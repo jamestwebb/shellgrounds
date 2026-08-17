@@ -17,7 +17,7 @@ const SECRET = 'solvability-secret';
 const HANDLE = 'test_player';
 
 // Keep in sync with submit-flag.js and App.jsx
-const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
+const ERROR_MARKERS = /command not found|not available in this simulator|that is the (Linux|Windows) name|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
 
 const flags = {};
 for (const c of CHALLENGES) {

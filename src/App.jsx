@@ -28,7 +28,7 @@ import { explainCommand } from './engine/coach';
 import { sounds } from './utils/audio';
 
 // A command that "ran" but errored must not satisfy a challenge (kept in sync with submit-flag.js)
-const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
+const ERROR_MARKERS = /command not found|not available in this simulator|that is the (Linux|Windows) name|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
 
 // Badges implied by an existing solve set — used to seed state silently on
 // session load so returning players don't get re-celebrated with confetti.

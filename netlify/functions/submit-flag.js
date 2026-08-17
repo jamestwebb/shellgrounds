@@ -10,7 +10,7 @@ import { injectFlagsIntoVFS } from '../../src/utils/vfs-injector.js';
 import { getPlayer, getSolves, addSolve } from './utils/store.js';
 
 // Same marker list the client uses: a command that "ran" but errored does not count.
-const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
+const ERROR_MARKERS = /command not found|not available in this simulator|that is the (Linux|Windows) name|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
 
 // Act progression is enforced here, not just in the sidebar UI: without this, a
 // student could pull later-act flags from their own manifest and submit them early.

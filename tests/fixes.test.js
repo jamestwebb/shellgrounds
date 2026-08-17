@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { tokenizeCommandLine } from '../src/engine/tokenizer.js';
 import { runPipeline } from '../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../src/engine/fs.warren.js';
+import { createTopsideFilesystem } from '../src/engine/fs.topside.js';
 import { injectFlagsIntoVFS, replaceFlagTokens, FLAG_UNAVAILABLE } from '../src/utils/vfs-injector.js';
 import { generateUserFlag, createSessionToken } from '../src/engine/crypto-utils.js';
 import { executeWindowsCommand } from '../src/engine/exec.windows.js';
@@ -90,5 +91,36 @@ describe('Windows executor robustness', () => {
     };
     const res = executeWindowsCommand(['findstr', 'pass(', 'a.txt'], 'C:', fs, '', {});
     expect(res.stderr).toMatch(/Invalid search expression/);
+  });
+});
+
+describe('Unknown-command honesty', () => {
+  it('tells the truth about real Linux commands that are not simulated', () => {
+    const fs = createWarrenFilesystem();
+    const res = runPipeline('top', '/home/analyst', fs, 'linux', {});
+    expect(res.output).toMatch(/real Linux command/);
+    expect(res.output).toMatch(/not available in this simulator/);
+    expect(res.hasError).toBe(true);
+  });
+
+  it('names the course context for real forensic tools', () => {
+    const fs = createWarrenFilesystem();
+    const res = runPipeline('mmls disk.raw', '/home/analyst', fs, 'linux', {});
+    expect(res.output).toMatch(/Sleuth Kit/);
+    expect(res.output).toMatch(/Case 003/);
+  });
+
+  it('corrects cross-platform command confusion in both directions', () => {
+    const linuxFs = createWarrenFilesystem();
+    const winRes = runPipeline('ls', 'C:\\Users\\Analyst', createTopsideFilesystem(), 'windows', {});
+    expect(winRes.output).toMatch(/On Windows CMD, use `dir`/);
+    const linRes = runPipeline('dir', '/home/analyst', linuxFs, 'linux', {});
+    expect(linRes.output).toMatch(/On Linux, use `ls`/);
+  });
+
+  it('still says command not found for genuine nonsense', () => {
+    const fs = createWarrenFilesystem();
+    const res = runPipeline('asdfqwer', '/home/analyst', fs, 'linux', {});
+    expect(res.output).toMatch(/command not found/);
   });
 });
