@@ -6,6 +6,8 @@ import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin } fr
 import { getTabCompletions } from '../engine/complete';
 import { sounds } from '../utils/audio';
 
+const FLAG_PATTERN = /(FLAG\{[A-Z2-7]{12}\})/g;
+
 export const Terminal = ({
   platform = 'linux',
   cwd = '/home/analyst',
@@ -25,6 +27,41 @@ export const Terminal = ({
   const terminalRef = useRef(null);
   const commandHistoryRef = useRef([]);
   const historyIndexRef = useRef(-1);
+  const [copiedFlag, setCopiedFlag] = React.useState(null);
+
+  const copyFlag = (flag) => {
+    navigator.clipboard?.writeText(flag).then(() => {
+      setCopiedFlag(flag);
+      setTimeout(() => setCopiedFlag(null), 2000);
+    }).catch(() => {});
+  };
+
+  // Render FLAG{...} tokens as click-to-copy chips so novices never have to
+  // fight text selection to capture a flag.
+  const renderOutputText = (text) => {
+    if (!text || !text.includes('FLAG{')) return text;
+    const parts = text.split(FLAG_PATTERN);
+    return parts.map((part, idx) => {
+      if (/^FLAG\{[A-Z2-7]{12}\}$/.test(part)) {
+        const isCopied = copiedFlag === part;
+        return (
+          <button
+            key={idx}
+            onClick={(e) => { e.stopPropagation(); copyFlag(part); }}
+            title="Click to copy this flag"
+            className={`inline px-1 py-0.5 mx-0.5 rounded border font-bold cursor-pointer transition-all align-baseline ${
+              isCopied
+                ? 'bg-term-green text-term-black border-term-green'
+                : 'bg-term-green-faint text-term-green border-term-green/40 hover:bg-term-green hover:text-term-black'
+            }`}
+          >
+            {isCopied ? '✓ copied!' : part}
+          </button>
+        );
+      }
+      return part;
+    });
+  };
 
   // Auto-scroll to bottom on output update
   useEffect(() => {
@@ -33,8 +70,11 @@ export const Terminal = ({
     }
   }, [terminalHistory, currentInput]);
 
-  // Focus input when clicking anywhere in terminal
+  // Focus input when clicking anywhere in terminal — but never steal an active
+  // text selection: refocusing the input clears it, which breaks copy/paste.
   const handleContainerClick = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) return;
     if (inputRef.current && !disabled) {
       inputRef.current.focus();
     }
@@ -240,7 +280,7 @@ export const Terminal = ({
                           : 'text-neutral-300'
                 }`}
               >
-                {item.isCoach ? `» ${item.text}` : item.text}
+                {item.isCoach ? `» ${item.text}` : renderOutputText(item.text)}
               </div>
             )}
           </div>
