@@ -2,9 +2,10 @@
 // Netlify Function: GET /api/session
 
 import { verifySessionToken, createSessionToken } from '../../src/engine/crypto-utils.js';
-import { getPlayer, getSolves } from './utils/store.js';
+import { initBlobs, getPlayer, getSolves } from './utils/store.js';
 
 export const handler = async (event) => {
+  initBlobs(event);
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');

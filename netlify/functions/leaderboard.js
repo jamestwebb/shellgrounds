@@ -1,10 +1,11 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // Netlify Function: GET /api/leaderboard
 
-import { listPlayers, getSolves } from './utils/store.js';
+import { initBlobs, listPlayers, getSolves } from './utils/store.js';
 import { BADGE_DEFINITIONS, CHALLENGES } from '../../src/data/challenges.js';
 
 export const handler = async (event) => {
+  initBlobs(event);
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,

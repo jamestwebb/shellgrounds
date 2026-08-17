@@ -7,7 +7,7 @@ import { runPipeline } from '../../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
 import { injectFlagsIntoVFS } from '../../src/utils/vfs-injector.js';
-import { getPlayer, getSolves, addSolve } from './utils/store.js';
+import { initBlobs, getPlayer, getSolves, addSolve } from './utils/store.js';
 
 // Same marker list the client uses: a command that "ran" but errored does not count.
 const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
@@ -54,6 +54,7 @@ function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd)
 }
 
 export const handler = async (event) => {
+  initBlobs(event);
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,

@@ -3,9 +3,10 @@
 
 import { verifySessionToken } from '../../src/engine/crypto-utils.js';
 import { CHALLENGES } from '../../src/data/challenges.js';
-import { listPlayers, getSolves } from './utils/store.js';
+import { initBlobs, listPlayers, getSolves } from './utils/store.js';
 
 export const handler = async (event) => {
+  initBlobs(event);
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');
