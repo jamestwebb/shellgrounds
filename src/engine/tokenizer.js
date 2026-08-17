@@ -118,6 +118,14 @@ export function tokenizeCommandLine(input) {
   return { pipeline: parsedStages };
 }
 
+// A redirect target may be quoted to contain spaces: > "my file.txt"
+function unquoteTarget(raw) {
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+    return raw.slice(1, -1);
+  }
+  return raw.replace(/['"]/g, '');
+}
+
 /**
  * Parses a single command stage (e.g. `grep -v "root" > /tmp/output.txt 2>/dev/null`)
  */
@@ -192,11 +200,11 @@ function parseSingleStage(raw) {
           append = true;
           offset = 3;
         }
-        const targetMatch = raw.slice(i + offset).match(/^\s*(\S+)/);
+        const targetMatch = raw.slice(i + offset).match(/^\s*("[^"]*"|'[^']*'|\S+)/);
         if (!targetMatch) {
           return { error: "bash: syntax error near unexpected token 'newline'" };
         }
-        const file = targetMatch[1].replace(/['"]/g, '');
+        const file = unquoteTarget(targetMatch[1]);
         redirectErr = file === '/dev/null' ? 'null' : { file, append };
         i += offset + targetMatch[0].length;
         continue;
@@ -212,11 +220,11 @@ function parseSingleStage(raw) {
           append = true;
           offset = 2;
         }
-        const targetMatch = raw.slice(i + offset).match(/^\s*(\S+)/);
+        const targetMatch = raw.slice(i + offset).match(/^\s*("[^"]*"|'[^']*'|\S+)/);
         if (!targetMatch) {
           return { error: "bash: syntax error near unexpected token 'newline'" };
         }
-        const file = targetMatch[1].replace(/['"]/g, '');
+        const file = unquoteTarget(targetMatch[1]);
         redirectOut = { file, append };
         i += offset + targetMatch[0].length;
         continue;

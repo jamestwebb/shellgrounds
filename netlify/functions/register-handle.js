@@ -79,7 +79,7 @@ export const handler = async (event) => {
       }
       const inserted = await db.sql`
         INSERT INTO players (handle) VALUES (${cleanHandle})
-        ON CONFLICT (handle) DO NOTHING
+        ON CONFLICT DO NOTHING
         RETURNING id
       `;
       if (inserted.length === 0) {

@@ -60,6 +60,11 @@ async function ensureSchema(sql) {
       last_seen TIMESTAMPTZ DEFAULT now()
     );
   `;
+  // Case-insensitive uniqueness: without this, concurrent "Alice" and "alice"
+  // registrations both pass the LOWER() pre-check and both insert.
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS players_handle_lower_idx ON players ((LOWER(handle)));
+  `;
   await sql`
     CREATE TABLE IF NOT EXISTS solves (
       player_id INTEGER REFERENCES players(id) ON DELETE CASCADE,

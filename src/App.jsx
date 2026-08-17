@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // The Gauntlet — Forensics CLI 101 — Standalone Netlify CLI Challenge Site for CIS 4400/5544
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Terminal as TerminalIcon, Trophy, MapPin, Shield, LogOut,
   Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle
@@ -60,7 +60,11 @@ export default function App() {
   const [flagMap, setFlagMap] = useState({}); // challengeId -> per-user flag (from server manifest)
   const [unlockedHints, setUnlockedHints] = useState({}); // challengeId -> number of hints revealed
   const [solvesMap, setSolvesMap] = useState({}); // challengeId -> { points, hintPenalty, netPoints, solvedAt }
-  const [totalScore, setTotalScore] = useState(0);
+  // Derived, never stored: a second source of truth would drift under concurrent submissions
+  const totalScore = useMemo(
+    () => Object.values(solvesMap).reduce((sum, s) => sum + (s.netPoints || 0), 0),
+    [solvesMap]
+  );
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [newBadge, setNewBadge] = useState(null);
 
@@ -88,7 +92,6 @@ export default function App() {
               map[s.challengeId] = s;
             });
             setSolvesMap(map);
-            setTotalScore(sess.totalScore || 0);
 
             // Fetch manifest and splice flags into VFS
             const manifest = await fetchManifest();
@@ -145,6 +148,12 @@ export default function App() {
     }
   }, [earnedBadges]);
 
+  // Badges react to the solve map itself, so every solve path (sidebar, terminal
+  // submit, auto-solve) is covered without threading the updated map around.
+  useEffect(() => {
+    checkBadges(solvesMap);
+  }, [solvesMap, checkBadges]);
+
   // Handle successful authentication
   const handleAuthenticated = async (handle, token) => {
     setAuthToken(token);
@@ -166,7 +175,6 @@ export default function App() {
       map[s.challengeId] = s;
     });
     setSolvesMap(map);
-    setTotalScore(sess?.totalScore || 0);
 
     setSession({
       handle,
@@ -184,30 +192,26 @@ export default function App() {
       const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText);
       if (res.success) {
         sounds.playSuccess();
-        // A repeat solve must not overwrite the original entry — pointsAwarded is 0
-        // on resubmits, and clobbering would visibly drop the score until reload.
-        // The server resolves which challenge a flag actually belongs to
+        // The server resolves which challenge a flag actually belongs to.
+        // Functional update: concurrent submissions (terminal auto-solve racing a
+        // sidebar submit) must not clobber each other via a stale closure, and a
+        // repeat solve must not overwrite the original entry with 0 points.
         const solvedId = res.challengeId || challengeId;
-        const updatedSolves = { ...solvesMap };
-        if (!(res.alreadySolved && updatedSolves[solvedId])) {
-          updatedSolves[solvedId] = {
-            challengeId: solvedId,
-            points: res.basePoints || 20,
-            hintPenalty: res.hintPenalty || 0,
-            netPoints: res.alreadySolved
-              ? Math.max(0, (res.basePoints || 0) - (res.hintPenalty || 0))
-              : (res.pointsAwarded || 0),
-            solvedAt: new Date().toISOString()
+        setSolvesMap(prev => {
+          if (res.alreadySolved && prev[solvedId]) return prev;
+          return {
+            ...prev,
+            [solvedId]: {
+              challengeId: solvedId,
+              points: res.basePoints || 20,
+              hintPenalty: res.hintPenalty || 0,
+              netPoints: res.alreadySolved
+                ? Math.max(0, (res.basePoints || 0) - (res.hintPenalty || 0))
+                : (res.pointsAwarded || 0),
+              solvedAt: new Date().toISOString()
+            }
           };
-        }
-        setSolvesMap(updatedSolves);
-
-        // Recalculate total score
-        const newScore = Object.values(updatedSolves).reduce((sum, s) => sum + (s.netPoints || 0), 0);
-        setTotalScore(newScore);
-
-        // Check badge unlocks
-        checkBadges(updatedSolves);
+        });
 
         return {
           success: true,
@@ -368,9 +372,18 @@ export default function App() {
     // selected in the sidebar: the executed command is tested against the first
     // unsolved matching challenge on this platform (in act order).
     if (!res.hasError && !ERROR_MARKERS.test(res.output || '')) {
+      // Mirrors the server's act gating: never auto-submit into a locked act
+      const actUnlocked = (actId) => {
+        const act = ACT_DEFINITIONS.find(a => a.id === actId);
+        if (!act || !act.unlockThreshold) return true;
+        const prev = CHALLENGES.filter(c => c.act === actId - 1);
+        if (prev.length === 0) return true;
+        return prev.filter(c => solvesMap[c.id]).length / prev.length >= act.unlockThreshold;
+      };
       const candidate = CHALLENGES.find(c => {
         if (solvesMap[c.id]) return false;
         if ((c.platform || 'linux') !== platform) return false;
+        if (!actUnlocked(c.act)) return false;
         if (c.success.kind === 'command') {
           return !!c.success.matchRegex && new RegExp(c.success.matchRegex, 'i').test(trimmed);
         }
@@ -421,7 +434,6 @@ export default function App() {
     setAuthToken(null);
     setSession(null);
     setSolvesMap({});
-    setTotalScore(0);
     setViewState('gate');
   };
 

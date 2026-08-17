@@ -2,7 +2,7 @@
 // Netlify Function: POST /api/submit-flag
 
 import { verifySessionToken, generateUserFlag } from '../../src/engine/crypto-utils.js';
-import { CHALLENGES } from '../../src/data/challenges.js';
+import { CHALLENGES, ACT_DEFINITIONS } from '../../src/data/challenges.js';
 import { runPipeline } from '../../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
@@ -11,6 +11,17 @@ import { getDb } from './utils/db.js';
 
 // Same marker list the client uses: a command that "ran" but errored does not count.
 const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
+
+// Act progression is enforced here, not just in the sidebar UI: without this, a
+// student could pull later-act flags from their own manifest and submit them early.
+function isActUnlocked(challenge, solvedIds) {
+  const act = ACT_DEFINITIONS.find(a => a.id === challenge.act);
+  if (!act || !act.unlockThreshold) return true;
+  const prevChallenges = CHALLENGES.filter(c => c.act === challenge.act - 1);
+  if (prevChallenges.length === 0) return true;
+  const solved = prevChallenges.filter(c => solvedIds.has(c.id)).length;
+  return solved / prevChallenges.length >= act.unlockThreshold;
+}
 
 function buildServerFlags(sessionSecret, handle) {
   const flags = {};
@@ -179,6 +190,21 @@ export const handler = async (event) => {
 
       const playerId = playerRows[0].id;
 
+      const solvedRows = await db.sql`
+        SELECT challenge_id FROM solves WHERE player_id = ${playerId}
+      `;
+      const solvedIds = new Set(solvedRows.map(r => r.challenge_id));
+      if (!isActUnlocked(challenge, solvedIds)) {
+        return {
+          statusCode: 403,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: 'That challenge is still locked. Solve 80% of the previous act first.'
+          })
+        };
+      }
+
       const inserted = await db.sql`
         INSERT INTO solves (player_id, challenge_id, points, hint_penalty)
         VALUES (${playerId}, ${challenge.id}, ${challenge.points}, ${hintPenalty})
@@ -195,6 +221,20 @@ export const handler = async (event) => {
           statusCode: 404,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ error: 'Player record not found' })
+        };
+      }
+
+      const solvedIds = new Set(
+        [...db.store.solves.values()].filter(s => s.player_id === player.id).map(s => s.challenge_id)
+      );
+      if (!isActUnlocked(challenge, solvedIds)) {
+        return {
+          statusCode: 403,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: 'That challenge is still locked. Solve 80% of the previous act first.'
+          })
         };
       }
 
