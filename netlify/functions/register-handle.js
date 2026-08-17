@@ -3,7 +3,7 @@
 
 import { checkSFW } from '../../src/engine/sfw-filter.js';
 import { createSessionToken } from '../../src/engine/crypto-utils.js';
-import { getDb } from './utils/db.js';
+import { createPlayer } from './utils/store.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -57,46 +57,19 @@ export const handler = async (event) => {
     }
 
     const cleanHandle = sfw.handle;
-    const db = await getDb();
 
     // A handle can only be claimed once. Returning players resume via the token stored
     // in their original browser; re-registering an existing handle would let anyone with
     // the shared class password take over another student's account.
-    const handleTakenResponse = {
-      statusCode: 409,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        error: `Handle '@${cleanHandle}' is already claimed. If it is yours, open The Gauntlet in the browser you registered with — sessions resume automatically. If you lost access, ask your instructor to reset the handle.`
-      })
-    };
-
-    if (db.mode === 'neon') {
-      const existing = await db.sql`
-        SELECT id FROM players WHERE LOWER(handle) = LOWER(${cleanHandle})
-      `;
-      if (existing.length > 0) {
-        return handleTakenResponse;
-      }
-      const inserted = await db.sql`
-        INSERT INTO players (handle) VALUES (${cleanHandle})
-        ON CONFLICT DO NOTHING
-        RETURNING id
-      `;
-      if (inserted.length === 0) {
-        return handleTakenResponse;
-      }
-    } else {
-      const lower = cleanHandle.toLowerCase();
-      if (db.store.players.get(lower)) {
-        return handleTakenResponse;
-      }
-      db.store.players.set(lower, {
-        id: db.store.nextPlayerId++,
-        handle: cleanHandle,
-        created_at: new Date(),
-        last_seen: new Date()
-      });
-      db.save?.();
+    const { created } = await createPlayer(cleanHandle);
+    if (!created) {
+      return {
+        statusCode: 409,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          error: `Handle '@${cleanHandle}' is already claimed. If it is yours, open The Gauntlet in the browser you registered with — sessions resume automatically. If you lost access, ask your instructor to reset the handle.`
+        })
+      };
     }
 
     const token = createSessionToken(sessionSecret, cleanHandle);

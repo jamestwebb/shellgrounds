@@ -31,6 +31,9 @@ Target: Suspicious Endpoint C:\\Users\\Analyst
 Analyst: Forensic Examiner
 
 Investigate hidden system files and verify integrity of seized disk images.
+
+You do NOT need to act on this file. The Topside challenges in the left panel
+walk you through each step.
 `),
           'logs.txt': file(
 `[WINDOWS EVENT LOG ENTRY]

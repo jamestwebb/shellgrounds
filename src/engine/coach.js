@@ -17,7 +17,7 @@ const ERROR_ADVICE = [
   },
   {
     pattern: /Is a directory|Access is denied/i,
-    advice: "That target is a directory, not a file. Use `cd` to enter it or `ls` to look inside it."
+    advice: "That target is a directory, not a file. Use `cd` to enter it, or `ls` (Windows: `dir`) to look inside it."
   },
   {
     pattern: /missing operand|missing pattern|missing filename|missing sector offset|missing disk image|syntax of the command is incorrect|Parameter format not correct|Bad command line|you must specify/i,

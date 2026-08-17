@@ -72,7 +72,7 @@ export async function fetchManifest() {
   return await res.json();
 }
 
-export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge = undefined) {
+export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge = undefined, cwd = undefined) {
   const token = getAuthToken();
   if (!token) throw new Error('Not logged in');
 
@@ -82,7 +82,7 @@ export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandTex
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ challengeId, flag, hintsUsed, commandText, hintsUsedByChallenge })
+    body: JSON.stringify({ challengeId, flag, hintsUsed, commandText, hintsUsedByChallenge, cwd })
   });
   const data = await parseJsonSafe(res);
   if (!res.ok) {

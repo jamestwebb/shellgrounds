@@ -226,6 +226,9 @@ export function executeWindowsCommand(argv, cwd, fs, stdin = '', context = {}) {
 
     case 'submit': {
       const flag = args[0];
+      if (!flag) {
+        return { stdout: '', stderr: 'Usage: submit <FLAG_STRING> (e.g. submit FLAG{...})', newCwd: cwd };
+      }
       return {
         stdout: `Submitting flag '${flag}' for validation...`,
         stderr: '',

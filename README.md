@@ -64,15 +64,16 @@ npm run build
 ## Netlify Deployment
 
 1. Deploy this repository to Netlify (or run `netlify deploy`).
-2. Configure Environment Variables in the Netlify Dashboard — **all are required; the API fails closed (HTTP 500) if any is missing**:
+2. Configure Environment Variables in the Netlify Dashboard — `CLASS_PASSWORD` and `SESSION_SECRET` are **required; the API fails closed (HTTP 500) if either is missing**:
    - `CLASS_PASSWORD`: Password announced in lecture. Rotate each semester.
    - `SESSION_SECRET`: Long random secret for HMAC signing (e.g. `openssl rand -hex 32`). Rotating it invalidates all sessions and regenerates all flags.
-   - `DATABASE_URL`: Connection string for Neon Serverless PostgreSQL. Tables are created automatically on first use.
    - `ADMIN_HANDLES`: Comma-separated instructor handles. Empty means no admins. **Register these handles yourself before announcing the site** — handles are first-come, first-served and cannot be re-registered.
+   - `GAUNTLET_STORE` (optional): Netlify Blobs store name, default `gauntlet-fall2026`. Change it next semester and the class starts fresh.
 
 Notes:
-- Handles can only be claimed once. Returning students resume via the token stored in their browser; every visit rolls the token forward another 72 h. A student who loses the token (new machine, cleared storage) needs the instructor to delete their `players` row in Neon to free the handle for re-registration.
-- The in-memory store only activates under local `netlify dev` (no `DATABASE_URL`). Deployed environments refuse to run without a database.
+- All data (players, solves) lives in **Netlify Blobs** — nothing external to provision, nothing to remember to clear. New semester: change `GAUNTLET_STORE`. Delete old data with `netlify blobs:delete <store>` or via the Netlify UI.
+- Handles can only be claimed once. Returning students resume via the token stored in their browser; every visit rolls the token forward another 72 h. A student who loses the token (new machine, cleared storage) needs the instructor to delete their `players/<handle>` blob to free the handle.
+- Local `netlify dev` serves a local blob sandbox automatically — no setup, data persists under `.netlify/`.
 
 ---
 

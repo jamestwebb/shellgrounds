@@ -265,11 +265,12 @@ export default function App() {
   };
 
   // Submit flag handler
-  const handleFlagSubmit = async (challengeId, flagText, hintsUsed = 0, commandText = '') => {
+  const handleFlagSubmit = async (challengeId, flagText, hintsUsed = 0, commandText = '', submitCwd = undefined) => {
     try {
       // The per-challenge hint map lets the server charge the penalty against
       // whichever challenge the flag actually matches, not the selected one.
-      const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText, unlockedHints);
+      // submitCwd lets the server replay the command from where it really ran.
+      const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText, unlockedHints, submitCwd);
       if (res.success) {
         sounds.playSuccess();
         // The server resolves which challenge a flag actually belongs to.
@@ -473,7 +474,18 @@ export default function App() {
         return false;
       });
       if (candidate) {
-        const subResult = await handleFlagSubmit(candidate.id, '', unlockedHints[candidate.id] || 0, trimmed);
+        const subResult = await handleFlagSubmit(candidate.id, '', unlockedHints[candidate.id] || 0, trimmed, cwd);
+        if (!subResult.success) {
+          // Never fail silently: the student's command LOOKED right locally
+          setTerminalHistory(prev => [
+            ...prev,
+            {
+              type: 'output',
+              text: `[!] '${candidate.title}' matched your command, but validation failed: ${subResult.error || 'unknown error'}. Try again, or refresh the page if this repeats.`,
+              isError: true
+            }
+          ]);
+        }
         if (subResult.success) {
           setTerminalHistory(prev => [
             ...prev,

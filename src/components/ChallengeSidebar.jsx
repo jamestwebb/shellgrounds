@@ -73,7 +73,7 @@ export const ChallengeSidebar = ({
     if (hintsRevealedCount >= currentChallenge.hints.length) return;
 
     if (cost > 0) {
-      const ok = window.confirm(`Unlocking this hint will deduct ${cost} XP penalty from this challenge's score. Proceed?`);
+      const ok = window.confirm(`This hint costs ${cost} XP, subtracted from this challenge's points. Reveal it?`);
       if (!ok) return;
     }
 
@@ -129,7 +129,7 @@ export const ChallengeSidebar = ({
       } else if (nextAct) {
         setFeedback({
           type: 'success',
-          message: `${nextAct.name} is still locked — solve 80% of this act's challenges to open it.`
+          message: `LOCKED: ${nextAct.name} opens after you solve 80% of this act's challenges.`
         });
       } else {
         setFeedback({
@@ -193,7 +193,7 @@ export const ChallengeSidebar = ({
         {/* Act Progress Bar */}
         <div className="mt-3">
           <div className="flex justify-between text-[11px] text-neutral-400 mb-1">
-            <span>Ring Progress</span>
+            <span>Act Progress</span>
             <span className="text-term-green font-bold">{solvedCountInAct}/{actChallenges.length} Solved</span>
           </div>
           <div className="h-1.5 bg-term-black rounded-full overflow-hidden border border-term-border">
@@ -326,6 +326,13 @@ export const ChallengeSidebar = ({
                 >
                   Next Challenge <ChevronRight size={14} />
                 </button>
+              </div>
+            ) : currentChallenge.success?.kind !== 'flag' ? (
+              /* Command/state challenges have no flag: kill the "what do I type
+                 in the box?" hunt before it starts */
+              <div className="p-3 rounded-lg bg-term-gray border border-term-border text-xs text-neutral-300">
+                <span className="text-term-green font-bold">No flag needed.</span> This challenge
+                completes automatically the moment you run the right command in the terminal.
               </div>
             ) : (
               <div>
