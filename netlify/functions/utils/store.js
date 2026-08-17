@@ -11,20 +11,9 @@
 // only realistic race is one player's two near-simultaneous solves, where the
 // losing write is re-earnable; acceptable by design.
 
-import { getStore, connectLambda } from '@netlify/blobs';
+import { getStore } from '@netlify/blobs';
 import fs from 'fs';
 import path from 'path';
-
-// Lambda-compatibility (v1) functions receive the Blobs credentials inside the
-// event payload; connectLambda wires them up. Every handler that touches the
-// store must call this first with its event. No-ops harmlessly in local dev.
-export function initBlobs(event) {
-  try {
-    connectLambda(event);
-  } catch {
-    // Local unlinked dev: no blobs context in the event — fileBackend covers it
-  }
-}
 
 // Local fallback for `netlify dev` on an UNLINKED project (before first deploy,
 // the CLI has no site ID and Blobs throws MissingBlobsEnvironmentError). Same
@@ -50,11 +39,11 @@ function fileBackend() {
 
 function store() {
   try {
-    // Default (eventual) consistency: 'strong' requires an uncachedEdgeURL the
-    // v1 lambda environment does not supply (BlobsConsistencyError in prod).
-    // The rare stale-read window is acceptable at classroom scale.
+    // Functions v2 runtime: strong consistency is supported and required here —
+    // registration dedupe and solve reads must see their own writes.
     return getStore({
-      name: process.env.GAUNTLET_STORE || 'gauntlet-fall2026'
+      name: process.env.GAUNTLET_STORE || 'gauntlet-fall2026',
+      consistency: 'strong'
     });
   } catch (err) {
     if (process.env.NETLIFY_DEV === 'true') {
