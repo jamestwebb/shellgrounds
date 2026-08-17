@@ -6,7 +6,7 @@ import {
   CheckCircle2, Circle, Lock, Lightbulb, ChevronRight,
   Zap, Trophy, Send, Award, Layers, AlertCircle, HelpCircle
 } from 'lucide-react';
-import { ACT_DEFINITIONS } from '../data/challenges';
+import { ACT_DEFINITIONS, isActUnlockedFor, requiredSolvesToUnlock } from '../data/challenges';
 import { sounds } from '../utils/audio';
 
 // Helper to highlight backtick-wrapped commands in text
@@ -57,14 +57,7 @@ export const ChallengeSidebar = ({
   const actProgress = actChallenges.length > 0 ? (solvedCountInAct / actChallenges.length) * 100 : 0;
 
   // Check which acts are unlocked
-  const isActUnlocked = (act) => {
-    if (act.unlockThreshold === 0) return true;
-    const prevAct = acts.find(a => a.id === act.id - 1);
-    if (!prevAct) return true;
-    const prevChallenges = challenges.filter(c => c.act === prevAct.id);
-    const prevSolved = prevChallenges.filter(c => solvesMap[c.id]).length;
-    return prevChallenges.length === 0 || (prevSolved / prevChallenges.length) >= (act.unlockThreshold || 0.8);
-  };
+  const isActUnlocked = (act) => isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
 
   const hintsRevealedCount = (currentChallenge && unlockedHints[currentChallenge.id]) || 0;
 
@@ -129,7 +122,7 @@ export const ChallengeSidebar = ({
       } else if (nextAct) {
         setFeedback({
           type: 'success',
-          message: `LOCKED: ${nextAct.name} opens after you solve 80% of this act's challenges.`
+          message: `LOCKED: ${nextAct.name} opens once you have solved ${requiredSolvesToUnlock(nextAct.id, challenges)} of this act's ${actChallenges.length} challenges.`
         });
       } else {
         setFeedback({
@@ -182,7 +175,7 @@ export const ChallengeSidebar = ({
                       ? 'text-neutral-400 hover:text-white hover:bg-term-sidebar-raised'
                       : 'text-neutral-500 opacity-40 cursor-not-allowed'
                 }`}
-                title={`${act.name} ${!unlocked ? '(Locked - Solve 80% of prior act)' : ''}`}
+                title={`${act.name}${!unlocked ? ` (Locked — solve ${requiredSolvesToUnlock(act.id, challenges)} of the previous act's challenges)` : ''}`}
               >
                 <span>{act.id === 6 ? 'WIN' : act.id}</span>
               </button>

@@ -39,8 +39,11 @@ export function tokenizeCommandLine(input) {
     { regex: /(?<!2)>(?!>)\s*&/, msg: "bash: unsupported redirection syntax — you'll meet advanced redirection on the WorkBench VM" },
   ];
 
+  // Test only the UNQUOTED parts: `grep "error && warning" file` is a valid
+  // search, not an attempt to use the && operator.
+  const unquoted = trimmed.replace(/"[^"]*"/g, '""').replace(/'[^']*'/g, "''");
   for (const check of unsupportedChecks) {
-    if (check.regex.test(trimmed)) {
+    if (check.regex.test(unquoted)) {
       return { error: check.msg, pipeline: [] };
     }
   }
@@ -116,6 +119,27 @@ export function tokenizeCommandLine(input) {
   }
 
   return { pipeline: parsedStages };
+}
+
+/**
+ * Quote-aware argv split for Windows CMD, which has no pipes/redirection in
+ * this simulator but does have quoted paths ("Program Files").
+ */
+export function splitArgsRespectingQuotes(input) {
+  const args = [];
+  let cur = '';
+  let inS = false, inD = false, has = false;
+  for (const ch of (input || '')) {
+    if (ch === "'" && !inD) { inS = !inS; has = true; continue; }
+    if (ch === '"' && !inS) { inD = !inD; has = true; continue; }
+    if (/\s/.test(ch) && !inS && !inD) {
+      if (cur.length > 0 || has) { args.push(cur); cur = ''; has = false; }
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.length > 0 || has) args.push(cur);
+  return args;
 }
 
 // A redirect target may be quoted to contain spaces: > "my file.txt"

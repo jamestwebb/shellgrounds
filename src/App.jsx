@@ -21,7 +21,7 @@ import { KeyboardGuard } from './components/KeyboardGuard';
 import { createWarrenFilesystem } from './engine/fs.warren';
 import { createTopsideFilesystem } from './engine/fs.topside';
 import { runPipeline } from './engine/pipeline';
-import { ACT_DEFINITIONS, BADGE_DEFINITIONS, CHALLENGES } from './data/challenges';
+import { ACT_DEFINITIONS, BADGE_DEFINITIONS, CHALLENGES, isActUnlockedFor } from './data/challenges';
 import { fetchSession, fetchManifest, submitFlagApi, getAuthToken, setAuthToken } from './utils/api';
 import { injectFlagsIntoVFS, replaceFlagTokens } from './utils/vfs-injector';
 import { explainCommand } from './engine/coach';
@@ -454,13 +454,9 @@ export default function App() {
     // unsolved matching challenge on this platform (in act order).
     if (!res.hasError && !ERROR_MARKERS.test(res.output || '')) {
       // Mirrors the server's act gating: never auto-submit into a locked act
-      const actUnlocked = (actId) => {
-        const act = ACT_DEFINITIONS.find(a => a.id === actId);
-        if (!act || !act.unlockThreshold) return true;
-        const prev = CHALLENGES.filter(c => c.act === actId - 1);
-        if (prev.length === 0) return true;
-        return prev.filter(c => solvesMap[c.id]).length / prev.length >= act.unlockThreshold;
-      };
+      const solvedIds = new Set(Object.keys(solvesMap));
+      const actUnlocked = (actId) =>
+        isActUnlockedFor(ACT_DEFINITIONS.find(a => a.id === actId), solvedIds, CHALLENGES);
       const candidate = CHALLENGES.find(c => {
         if (solvesMap[c.id]) return false;
         if ((c.platform || 'linux') !== platform) return false;
