@@ -58,7 +58,7 @@ export const Leaderboard = ({ currentHandle }) => {
                   THE GAUNTLET // LEADERBOARD
                 </h1>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  Live Forensic Standings · CIS 4400 / 5544
+                  Live Forensic Standings
                 </p>
               </div>
             </div>

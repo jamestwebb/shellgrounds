@@ -71,7 +71,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
           <h1 className="text-2xl font-bold text-green-400 tracking-wider">THE GAUNTLET</h1>
           <p className="text-xs text-neutral-400 mt-1.5 italic">"Prove it in the terminal."</p>
           <div className="text-[11px] text-neutral-400 mt-1 uppercase tracking-widest">
-            CIS 4400 / 5544 · Forensics CLI 101
+            Forensics CLI 101 · Command-Line Proving Ground
           </div>
         </div>
 
@@ -135,7 +135,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
               placeholder="••••••••••••"
               className="w-full bg-term-gray border border-term-border rounded px-3.5 py-2.5 text-sm text-green-300 placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green transition-all"
             />
-            <p className="text-[11px] text-neutral-400 mt-1">Needed only to create your handle. Ask James if you missed it.</p>
+            <p className="text-[11px] text-neutral-400 mt-1">Needed only to create your handle. Ask your instructor if you missed it.</p>
           </div>
 
           {/* Error Message */}
@@ -168,7 +168,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
 
         {/* Footer info */}
         <div className="mt-8 pt-4 border-t border-neutral-900 text-center text-[11px] text-neutral-400">
-          CIS 4400 / 5544 · Fall 2026
+          Forensics CLI 101
         </div>
       </div>
     </div>

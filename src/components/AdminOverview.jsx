@@ -65,7 +65,7 @@ export const AdminOverview = () => {
                 INSTRUCTOR OVERSIGHT // THE GAUNTLET
               </h1>
               <p className="text-xs text-neutral-400">
-                CIS 4400 / 5544 Analytics & Diagnostic Telemetry
+                Class Analytics & Diagnostic Telemetry
               </p>
             </div>
           </div>

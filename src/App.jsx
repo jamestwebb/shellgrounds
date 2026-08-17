@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// The Gauntlet — Forensics CLI 101 — Standalone Netlify CLI Challenge Site for CIS 4400/5544
+// The Gauntlet — Forensics CLI 101 — a standalone Netlify CLI challenge site for cyber forensics courses
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
