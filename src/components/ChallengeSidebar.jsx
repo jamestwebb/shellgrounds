@@ -141,9 +141,9 @@ export const ChallengeSidebar = ({
   };
 
   return (
-    <div className="w-80 md:w-96 flex-none bg-term-panel border-r border-term-border flex flex-col h-full overflow-hidden text-neutral-200 select-none">
+    <div className="w-80 md:w-96 flex-none bg-term-sidebar border-r-2 border-term-sidebar-border flex flex-col h-full overflow-hidden text-neutral-200 select-none">
       {/* Platform & Act Select Header */}
-      <div className="p-4 border-b border-term-border bg-term-gray flex-none">
+      <div className="p-4 border-b border-term-sidebar-border bg-term-sidebar-deep flex-none">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">{currentAct?.icon}</span>
@@ -159,7 +159,7 @@ export const ChallengeSidebar = ({
         </div>
 
         {/* Act Switcher Tabs */}
-        <div className="grid grid-cols-6 gap-1 bg-term-black p-1 rounded-lg border border-term-border">
+        <div className="grid grid-cols-6 gap-1 bg-term-sidebar-deep p-1 rounded-lg border border-term-sidebar-border">
           {acts.map((act) => {
             const unlocked = isActUnlocked(act);
             const isActive = act.id === activeActId;
@@ -179,7 +179,7 @@ export const ChallengeSidebar = ({
                   isActive
                     ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.4)]'
                     : unlocked
-                      ? 'text-neutral-400 hover:text-white hover:bg-term-gray'
+                      ? 'text-neutral-400 hover:text-white hover:bg-term-sidebar-raised'
                       : 'text-neutral-500 opacity-40 cursor-not-allowed'
                 }`}
                 title={`${act.name} ${!unlocked ? '(Locked - Solve 80% of prior act)' : ''}`}
@@ -196,7 +196,7 @@ export const ChallengeSidebar = ({
             <span>Act Progress</span>
             <span className="text-term-green font-bold">{solvedCountInAct}/{actChallenges.length} Solved</span>
           </div>
-          <div className="h-1.5 bg-term-black rounded-full overflow-hidden border border-term-border">
+          <div className="h-1.5 bg-term-sidebar-deep rounded-full overflow-hidden border border-term-sidebar-border">
             <div
               className="h-full bg-term-green transition-all duration-300"
               style={{ width: `${actProgress}%` }}
@@ -206,7 +206,7 @@ export const ChallengeSidebar = ({
       </div>
 
       {/* Challenge List in current Act */}
-      <div className="p-3 border-b border-term-border bg-term-black/50 max-h-48 overflow-y-auto flex-none space-y-1 scrollbar-thin scrollbar-thumb-neutral-800">
+      <div className="p-3 border-b border-term-sidebar-border bg-term-sidebar-deep/60 max-h-48 overflow-y-auto flex-none space-y-1 scrollbar-thin scrollbar-thumb-neutral-700">
         {actChallenges.map((challenge, idx) => {
           const solved = !!solvesMap[challenge.id];
           const isSelected = currentChallenge?.id === challenge.id;
@@ -219,8 +219,8 @@ export const ChallengeSidebar = ({
                 isSelected
                   ? 'bg-term-green-faint border-term-green text-white font-medium shadow-[0_0_10px_rgba(34,197,94,0.15)]'
                   : solved
-                    ? 'bg-term-gray/60 border-term-border text-neutral-300 hover:border-neutral-600'
-                    : 'bg-transparent border-transparent text-neutral-400 hover:bg-term-gray hover:text-white'
+                    ? 'bg-term-sidebar-raised/70 border-term-sidebar-border text-neutral-300 hover:border-neutral-500'
+                    : 'bg-transparent border-transparent text-neutral-400 hover:bg-term-sidebar-raised hover:text-white'
               }`}
             >
               <div className="flex items-center gap-2 truncate pr-2">
@@ -231,7 +231,7 @@ export const ChallengeSidebar = ({
                 )}
                 <span className="truncate">{idx + 1}. {challenge.title}</span>
               </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-900 text-neutral-400 shrink-0">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-term-sidebar-deep text-neutral-400 shrink-0">
                 +{challenge.points}
               </span>
             </button>
@@ -260,7 +260,7 @@ export const ChallengeSidebar = ({
             </div>
 
             {/* Briefing text */}
-            <div className="text-xs text-neutral-300 leading-relaxed bg-term-gray p-3.5 rounded-lg border border-term-border mb-4 font-mono select-text cursor-text">
+            <div className="text-xs text-neutral-300 leading-relaxed bg-term-sidebar-raised p-3.5 rounded-lg border border-term-sidebar-border mb-4 font-mono select-text cursor-text">
               {formatBriefText(currentChallenge.brief)}
             </div>
 
@@ -294,7 +294,7 @@ export const ChallengeSidebar = ({
                 {hintsRevealedCount < currentChallenge.hints.length && (
                   <button
                     onClick={() => handleRevealNextHint(currentChallenge.hints[hintsRevealedCount].cost || 0)}
-                    className="w-full py-2 px-3 rounded-lg bg-term-gray border border-dashed border-term-border hover:border-amber-500/50 hover:bg-neutral-900 text-xs text-amber-300 flex items-center justify-between transition-all cursor-pointer"
+                    className="w-full py-2 px-3 rounded-lg bg-term-sidebar-raised border border-dashed border-term-sidebar-border hover:border-amber-500/50 hover:bg-term-sidebar-deep text-xs text-amber-300 flex items-center justify-between transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
                       <HelpCircle size={13} /> Unlock Hint {hintsRevealedCount + 1}
@@ -330,7 +330,7 @@ export const ChallengeSidebar = ({
             ) : currentChallenge.success?.kind !== 'flag' ? (
               /* Command/state challenges have no flag: kill the "what do I type
                  in the box?" hunt before it starts */
-              <div className="p-3 rounded-lg bg-term-gray border border-term-border text-xs text-neutral-300">
+              <div className="p-3 rounded-lg bg-term-sidebar-raised border border-term-sidebar-border text-xs text-neutral-300">
                 <span className="text-term-green font-bold">No flag needed.</span> This challenge
                 completes automatically the moment you run the right command in the terminal.
               </div>
@@ -344,7 +344,7 @@ export const ChallengeSidebar = ({
                       value={flagInput}
                       onChange={(e) => { setFlagInput(e.target.value); setFeedback(null); }}
                       placeholder="Submit flag (e.g. FLAG{...})"
-                      className="w-full bg-term-gray border border-term-border rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green font-mono"
+                      className="w-full bg-term-sidebar-raised border border-term-sidebar-border rounded px-3 py-2 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green font-mono"
                       autoComplete="off"
                       spellCheck="false"
                     />
