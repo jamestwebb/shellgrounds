@@ -2,7 +2,7 @@
 // Netlify Function: POST /api/submit-flag
 
 import { verifySessionToken, generateUserFlag } from '../../src/engine/crypto-utils.js';
-import { CHALLENGES, ACT_DEFINITIONS } from '../../src/data/challenges.js';
+import { CHALLENGES, ACT_DEFINITIONS, isActUnlockedFor } from '../../src/data/challenges.js';
 import { runPipeline } from '../../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
@@ -16,11 +16,7 @@ const ERROR_MARKERS = /command not found|not available in this simulator|that is
 // student could pull later-act flags from their own manifest and submit them early.
 function isActUnlocked(challenge, solvedIds) {
   const act = ACT_DEFINITIONS.find(a => a.id === challenge.act);
-  if (!act || !act.unlockThreshold) return true;
-  const prevChallenges = CHALLENGES.filter(c => c.act === challenge.act - 1);
-  if (prevChallenges.length === 0) return true;
-  const solved = prevChallenges.filter(c => solvedIds.has(c.id)).length;
-  return solved / prevChallenges.length >= act.unlockThreshold;
+  return isActUnlockedFor(act, solvedIds, CHALLENGES);
 }
 
 function buildServerFlags(sessionSecret, handle) {

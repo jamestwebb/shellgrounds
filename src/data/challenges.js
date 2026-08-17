@@ -118,7 +118,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^pwd$'
+      matchRegex: "^pwd\\s*$"
     },
     hints: [
       { cost: 0, text: 'Type `pwd` (Present Working Directory) and press Enter.' }
@@ -135,7 +135,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^ls(\\s+\\.)?$'
+      matchRegex: "^ls(\\s+\\.)?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Type `ls` to list files and folders.' }
@@ -206,7 +206,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^cd\\s+Documents/?$'
+      matchRegex: "^cd\\s+[\"\']?(?:\\./|~/|/home/analyst/)?Documents/?[\"\']?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Type `cd Doc` then press the Tab key. The shell will auto-complete to `cd Documents`.' }
@@ -223,7 +223,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^pwd$'
+      matchRegex: "^pwd\\s*$"
     },
     hints: [
       { cost: 0, text: 'Run `pwd`, then press Up Arrow and Enter.' }
@@ -244,7 +244,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^cat\\s+"?(Documents/)?case_notes\\.txt"?\\s*$'
+      matchRegex: "^cat\\s+[\"\']?(?:\\./|~/|/home/analyst/)?(?:Documents/)?case_notes\\.txt[\"\']?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Type `cat Documents/case_notes.txt` — that single command is the entire challenge.' }
@@ -261,7 +261,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^head\\s+(-n\\s*5|-5)\\s+(Documents/)?access\\.log\\s*$'
+      matchRegex: "^head\\s+(?:-n\\s*5|-5)\\s+[\"\']?(?:\\./|~/|/home/analyst/)?(?:Documents/)?access\\.log[\"\']?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Run: `head -n 5 Documents/access.log`' }
@@ -296,7 +296,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^file\\s+(evidence/)?mystery_file\\s*$'
+      matchRegex: "^file\\s+[\"\']?(?:\\./|~/|/home/analyst/)?(?:evidence/)?mystery_file[\"\']?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Run `file evidence/mystery_file`' }
@@ -557,7 +557,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^scan\\s+"?(evidence/)?suspect_drive\\.raw"?\\s*$'
+      matchRegex: "^scan\\s+[\"\']?(?:\\./|~/|/home/analyst/)?(?:evidence/)?suspect_drive\\.raw[\"\']?\\s*$"
     },
     hints: [
       { cost: 0, text: 'Run: `scan evidence/suspect_drive.raw`' }
@@ -597,7 +597,7 @@ export const CHALLENGES = [
     setup: { cwd: 'C:\\Users\\Analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^dir$'
+      matchRegex: "^dir\\s*$"
     },
     hints: [
       { cost: 0, text: 'Type `dir` and press Enter.' }
@@ -653,7 +653,7 @@ export const CHALLENGES = [
     setup: { cwd: 'C:\\Users\\Analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^certutil\\s+-hashfile\\s+(evidence(\\\\|/))?evidence\\.img\\s+MD5\\s*$'
+      matchRegex: "^certutil\\s+-hashfile\\s+[\"\']?(?:evidence[\\\\/])?evidence\\.img[\"\']?\\s+MD5\\s*$"
     },
     hints: [
       { cost: 0, text: 'Run: `certutil -hashfile evidence\\evidence.img MD5`' }
@@ -662,3 +662,21 @@ export const CHALLENGES = [
     teaches: ['certutil', 'windows-hashing']
   }
 ];
+
+// Shared unlock rule — imported by the client sidebar AND the server validator so
+// they can never drift. A student may skip ONE challenge per act; a strict 80%
+// ratio silently demanded 100% of any 4-challenge act (Act IV), locking a stuck
+// student out of the capstone.
+export function requiredSolvesToUnlock(actId, challenges = CHALLENGES) {
+  const prior = challenges.filter(c => c.act === actId - 1).length;
+  if (prior === 0) return 0;
+  return Math.max(1, prior - 1);
+}
+
+export function isActUnlockedFor(act, solvedIdSet, challenges = CHALLENGES) {
+  if (!act || !act.unlockThreshold) return true;
+  const prior = challenges.filter(c => c.act === act.id - 1);
+  if (prior.length === 0) return true;
+  const solved = prior.filter(c => solvedIdSet.has(c.id)).length;
+  return solved >= requiredSolvesToUnlock(act.id, challenges);
+}

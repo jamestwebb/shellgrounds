@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // Pipeline and redirection engine for The Gauntlet
 
-import { tokenizeCommandLine } from './tokenizer.js';
+import { tokenizeCommandLine, splitArgsRespectingQuotes } from './tokenizer.js';
 import { executeLinuxCommand } from './exec.linux.js';
 import { executeWindowsCommand } from './exec.windows.js';
 import { normalizePath, file as createFileNode } from './fs-builder.js';
@@ -63,7 +63,8 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
 
   // Windows top-level CMD execution (simplistic or via tokenizer)
   if (isWindows) {
-    const parts = input.trim().split(/\s+/);
+    // Quote-aware: naive space-splitting destroyed `cd "Program Files"`
+    const parts = splitArgsRespectingQuotes(input.trim());
     const result = executeWindowsCommand(parts, cwd, fs, '', context);
     return {
       output: result.stdout || result.stderr || '',

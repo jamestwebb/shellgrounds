@@ -5,7 +5,7 @@
 // pass, and validation that mirrors client/server drift.
 
 import { describe, it, expect } from 'vitest';
-import { CHALLENGES } from '../src/data/challenges.js';
+import { CHALLENGES, ACT_DEFINITIONS, isActUnlockedFor } from '../src/data/challenges.js';
 import { runPipeline } from '../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../src/engine/fs.topside.js';
@@ -126,4 +126,43 @@ describe('Solvability: every challenge has a working canonical solution', () => 
       }
     });
   }
+});
+
+// Beginner variants that must ALSO be accepted — a correct command must never
+// be silently ignored (the "no way to get the points" bug class).
+describe('Variant tolerance for command challenges', () => {
+  const VARIANTS = [
+    ['act1-pwd', 'pwd '], ['act1-ls', 'ls .'],
+    ['act1-tab', 'cd ./Documents'], ['act1-tab', 'cd /home/analyst/Documents'], ['act1-tab', 'cd ~/Documents'],
+    ['act2-cat', 'cat ./Documents/case_notes.txt'], ['act2-cat', 'cat "Documents/case_notes.txt"'],
+    ['act2-head', 'head -n 5 "Documents/access.log"'], ['act2-head', 'head -n5 Documents/access.log'],
+    ['act2-file', 'file ./evidence/mystery_file'],
+    ['act5-scan', 'scan "evidence/suspect_drive.raw"'],
+    ['topside-nav', 'dir '],
+    ['topside-certutil', 'certutil -hashfile evidence/evidence.img md5']
+  ];
+  for (const [id, variant] of VARIANTS) {
+    it(`${id} accepts: ${variant}`, () => {
+      const challenge = CHALLENGES.find(c => c.id === id);
+      expect(new RegExp(challenge.success.matchRegex, 'i').test(variant.trim()),
+        `regex rejected "${variant}"`).toBe(true);
+      const isWindows = challenge.platform === 'windows';
+      const baseFs = isWindows ? createTopsideFilesystem() : createWarrenFilesystem();
+      const { fs } = injectFlagsIntoVFS(baseFs, HANDLE, flags);
+      const cwd = challenge.setup?.cwd || (isWindows ? 'C:\\Users\\Analyst' : '/home/analyst');
+      const res = runPipeline(variant, cwd, fs, isWindows ? 'windows' : 'linux', { installedPackages: new Set() });
+      expect(res.hasError, `"${variant}" errored: ${res.output}`).toBeFalsy();
+    });
+  }
+});
+
+describe('Act progression allows exactly one skip', () => {
+  it('every gated act unlocks with one challenge skipped in the prior act', () => {
+    for (const act of ACT_DEFINITIONS.filter(a => a.unlockThreshold > 0)) {
+      const prior = CHALLENGES.filter(c => c.act === act.id - 1);
+      const allButOne = new Set(prior.slice(0, prior.length - 1).map(c => c.id));
+      expect(isActUnlockedFor(act, allButOne, CHALLENGES),
+        `Act ${act.id} demands 100% of the previous act`).toBe(true);
+    }
+  });
 });
