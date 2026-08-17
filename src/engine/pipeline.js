@@ -19,13 +19,17 @@ function writeToVFS(fs, targetPath, content, append = false, isWindows = false) 
     ? (parts.length > 0 ? parts.join('\\') : 'C:')
     : (parts.length > 0 ? '/' + parts.join('/') : '/');
 
-  // Ensure parent exists
-  if (!fs[parentPath]) {
-    fs[parentPath] = { type: 'dir', contents: [], attrib: isWindows ? 'D' : undefined };
+  // Ensure parent exists. Replace the parent node instead of mutating it in place:
+  // the caller only shallow-copies the map, and the original node objects are shared
+  // with React state — in-place pushes would corrupt the previous state snapshot.
+  const existingParent = fs[parentPath];
+  const parentNode = existingParent
+    ? { ...existingParent, contents: [...(existingParent.contents || [])] }
+    : { type: 'dir', contents: [], attrib: isWindows ? 'D' : undefined };
+  if (!parentNode.contents.includes(fileName)) {
+    parentNode.contents.push(fileName);
   }
-  if (!fs[parentPath].contents.includes(fileName)) {
-    fs[parentPath].contents.push(fileName);
-  }
+  fs[parentPath] = parentNode;
 
   const existingNode = fs[normPath];
   const finalContent = append && existingNode ? `${existingNode.content || ''}${content}` : content;

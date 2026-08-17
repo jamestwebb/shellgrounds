@@ -244,7 +244,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^cat\\s+(Documents/case_notes\\.txt|"Documents/case_notes\\.txt"|case_notes\\.txt)'
+      matchRegex: '^cat\\s+(Documents/case_notes\\.txt|"Documents/case_notes\\.txt"|case_notes\\.txt)\\s*$'
     },
     hints: [
       { cost: 0, text: 'Type `cat Documents/case_notes.txt`' }
@@ -261,7 +261,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^head\\s+(-n\\s*5|-5)\\s+Documents/access\\.log'
+      matchRegex: '^head\\s+(-n\\s*5|-5)\\s+Documents/access\\.log\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `head -n 5 Documents/access.log`' }
@@ -296,7 +296,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^file\\s+evidence/mystery_file'
+      matchRegex: '^file\\s+evidence/mystery_file\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run `file evidence/mystery_file`' }
@@ -500,7 +500,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: 'grep\\s+-v\\s+["\']?ALLOW["\']?\\s+Documents/network_stream\\.log\\s*\\|\\s*wc\\s+-l'
+      matchRegex: 'grep\\s+-v\\s+["\']?ALLOW["\']?\\s+Documents/network_stream\\.log\\s*\\|\\s*wc\\s+-l\\s*$'
     },
     hints: [
       { cost: 0, text: 'Type: `grep -v "ALLOW" Documents/network_stream.log | wc -l`' }
@@ -557,7 +557,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^scan\\s+(evidence/suspect_drive\\.raw|"evidence/suspect_drive\\.raw")'
+      matchRegex: '^scan\\s+(evidence/suspect_drive\\.raw|"evidence/suspect_drive\\.raw")\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `scan evidence/suspect_drive.raw`' }
@@ -653,7 +653,7 @@ export const CHALLENGES = [
     setup: { cwd: 'C:\\Users\\Analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^certutil\\s+-hashfile\\s+evidence(\\\\|/)evidence\\.img\\s+MD5'
+      matchRegex: '^certutil\\s+-hashfile\\s+evidence(\\\\|/)evidence\\.img\\s+MD5\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `certutil -hashfile evidence\\evidence.img MD5`' }

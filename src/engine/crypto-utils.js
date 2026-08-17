@@ -338,6 +338,16 @@ export function createSessionToken(sessionSecret, handle, expiryHours = 72) {
     : Buffer.from(payload).toString('base64');
 }
 
+// Constant-time string comparison: no early exit on the first differing character
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 // Verify signed session token
 export function verifySessionToken(sessionSecret, token) {
   if (!sessionSecret || !token) return null;
@@ -357,7 +367,7 @@ export function verifySessionToken(sessionSecret, token) {
     }
 
     const expectedSig = hmacSha256(sessionSecret, `${handle}:${expiry}`);
-    if (sig !== expectedSig) {
+    if (!timingSafeEqualStr(sig, expectedSig)) {
       return null; // Signature invalid
     }
 
