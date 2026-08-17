@@ -33,7 +33,7 @@ export const KeyboardGuard = () => {
         </div>
 
         <p className="text-xs text-neutral-300 leading-relaxed">
-          Course labs and challenges rely extensively on Tab auto-completion, Up/Down arrow history traversal, and keyboard pipelines.
+          Course labs and challenges rely on Tab auto-completion, Up/Down arrow history, and typing pipe characters — none of which work well on a phone keyboard.
           Please open The Gauntlet on a laptop or desktop workstation.
         </p>
 

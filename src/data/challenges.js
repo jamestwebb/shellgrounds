@@ -140,7 +140,7 @@ export const CHALLENGES = [
     hints: [
       { cost: 0, text: 'Type `ls` to list files and folders.' }
     ],
-    successMessage: '`ls` lists directory contents. You can see Documents, Downloads, evidence, and training.',
+    successMessage: '`ls` lists directory contents. You can see Documents, Downloads, evidence, training, and welcome.txt — try `cat welcome.txt` for a tour.',
     teaches: ['ls']
   },
   {
@@ -148,7 +148,7 @@ export const CHALLENGES = [
     act: 1,
     title: 'Hidden in Plain Sight',
     points: 15,
-    brief: 'Something is hiding in your home directory. In Linux, files beginning with `.` are invisible to a plain `ls`. Use `ls -la` to find `.stash`, read it with `cat .stash`, and submit the flag.',
+    brief: 'Something is hiding in your home directory. In Linux, files beginning with `.` are invisible to a plain `ls`. Use `ls -la` to find `.stash`, then read it with `cat .stash`. To submit the flag: click the FLAG{...} in the terminal to copy it, then type `submit ` and paste it — or use the box in the left panel.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'flag',
@@ -219,7 +219,7 @@ export const CHALLENGES = [
     act: 1,
     title: 'Recall the Past (History)',
     points: 10,
-    brief: 'Run `pwd`. Then press the Up Arrow key on your keyboard to recall `pwd` without retyping it, and run it again.',
+    brief: 'Your recent commands are saved. Press the Up Arrow key to bring back a command you ran earlier — like `pwd` — then press Enter to run it without retyping. (Running `pwd` completes this challenge; the Up-Arrow habit is the real lesson.)',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
@@ -240,11 +240,11 @@ export const CHALLENGES = [
     act: 2,
     title: 'Read the Case File',
     points: 15,
-    brief: 'Every investigation starts by opening the case file. Use `cat` to display `Documents/case_notes.txt` on screen. Reading it is the whole task — the challenge completes the moment you do.',
+    brief: 'Every investigation starts by opening the case file. If your prompt shows you are not in `/home/analyst`, run `cd ~` first. Then use `cat` to display `Documents/case_notes.txt` on screen. Reading it is the whole task — the challenge completes the moment you do.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^cat\\s+(Documents/case_notes\\.txt|"Documents/case_notes\\.txt"|case_notes\\.txt)\\s*$'
+      matchRegex: '^cat\\s+"?(Documents/)?case_notes\\.txt"?\\s*$'
     },
     hints: [
       { cost: 0, text: 'Type `cat Documents/case_notes.txt` — that single command is the entire challenge.' }
@@ -261,7 +261,7 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^head\\s+(-n\\s*5|-5)\\s+Documents/access\\.log\\s*$'
+      matchRegex: '^head\\s+(-n\\s*5|-5)\\s+(Documents/)?access\\.log\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `head -n 5 Documents/access.log`' }
@@ -292,11 +292,11 @@ export const CHALLENGES = [
     act: 2,
     title: "Don't Trust Extensions",
     points: 20,
-    brief: 'Adversaries often rename files to trick analysts. Use `file evidence/mystery_file` to determine its true data format based on magic bytes.',
+    brief: 'Never trust a filename — analysts identify files by their contents. Use `file evidence/mystery_file` to reveal its true format. (`file` reads the first few bytes of a file — the "magic bytes" — which identify it no matter what it is named.)',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^file\\s+evidence/mystery_file\\s*$'
+      matchRegex: '^file\\s+(evidence/)?mystery_file\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run `file evidence/mystery_file`' }
@@ -327,7 +327,7 @@ export const CHALLENGES = [
     act: 2,
     title: 'Integrity Checksum (MD5)',
     points: 25,
-    brief: 'Digital evidence requires strict chain of custody verification. Calculate the MD5 hash of `evidence/evidence.img` using `md5sum`, inspect the evidence header, and submit the flag inside.',
+    brief: 'Digital evidence must be hashed to prove it was not altered. Step 1: run `md5sum evidence/evidence.img` to compute its hash. The hash is NOT the flag. Step 2: run `cat evidence/evidence.img` to read the image header, find the FLAG{...} inside, and submit it.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'flag',
@@ -335,7 +335,7 @@ export const CHALLENGES = [
     },
     hints: [
       { cost: 0, text: 'Run `md5sum evidence/evidence.img` to compute the hash.' },
-      { cost: 5, text: 'View `cat evidence/evidence.img` to read the partition sector signature flag, then submit it.' }
+      { cost: 5, text: 'Run `cat evidence/evidence.img`. The FLAG{...} is on the "Payload signature" line — click it to copy, then run `submit FLAG{...}`.' }
     ],
     successMessage: 'Always hash evidence upon acquisition and before/after examination to prove the forensic image was not altered.',
     teaches: ['md5sum', 'chain-of-custody']
@@ -367,7 +367,7 @@ export const CHALLENGES = [
     act: 3,
     title: 'Case-Insensitive Searching',
     points: 30,
-    brief: '`Documents/logs.txt` logs errors inconsistently as "error", "ERROR", and "Error". Use `grep -i "error" Documents/logs.txt` to find all corrupted stream entries and submit the flag.',
+    brief: '`Documents/logs.txt` logs errors inconsistently as "error", "ERROR", and "Error". Use `grep -i "error" Documents/logs.txt` to see every error line regardless of capitalization, then submit the FLAG{...} you find on one of them.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'flag',
@@ -375,7 +375,7 @@ export const CHALLENGES = [
     },
     hints: [
       { cost: 0, text: 'Use the `-i` flag: `grep -i "error" Documents/logs.txt`' },
-      { cost: 5, text: 'Find the corrupted pipeline flag and submit it.' }
+      { cost: 5, text: 'One of the matching ERROR lines ends with a FLAG{...}. Click the flag to copy it, then run `submit FLAG{...}`.' }
     ],
     successMessage: '`grep -i` ignores case distinctions, making it essential when analyzing unstructured application logs.',
     teaches: ['grep -i']
@@ -393,7 +393,7 @@ export const CHALLENGES = [
     },
     hints: [
       { cost: 0, text: 'Run `find /var/log -name "*.log"` to see every log that exists there.' },
-      { cost: 10, text: 'Read the audit log you found with `cat` and submit the flag.' }
+      { cost: 10, text: 'Run `cat /var/log/sensor_audit.log` (the full path from the find output), then submit the keycode FLAG{...} it contains.' }
     ],
     successMessage: '`find` traverses entire directory hierarchies searching by filename patterns, file types, timestamps, and sizes.',
     teaches: ['find', 'find -name']
@@ -478,7 +478,7 @@ export const CHALLENGES = [
     act: 4,
     title: 'Filter the Noise (Inverted Grep)',
     points: 40,
-    brief: '`Documents/network_stream.log` is filled with normal `ALLOW` traffic. Use `grep -v "ALLOW" Documents/network_stream.log` to filter out benign packets, isolate the critical leak packet, and submit the flag.',
+    brief: 'Start from home (`cd ~` if needed). `Documents/network_stream.log` is filled with normal `ALLOW` traffic. Use `grep -v "ALLOW" Documents/network_stream.log` to filter out benign packets, isolate the critical leak packet, and submit the flag.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'flag',
@@ -500,12 +500,12 @@ export const CHALLENGES = [
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: 'grep\\s+-v\\s+["\']?ALLOW["\']?\\s+Documents/network_stream\\.log\\s*\\|\\s*wc\\s+-l\\s*$'
+      matchRegex: 'grep\\s+-v\\s+["\']?ALLOW["\']?\\s+(Documents/)?network_stream\\.log\\s*\\|\\s*wc\\s+-l\\s*$'
     },
     hints: [
       { cost: 0, text: 'Type: `grep -v "ALLOW" Documents/network_stream.log | wc -l`' }
     ],
-    successMessage: 'The pipe `|` sends the stdout of `grep` into the stdin of `wc -l`. You just constructed your first Unix pipeline!',
+    successMessage: 'The pipe `|` sends the output (called stdout) of `grep` into the input (stdin) of `wc -l`. You just constructed your first Unix pipeline!',
     teaches: ['pipes', 'wc -l']
   },
   {
@@ -553,11 +553,11 @@ export const CHALLENGES = [
     act: 5,
     title: 'Partition Geometry Inspection',
     points: 60,
-    brief: 'Raw forensic image `evidence/suspect_drive.raw` contains multiple partition slices. Run `scan evidence/suspect_drive.raw` to analyze the partition table and identify the starting sector offset of the Evidence Vault partition.',
+    brief: 'Raw forensic image `evidence/suspect_drive.raw` contains multiple partition slices. Run `scan evidence/suspect_drive.raw` to analyze the partition table and identify the starting sector offset of the Evidence Vault partition. (A sector offset is the sector number where a partition begins — a bookmark inside the disk image.)',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^scan\\s+(evidence/suspect_drive\\.raw|"evidence/suspect_drive\\.raw")\\s*$'
+      matchRegex: '^scan\\s+"?(evidence/)?suspect_drive\\.raw"?\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `scan evidence/suspect_drive.raw`' }
@@ -640,7 +640,7 @@ export const CHALLENGES = [
       { cost: 0, text: 'Run: `findstr /i "marker" Documents\\logs.txt`' },
       { cost: 5, text: 'Submit the discovered flag.' }
     ],
-    successMessage: '`findstr /i` is the Windows CMD equivalent of `grep -i`. It supports regular expression matching with `/r`.',
+    successMessage: '`findstr /i` is the Windows CMD equivalent of `grep -i`. It also supports regular expressions (search patterns with wildcards) via `/r`.',
     teaches: ['findstr', 'findstr /i']
   },
   {
@@ -653,7 +653,7 @@ export const CHALLENGES = [
     setup: { cwd: 'C:\\Users\\Analyst' },
     success: {
       kind: 'command',
-      matchRegex: '^certutil\\s+-hashfile\\s+evidence(\\\\|/)evidence\\.img\\s+MD5\\s*$'
+      matchRegex: '^certutil\\s+-hashfile\\s+(evidence(\\\\|/))?evidence\\.img\\s+MD5\\s*$'
     },
     hints: [
       { cost: 0, text: 'Run: `certutil -hashfile evidence\\evidence.img MD5`' }

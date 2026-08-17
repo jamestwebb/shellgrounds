@@ -2,7 +2,7 @@
 // Netlify Function: GET /api/session
 
 import { verifySessionToken, createSessionToken } from '../../src/engine/crypto-utils.js';
-import { getDb } from './utils/db.js';
+import { getPlayer, getSolves } from './utils/store.js';
 
 export const handler = async (event) => {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -36,44 +36,17 @@ export const handler = async (event) => {
   const isAdmin = adminHandles.includes(handle.toLowerCase());
 
   try {
-    const db = await getDb();
-    let solves = [];
-    let totalScore = 0;
+    const player = await getPlayer(handle);
+    const solvesObj = player ? await getSolves(handle) : {};
 
-    if (db.mode === 'neon') {
-      const rows = await db.sql`
-        SELECT s.challenge_id, s.points, s.hint_penalty, s.solved_at
-        FROM solves s
-        JOIN players p ON s.player_id = p.id
-        WHERE LOWER(p.handle) = LOWER(${handle})
-      `;
-
-      solves = rows.map(r => ({
-        challengeId: r.challenge_id,
-        points: r.points,
-        hintPenalty: r.hint_penalty,
-        netPoints: r.points - r.hint_penalty,
-        solvedAt: r.solved_at
-      }));
-    } else {
-      const lower = handle.toLowerCase();
-      const player = db.store.players.get(lower);
-      if (player) {
-        for (const [key, solve] of db.store.solves.entries()) {
-          if (solve.player_id === player.id) {
-            solves.push({
-              challengeId: solve.challenge_id,
-              points: solve.points,
-              hintPenalty: solve.hint_penalty,
-              netPoints: solve.points - solve.hint_penalty,
-              solvedAt: solve.solved_at
-            });
-          }
-        }
-      }
-    }
-
-    totalScore = solves.reduce((sum, s) => sum + s.netPoints, 0);
+    const solves = Object.entries(solvesObj).map(([challengeId, s]) => ({
+      challengeId,
+      points: s.points,
+      hintPenalty: s.hintPenalty,
+      netPoints: Math.max(0, (s.points || 0) - (s.hintPenalty || 0)),
+      solvedAt: s.solvedAt
+    }));
+    const totalScore = solves.reduce((sum, s) => sum + s.netPoints, 0);
 
     return {
       statusCode: 200,

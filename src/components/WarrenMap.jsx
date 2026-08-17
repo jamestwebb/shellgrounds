@@ -161,7 +161,7 @@ export const WarrenMap = ({ currentCwd = '/home/analyst', onNavigate }) => {
                    └─ sensor_audit.log (find)
 
 ================================================================================
-Command Reference: pwd (where am I) | ls -la (reveal) | cd .. (up) | cd ~ (home)
+Command Reference: pwd (where am I) · ls -la (reveal) · cd .. (up) · cd ~ (home)
 ================================================================================`}
           </pre>
         </div>

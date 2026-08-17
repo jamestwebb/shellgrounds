@@ -7,7 +7,7 @@ import { runPipeline } from '../../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
 import { injectFlagsIntoVFS } from '../../src/utils/vfs-injector.js';
-import { getDb } from './utils/db.js';
+import { getPlayer, getSolves, addSolve } from './utils/store.js';
 
 // Same marker list the client uses: a command that "ran" but errored does not count.
 const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
@@ -36,11 +36,16 @@ function buildServerFlags(sessionSecret, handle) {
 // Re-executes the submitted command line against a fresh VFS on the server.
 // This is what makes 'command' and 'state' challenges cost actual work: the client's
 // claim is never trusted, the command itself is the proof.
-function replayCommand(challenge, commandText, sessionSecret, handle) {
+function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd) {
   const isWindows = challenge.platform === 'windows';
   const baseFs = isWindows ? createTopsideFilesystem() : createWarrenFilesystem();
   const { fs } = injectFlagsIntoVFS(baseFs, handle, buildServerFlags(sessionSecret, handle));
-  const cwd = challenge.setup?.cwd || (isWindows ? 'C:\\Users\\Analyst' : '/home/analyst');
+  // Replay from where the student actually stood: a relative path that worked
+  // in their shell must also work in the replay. The claimed cwd is harmless —
+  // the command still has to execute cleanly against the fixed filesystem.
+  const cwd = (typeof clientCwd === 'string' && clientCwd.length > 0 && clientCwd.length < 300)
+    ? clientCwd
+    : (challenge.setup?.cwd || (isWindows ? 'C:\\Users\\Analyst' : '/home/analyst'));
   const res = runPipeline(commandText.trim(), cwd, fs, isWindows ? 'windows' : 'linux', {
     installedPackages: new Set()
   });
@@ -82,7 +87,7 @@ export const handler = async (event) => {
   const handle = verified.handle;
 
   try {
-    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge } = JSON.parse(event.body || '{}');
+    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge, cwd } = JSON.parse(event.body || '{}');
 
     if (!challengeId && !(flag && flag.trim())) {
       return {
@@ -118,7 +123,7 @@ export const handler = async (event) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             success: false,
-            error: 'That flag does not match any challenge for your handle. Flags are personal — a copied one will not validate.'
+            error: 'That flag is not valid for your handle. Check for typos — click the flag in the terminal output to copy it exactly. (Flags are also personal: another student\'s flag will never validate for you.)'
           })
         };
       }
@@ -138,12 +143,12 @@ export const handler = async (event) => {
       if (challenge.success.matchRegex && commandText && commandText.trim()) {
         const regex = new RegExp(challenge.success.matchRegex, 'i');
         if (regex.test(commandText.trim())) {
-          isValid = replayCommand(challenge, commandText, sessionSecret, handle).ok;
+          isValid = replayCommand(challenge, commandText, sessionSecret, handle, cwd).ok;
         }
       }
     } else if (challenge.success.kind === 'state') {
       if (commandText && commandText.trim() && typeof challenge.success.check === 'function') {
-        const replay = replayCommand(challenge, commandText, sessionSecret, handle);
+        const replay = replayCommand(challenge, commandText, sessionSecret, handle, cwd);
         isValid = replay.ok && !!challenge.success.check(replay.fs);
       }
     }
@@ -154,7 +159,7 @@ export const handler = async (event) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'Flag verification failed. Check your excavated artifacts and command syntax.'
+          error: 'Verification failed. Re-run the exact command shown in the challenge brief, then submit again.'
         })
       };
     }
@@ -176,88 +181,29 @@ export const handler = async (event) => {
     hintPenalty = Math.min(hintPenalty, challenge.points - 1);
 
     const netPoints = challenge.points - hintPenalty;
-    const db = await getDb();
 
-    let alreadySolved = false;
-
-    if (db.mode === 'neon') {
-      // Find player id
-      const playerRows = await db.sql`
-        SELECT id FROM players WHERE LOWER(handle) = LOWER(${handle})
-      `;
-
-      if (playerRows.length === 0) {
-        return {
-          statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Player record not found' })
-        };
-      }
-
-      const playerId = playerRows[0].id;
-
-      const solvedRows = await db.sql`
-        SELECT challenge_id FROM solves WHERE player_id = ${playerId}
-      `;
-      const solvedIds = new Set(solvedRows.map(r => r.challenge_id));
-      if (!isActUnlocked(challenge, solvedIds)) {
-        return {
-          statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            success: false,
-            error: 'That challenge is still locked. Solve 80% of the previous act first.'
-          })
-        };
-      }
-
-      const inserted = await db.sql`
-        INSERT INTO solves (player_id, challenge_id, points, hint_penalty)
-        VALUES (${playerId}, ${challenge.id}, ${challenge.points}, ${hintPenalty})
-        ON CONFLICT (player_id, challenge_id) DO NOTHING
-        RETURNING challenge_id
-      `;
-      alreadySolved = inserted.length === 0;
-    } else {
-      // In-memory store (local netlify dev only)
-      const lower = handle.toLowerCase();
-      const player = db.store.players.get(lower);
-      if (!player) {
-        return {
-          statusCode: 404,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ error: 'Player record not found' })
-        };
-      }
-
-      const solvedIds = new Set(
-        [...db.store.solves.values()].filter(s => s.player_id === player.id).map(s => s.challenge_id)
-      );
-      if (!isActUnlocked(challenge, solvedIds)) {
-        return {
-          statusCode: 403,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            success: false,
-            error: 'That challenge is still locked. Solve 80% of the previous act first.'
-          })
-        };
-      }
-
-      const solveKey = `${player.id}:${challenge.id}`;
-      if (db.store.solves.has(solveKey)) {
-        alreadySolved = true;
-      } else {
-        db.store.solves.set(solveKey, {
-          player_id: player.id,
-          challenge_id: challenge.id,
-          points: challenge.points,
-          hint_penalty: hintPenalty,
-          solved_at: new Date()
-        });
-        db.save?.();
-      }
+    const player = await getPlayer(handle);
+    if (!player) {
+      return {
+        statusCode: 404,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Player record not found — log out and register again.' })
+      };
     }
+
+    const existingSolves = await getSolves(handle);
+    if (!isActUnlocked(challenge, new Set(Object.keys(existingSolves)))) {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: false,
+          error: 'That challenge is still locked. Solve 80% of the previous act first.'
+        })
+      };
+    }
+
+    const { alreadySolved } = await addSolve(handle, challenge.id, challenge.points, hintPenalty);
 
     return {
       statusCode: 200,

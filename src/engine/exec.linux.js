@@ -577,7 +577,7 @@ export function executeLinuxCommand(argv, cwd, fs, stdin = '', context = {}) {
                    └─ sensor_audit.log
 
 ================================================================================
-Legend: / = root  |  ~ = /home/analyst  |  cd <dir> = enter  |  cd .. = back up
+Legend: / = root  ·  ~ = /home/analyst  ·  cd <dir> = enter  ·  cd .. = back up
 ================================================================================`;
       return { stdout: asciiMap.trim(), stderr: '', newCwd: cwd };
     }

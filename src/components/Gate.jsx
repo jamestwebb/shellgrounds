@@ -135,7 +135,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
               placeholder="••••••••••••"
               className="w-full bg-term-gray border border-term-border rounded px-3.5 py-2.5 text-sm text-green-300 placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green transition-all"
             />
-            <p className="text-[11px] text-neutral-400 mt-1">Gates handle creation only. Ask James if you missed it.</p>
+            <p className="text-[11px] text-neutral-400 mt-1">Needed only to create your handle. Ask James if you missed it.</p>
           </div>
 
           {/* Error Message */}

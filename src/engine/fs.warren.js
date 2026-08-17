@@ -160,7 +160,9 @@ suspect_drive.raw1            2048     206847     204800  100M 83 Linux
 suspect_drive.raw2 *        206848     616447     409600  200M 83 Linux (Evidence Vault)
 suspect_drive.raw3          616448    1048575     432128  211M  7 HPFS/NTFS/exFAT
 
-INSPECTION HINT: Run 'scan suspect_drive.raw' to inspect partition table, then extract offset 206848 with 'extract -o 206848 suspect_drive.raw'.
+INSPECTION HINT (for Act V — nothing to do yet): from your home directory,
+run 'scan evidence/suspect_drive.raw' to read the partition table, then
+'extract -o 206848 evidence/suspect_drive.raw' to carve the evidence.
 `, {
             fileType: 'DOS/MBR boot sector, disk signature 0x4f81c9a2'
           })
@@ -186,7 +188,7 @@ In WSL — and in Case 001 — your Windows drive C:\\ is mounted at /mnt/c.
 
 Verification Flag: [[FLAG:act3-crossing]]
 `),
-            'mercer_evidence_log.txt': file('Case 001 Evidence: Browser artifacts located in AppData\\Local\\Google\\Chrome.\n')
+            'mercer_evidence_log.txt': file('Case 001 Evidence: Browser artifacts located in AppData\\Local\\Google\\Chrome.\n(Reference note for the real Case 001 lab — there is nothing more to find on this machine.)\n')
           }
         },
         'Documents': {

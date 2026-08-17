@@ -3,7 +3,7 @@
 
 import { verifySessionToken } from '../../src/engine/crypto-utils.js';
 import { CHALLENGES } from '../../src/data/challenges.js';
-import { getDb } from './utils/db.js';
+import { listPlayers, getSolves } from './utils/store.js';
 
 export const handler = async (event) => {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -43,9 +43,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const db = await getDb();
     const challengeStats = {};
-
     CHALLENGES.forEach(c => {
       challengeStats[c.id] = {
         id: c.id,
@@ -57,41 +55,21 @@ export const handler = async (event) => {
       };
     });
 
-    let totalPlayers = 0;
-    let recentSolves = [];
+    const players = await listPlayers();
+    const allSolves = [];
 
-    if (db.mode === 'neon') {
-      const players = await db.sql`SELECT COUNT(*)::int as count FROM players`;
-      totalPlayers = players[0]?.count || 0;
-
-      const solves = await db.sql`
-        SELECT s.challenge_id, s.hint_penalty, s.solved_at, p.handle
-        FROM solves s
-        JOIN players p ON s.player_id = p.id
-        ORDER BY s.solved_at DESC
-      `;
-
-      solves.forEach(s => {
-        if (challengeStats[s.challenge_id]) {
-          challengeStats[s.challenge_id].solveCount++;
-          if (s.hint_penalty > 0) challengeStats[s.challenge_id].totalHintsUsed++;
+    for (const p of players) {
+      const solvesObj = await getSolves(p.handle);
+      for (const [challengeId, s] of Object.entries(solvesObj)) {
+        if (challengeStats[challengeId]) {
+          challengeStats[challengeId].solveCount++;
+          if ((s.hintPenalty || 0) > 0) challengeStats[challengeId].totalHintsUsed++;
         }
-      });
-
-      recentSolves = solves.slice(0, 20).map(s => ({
-        handle: s.handle,
-        challengeId: s.challenge_id,
-        solvedAt: s.solved_at
-      }));
-    } else {
-      totalPlayers = db.store.players.size;
-      for (const [key, solve] of db.store.solves.entries()) {
-        if (challengeStats[solve.challenge_id]) {
-          challengeStats[solve.challenge_id].solveCount++;
-          if (solve.hint_penalty > 0) challengeStats[solve.challenge_id].totalHintsUsed++;
-        }
+        allSolves.push({ handle: p.handle, challengeId, solvedAt: s.solvedAt });
       }
     }
+
+    allSolves.sort((a, b) => new Date(b.solvedAt) - new Date(a.solvedAt));
 
     return {
       statusCode: 200,
@@ -101,9 +79,9 @@ export const handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        totalPlayers,
+        totalPlayers: players.length,
         challengeStats: Object.values(challengeStats),
-        recentSolves
+        recentSolves: allSolves.slice(0, 20)
       })
     };
   } catch (err) {

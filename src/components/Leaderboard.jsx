@@ -250,8 +250,8 @@ export const Leaderboard = ({ currentHandle }) => {
             <Shield size={14} className="text-term-green" /> Scoring & Anti-Cheat Architecture
           </div>
           <div>
-            Every student receives mathematically distinct cryptographic flag tokens generated via per-user HMAC salts.
-            First hints are free (0 XP penalty); subsequent hints deduct partial XP to ensure fair leaderboard integrity.
+            Every student gets different flags, so copying a classmate's flag will not work.
+            First hints are free; later hints subtract a few XP from that challenge's points.
           </div>
         </div>
       </div>
