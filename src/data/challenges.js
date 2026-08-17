@@ -238,16 +238,16 @@ export const CHALLENGES = [
   {
     id: 'act2-cat',
     act: 2,
-    title: 'Read the Dossier',
+    title: 'Read the Case File',
     points: 15,
-    brief: 'Read `Documents/case_notes.txt` to review the preliminary findings on the unauthorized sector breach.',
+    brief: 'Every investigation starts by opening the case file. Use `cat` to display `Documents/case_notes.txt` on screen. Reading it is the whole task — the challenge completes the moment you do.',
     setup: { cwd: '/home/analyst' },
     success: {
       kind: 'command',
       matchRegex: '^cat\\s+(Documents/case_notes\\.txt|"Documents/case_notes\\.txt"|case_notes\\.txt)\\s*$'
     },
     hints: [
-      { cost: 0, text: 'Type `cat Documents/case_notes.txt`' }
+      { cost: 0, text: 'Type `cat Documents/case_notes.txt` — that single command is the entire challenge.' }
     ],
     successMessage: '`cat` concatenates and prints entire file contents. Great for dossiers, configurations, and small text files.',
     teaches: ['cat']
