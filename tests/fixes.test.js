@@ -124,3 +124,17 @@ describe('Unknown-command honesty', () => {
     expect(res.output).toMatch(/command not found/);
   });
 });
+
+describe('Windows path tolerance', () => {
+  it('accepts forward slashes (Linux habit) in Windows paths', () => {
+    const res = runPipeline('type Documents/readme.txt', 'C:\\Users\\Analyst', createTopsideFilesystem(), 'windows', {});
+    expect(res.hasError).toBeFalsy();
+    expect(res.output).toMatch(/Topside/);
+  });
+
+  it('accepts forward slashes in the certutil challenge command', () => {
+    const res = runPipeline('certutil -hashfile evidence/evidence.img MD5', 'C:\\Users\\Analyst', createTopsideFilesystem(), 'windows', {});
+    expect(res.hasError).toBeFalsy();
+    expect(res.output).toMatch(/MD5 hash of/);
+  });
+});
