@@ -137,6 +137,13 @@ export const Leaderboard = ({ currentHandle }) => {
           />
         </div>
 
+        {/* Fetch failure must be visible — an empty table reads as "nobody is playing" */}
+        {error && (
+          <div className="p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-300 text-xs">
+            {error} Use the refresh button to retry.
+          </div>
+        )}
+
         {/* Leaderboard Table */}
         <div className="bg-term-black border border-term-border rounded-xl overflow-hidden shadow-xl">
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-term-panel border-b border-term-border text-[11px] font-bold text-neutral-400 uppercase tracking-wider">

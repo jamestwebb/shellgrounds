@@ -63,12 +63,20 @@ export const Terminal = ({
     });
   };
 
-  // Auto-scroll to bottom on output update
+  // Auto-scroll to bottom on output — but only when the student is already at
+  // the bottom. Never yank the view away from someone reading earlier output.
+  const stickToBottomRef = useRef(true);
   useEffect(() => {
-    if (terminalRef.current) {
+    if (stickToBottomRef.current && terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
-  }, [terminalHistory, currentInput]);
+  }, [terminalHistory]);
+
+  const handleScroll = () => {
+    const el = terminalRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+  };
 
   // Focus input when clicking anywhere in terminal — but never steal an active
   // text selection: refocusing the input clears it, which breaks copy/paste.
@@ -88,6 +96,7 @@ export const Terminal = ({
       if (trimmed) {
         commandHistoryRef.current.push(trimmed);
         historyIndexRef.current = commandHistoryRef.current.length;
+        stickToBottomRef.current = true; // running a command always follows its output
         sounds.playKeypress();
         onExecuteCommand(trimmed);
         setCurrentInput('');
@@ -103,10 +112,13 @@ export const Terminal = ({
       if (historyIndexRef.current < commandHistoryRef.current.length - 1) {
         historyIndexRef.current++;
         setCurrentInput(commandHistoryRef.current[historyIndexRef.current] || '');
-      } else {
+      } else if (historyIndexRef.current === commandHistoryRef.current.length - 1) {
+        // Stepping past the newest entry returns to an empty line...
         historyIndexRef.current = commandHistoryRef.current.length;
         setCurrentInput('');
       }
+      // ...but at the bottom already, do nothing — never erase what the
+      // student is typing (real shells don't either).
     } else if (e.key === 'Tab') {
       e.preventDefault();
       sounds.playKeypress();
@@ -149,7 +161,8 @@ export const Terminal = ({
 
           const isDir = fs[fullPath]?.type === 'dir';
 
-          if (parts.length === 1 && currentInput.endsWith(' ')) {
+          if (currentInput.endsWith(' ')) {
+            // Starting a fresh argument: append rather than replace the last word
             setCurrentInput(currentInput + completed + (isDir ? sep : ' '));
           } else if (parts.length > 1) {
             parts[parts.length - 1] = completed + (isDir ? sep : '');
@@ -231,6 +244,7 @@ export const Terminal = ({
       {/* Terminal Output Stream */}
       <div
         ref={terminalRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-4 space-y-2 text-neutral-200 scrollbar-thin scrollbar-thumb-neutral-800"
       >
         {terminalHistory.length === 0 && (

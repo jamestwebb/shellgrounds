@@ -82,7 +82,7 @@ export const handler = async (event) => {
   const handle = verified.handle;
 
   try {
-    const { challengeId, flag, hintsUsed = 0, commandText = '' } = JSON.parse(event.body || '{}');
+    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge } = JSON.parse(event.body || '{}');
 
     if (!challengeId && !(flag && flag.trim())) {
       return {
@@ -159,9 +159,15 @@ export const handler = async (event) => {
       };
     }
 
-    // 2. Compute hint penalty (clamped: hintsUsed is client-reported)
+    // 2. Compute hint penalty (clamped: hint counts are client-reported).
+    // Prefer the per-challenge map so a flag matched to a different challenge
+    // than the one selected is charged its OWN hint count.
     let hintPenalty = 0;
-    const claimedHints = Number.isInteger(hintsUsed) ? Math.max(0, hintsUsed) : 0;
+    const mapClaim = hintsUsedByChallenge && Number.isInteger(hintsUsedByChallenge[challenge.id])
+      ? hintsUsedByChallenge[challenge.id]
+      : null;
+    const fallbackClaim = Number.isInteger(hintsUsed) ? hintsUsed : 0;
+    const claimedHints = Math.max(0, mapClaim !== null ? mapClaim : fallbackClaim);
     if (claimedHints > 0 && challenge.hints) {
       for (let i = 0; i < Math.min(claimedHints, challenge.hints.length); i++) {
         hintPenalty += (challenge.hints[i].cost || 0);
