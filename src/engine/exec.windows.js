@@ -28,8 +28,11 @@ export function executeWindowsCommand(argv, cwd, fs, stdin = '', context = {}) {
     return null;
   };
 
-  const resolvePath = (path) => {
-    if (!path || path === '.') return cwd;
+  const resolvePath = (rawPath) => {
+    if (!rawPath || rawPath === '.') return cwd;
+    // Accept forward slashes: students arriving from the Linux side type them
+    // constantly, and real Windows tools tolerate them too.
+    const path = rawPath.replace(/\//g, '\\');
     if (/^[A-Za-z]:/.test(path)) {
       return findPath(path) || path;
     }
