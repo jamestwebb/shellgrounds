@@ -174,7 +174,7 @@ export const CHALLENGES = [
     },
     hints: [
       { cost: 0, text: 'Use `cd training/level_1` to move down into it.' },
-      { cost: 5, text: 'Run `cat checkpoint_alpha.txt` to view the flag, then run `submit FLAG{...}`.' }
+      { cost: 5, text: 'Once you are inside level_1, run `cat checkpoint_alpha.txt` to view the flag, then run `submit FLAG{...}`. (From home, the full path works too: `cat training/level_1/checkpoint_alpha.txt`.)' }
     ],
     successMessage: '`cd` changes your working directory. You navigated down through child directory `training` into `level_1`.',
     teaches: ['cd', 'relative-paths']
@@ -191,8 +191,8 @@ export const CHALLENGES = [
       flagFile: '/home/analyst/training/level_2/checkpoint_beta.txt'
     },
     hints: [
-      { cost: 0, text: 'If you are in level_1, run `cd ..` to go up to `training`, then `cd level_2`.' },
-      { cost: 5, text: 'Then `cat checkpoint_beta.txt` and submit the flag it contains.' }
+      { cost: 0, text: 'If you are inside level_1, run `cd ..` to go up to `training`, then `cd level_2`. From home, `cd training/level_2` gets you there in one step.' },
+      { cost: 5, text: 'Once you are inside level_2, run `cat checkpoint_beta.txt` and submit the flag it contains. (From home: `cat training/level_2/checkpoint_beta.txt`.)' }
     ],
     successMessage: '`..` represents the parent directory. `cd ..` moves you up one level toward the root.',
     teaches: ['cd ..', 'parent-directories']
@@ -539,7 +539,7 @@ export const CHALLENGES = [
     },
     hints: [
       { cost: 0, text: 'Run: `grep -i "error" Documents/logs.txt > /tmp/errors.log`' },
-      { cost: 10, text: 'After running the command, check `cat /tmp/errors.log` to verify your file was created.' }
+      { cost: 10, text: 'Run the redirect command FIRST (it prints nothing — that is correct). Then run `cat /tmp/errors.log` to see what got saved into the file.' }
     ],
     successMessage: 'Redirection `>` writes stdout directly into the filesystem. You can inspect your redirected file anytime with `cat`!',
     teaches: ['redirection', '>']
