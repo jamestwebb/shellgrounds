@@ -29,6 +29,22 @@ import { sounds } from './utils/audio';
 // A command that "ran" but errored must not satisfy a challenge (kept in sync with submit-flag.js)
 const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
 
+// Badges implied by an existing solve set — used to seed state silently on
+// session load so returning players don't get re-celebrated with confetti.
+const computeEarnedBadges = (solves) => {
+  const solvedSet = new Set(Object.keys(solves));
+  return BADGE_DEFINITIONS.filter(b => {
+    if (!b.act) return false;
+    const actChallenges = CHALLENGES.filter(c => c.act === b.act);
+    const solvedInAct = actChallenges.filter(c => solvedSet.has(c.id));
+    return actChallenges.length > 0 && solvedInAct.length >= Math.ceil(actChallenges.length * 0.8);
+  }).map(b => b.id);
+};
+
+// Where a returning player should land: their first unsolved Linux challenge
+const resumeSelection = (solves) =>
+  CHALLENGES.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
+
 const MANIFEST_WARNING = {
   type: 'output',
   text: '[!] WARNING: Could not load your personal flag set from HQ. Refresh the page before hunting flags.',
@@ -92,6 +108,12 @@ export default function App() {
               map[s.challengeId] = s;
             });
             setSolvesMap(map);
+            setEarnedBadges(computeEarnedBadges(map)); // silent — no confetti replay
+            const resume = resumeSelection(map);
+            if (resume) {
+              setActiveActId(resume.act);
+              setSelectedChallengeId(resume.id);
+            }
 
             // Fetch manifest and splice flags into VFS
             const manifest = await fetchManifest();
@@ -175,6 +197,12 @@ export default function App() {
       map[s.challengeId] = s;
     });
     setSolvesMap(map);
+    setEarnedBadges(computeEarnedBadges(map));
+    const resume = resumeSelection(map);
+    if (resume) {
+      setActiveActId(resume.act);
+      setSelectedChallengeId(resume.id);
+    }
 
     setSession({
       handle,
@@ -450,6 +478,16 @@ export default function App() {
         }}
         userHandle={session?.handle}
       />
+    );
+  }
+
+  // Never show the registration form while a stored session may still be loading:
+  // a returning player would re-type their handle and hit "already claimed".
+  if (!session && loadingSession) {
+    return (
+      <div className="min-h-screen bg-term-void text-term-green flex items-center justify-center font-mono text-sm">
+        <div className="animate-pulse">RESTORING SESSION...</div>
+      </div>
     );
   }
 
