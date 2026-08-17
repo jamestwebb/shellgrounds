@@ -50,9 +50,11 @@ function fileBackend() {
 
 function store() {
   try {
+    // Default (eventual) consistency: 'strong' requires an uncachedEdgeURL the
+    // v1 lambda environment does not supply (BlobsConsistencyError in prod).
+    // The rare stale-read window is acceptable at classroom scale.
     return getStore({
-      name: process.env.GAUNTLET_STORE || 'gauntlet-fall2026',
-      consistency: 'strong'
+      name: process.env.GAUNTLET_STORE || 'gauntlet-fall2026'
     });
   } catch (err) {
     if (process.env.NETLIFY_DEV === 'true') {
