@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Terminal as TerminalIcon, Trophy, MapPin, Shield, LogOut,
-  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle
+  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
 import { Boot } from './components/Boot';
@@ -14,6 +14,7 @@ import { ChallengeSidebar } from './components/ChallengeSidebar';
 import { Leaderboard } from './components/Leaderboard';
 import { WarrenMap } from './components/WarrenMap';
 import { AdminOverview } from './components/AdminOverview';
+import { CommandReference } from './components/CommandReference';
 import { BadgeCelebration } from './components/BadgeCelebration';
 import { KeyboardGuard } from './components/KeyboardGuard';
 
@@ -638,6 +639,18 @@ export default function App() {
             <span className="hidden sm:inline">MAP</span>
           </button>
 
+          <button
+            onClick={() => setActiveTab('reference')}
+            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'reference'
+                ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
+                : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <BookOpen size={13} />
+            <span className="hidden sm:inline">REFERENCE</span>
+          </button>
+
           {session?.isAdmin && (
             <button
               onClick={() => setActiveTab('admin')}
@@ -752,6 +765,10 @@ export default function App() {
 
         {activeTab === 'leaderboard' && (
           <Leaderboard currentHandle={session?.handle} />
+        )}
+
+        {activeTab === 'reference' && (
+          <CommandReference />
         )}
 
         {activeTab === 'map' && (
