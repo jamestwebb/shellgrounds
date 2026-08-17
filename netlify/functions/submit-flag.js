@@ -7,7 +7,7 @@ import { runPipeline } from '../../src/engine/pipeline.js';
 import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
 import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
 import { injectFlagsIntoVFS } from '../../src/utils/vfs-injector.js';
-import { initBlobs, getPlayer, getSolves, addSolve } from './utils/store.js';
+import { getPlayer, getSolves, addSolve } from './utils/store.js';
 
 // Same marker list the client uses: a command that "ran" but errored does not count.
 const ERROR_MARKERS = /command not found|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
@@ -53,49 +53,38 @@ function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd)
   return { ok, fs: res.fs };
 }
 
-export const handler = async (event) => {
-  initBlobs(event);
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
+  if (req.method !== 'POST') {
+    return json(405, { error: 'Method Not Allowed' });
   }
 
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Server is not configured. Contact the instructor.' })
-    };
+    return json(500, { error: 'Server is not configured. Contact the instructor.' });
   }
 
-  const authHeader = event.headers.authorization || event.headers.Authorization || '';
+  const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
   const verified = verifySessionToken(sessionSecret, token);
   if (!verified) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Unauthorized: Session expired or invalid' })
-    };
+    return json(401, { error: 'Unauthorized: Session expired or invalid' });
   }
 
   const handle = verified.handle;
 
   try {
-    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge, cwd } = JSON.parse(event.body || '{}');
+    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge, cwd } = (await req.json().catch(() => ({})));
 
     if (!challengeId && !(flag && flag.trim())) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'A challenge ID or a flag is required' })
-      };
+      return json(400, { error: 'A challenge ID or a flag is required' });
     }
 
     let challenge = CHALLENGES.find(c => c.id === challengeId);
@@ -119,27 +108,15 @@ export const handler = async (event) => {
         }
       }
       if (!isValid) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        return json(400, {
             success: false,
             error: 'That flag is not valid for your handle. Check for typos — click the flag in the terminal output to copy it exactly. (Flags are also personal: another student\'s flag will never validate for you.)'
-          })
-        };
+          });
       }
     } else if (!challenge) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Challenge not found' })
-      };
+      return json(404, { error: 'Challenge not found' });
     } else if (challenge.success.kind === 'flag') {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Flag submission cannot be empty' })
-      };
+      return json(400, { error: 'Flag submission cannot be empty' });
     } else if (challenge.success.kind === 'command') {
       if (challenge.success.matchRegex && commandText && commandText.trim()) {
         const regex = new RegExp(challenge.success.matchRegex, 'i');
@@ -155,14 +132,10 @@ export const handler = async (event) => {
     }
 
     if (!isValid) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      return json(400, {
           success: false,
           error: 'Verification failed. Re-run the exact command shown in the challenge brief, then submit again.'
-        })
-      };
+        });
     }
 
     // 2. Compute hint penalty (clamped: hint counts are client-reported).
@@ -185,34 +158,20 @@ export const handler = async (event) => {
 
     const player = await getPlayer(handle);
     if (!player) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Player record not found — log out and register again.' })
-      };
+      return json(404, { error: 'Player record not found — log out and register again.' });
     }
 
     const existingSolves = await getSolves(handle);
     if (!isActUnlocked(challenge, new Set(Object.keys(existingSolves)))) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      return json(403, {
           success: false,
           error: 'That challenge is still locked. Solve 80% of the previous act first.'
-        })
-      };
+        });
     }
 
     const { alreadySolved } = await addSolve(handle, challenge.id, challenge.points, hintPenalty);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      },
-      body: JSON.stringify({
+    return json(200, {
         success: true,
         alreadySolved,
         pointsAwarded: alreadySolved ? 0 : netPoints,
@@ -221,14 +180,9 @@ export const handler = async (event) => {
         challengeId: challenge.id,
         challengeTitle: challenge.title,
         successMessage: challenge.successMessage
-      })
-    };
+      }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Flag submission error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Internal error processing flag submission' })
-    };
+    return json(500, { error: 'Internal error processing flag submission' });
   }
 };

@@ -2,30 +2,27 @@
 // Netlify Function: GET /api/session
 
 import { verifySessionToken, createSessionToken } from '../../src/engine/crypto-utils.js';
-import { initBlobs, getPlayer, getSolves } from './utils/store.js';
+import { getPlayer, getSolves } from './utils/store.js';
 
-export const handler = async (event) => {
-  initBlobs(event);
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Server is not configured. Contact the instructor.' })
-    };
+    return json(500, { error: 'Server is not configured. Contact the instructor.' });
   }
 
-  const authHeader = event.headers.authorization || event.headers.Authorization || '';
+  const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
   const verified = verifySessionToken(sessionSecret, token);
   if (!verified) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Invalid or expired session token' })
-    };
+    return json(401, { error: 'Invalid or expired session token' });
   }
 
   const handle = verified.handle;
@@ -49,13 +46,7 @@ export const handler = async (event) => {
     }));
     const totalScore = solves.reduce((sum, s) => sum + s.netPoints, 0);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      },
-      body: JSON.stringify({
+    return json(200, {
         success: true,
         handle,
         isAdmin,
@@ -64,14 +55,9 @@ export const handler = async (event) => {
         // Rolling refresh: handles cannot be re-registered, so the session must not
         // hard-expire for any student who visits at least once every 72 hours.
         token: createSessionToken(sessionSecret, handle)
-      })
-    };
+      }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Session retrieval error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to retrieve session data' })
-    };
+    return json(500, { error: 'Failed to retrieve session data' });
   }
 };

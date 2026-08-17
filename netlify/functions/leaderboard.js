@@ -1,20 +1,21 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // Netlify Function: GET /api/leaderboard
 
-import { initBlobs, listPlayers, getSolves } from './utils/store.js';
+import { listPlayers, getSolves } from './utils/store.js';
 import { BADGE_DEFINITIONS, CHALLENGES } from '../../src/data/challenges.js';
 
-export const handler = async (event) => {
-  initBlobs(event);
-  if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
+  if (req.method !== 'GET') {
+    return json(405, { error: 'Method Not Allowed' });
   }
 
-  const queryWindow = event.queryStringParameters?.window || 'all';
+  const queryWindow = new URL(req.url).searchParams.get('window') || 'all';
   const isWeekly = queryWindow === 'week';
   const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
@@ -73,25 +74,14 @@ export const handler = async (event) => {
       };
     });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=30, s-maxage=30'
-      },
-      body: JSON.stringify({
+    return json(200, {
         success: true,
         window: queryWindow,
         totalPlayers: players.length,
         leaderboard
-      })
-    };
+      }, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
   } catch (err) {
     console.error('Leaderboard error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to fetch leaderboard' })
-    };
+    return json(500, { error: 'Failed to fetch leaderboard' });
   }
 };

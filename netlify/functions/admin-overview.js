@@ -3,30 +3,27 @@
 
 import { verifySessionToken } from '../../src/engine/crypto-utils.js';
 import { CHALLENGES } from '../../src/data/challenges.js';
-import { initBlobs, listPlayers, getSolves } from './utils/store.js';
+import { listPlayers, getSolves } from './utils/store.js';
 
-export const handler = async (event) => {
-  initBlobs(event);
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Server is not configured. Contact the instructor.' })
-    };
+    return json(500, { error: 'Server is not configured. Contact the instructor.' });
   }
 
-  const authHeader = event.headers.authorization || event.headers.Authorization || '';
+  const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
   const verified = verifySessionToken(sessionSecret, token);
   if (!verified) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Unauthorized' })
-    };
+    return json(401, { error: 'Unauthorized' });
   }
 
   const handle = verified.handle;
@@ -36,11 +33,7 @@ export const handler = async (event) => {
     .filter(Boolean);
 
   if (!adminHandles.includes(handle.toLowerCase())) {
-    return {
-      statusCode: 403,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Forbidden: Admin clearance required' })
-    };
+    return json(403, { error: 'Forbidden: Admin clearance required' });
   }
 
   try {
@@ -72,25 +65,14 @@ export const handler = async (event) => {
 
     allSolves.sort((a, b) => new Date(b.solvedAt) - new Date(a.solvedAt));
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      },
-      body: JSON.stringify({
+    return json(200, {
         success: true,
         totalPlayers: players.length,
         challengeStats: Object.values(challengeStats),
         recentSolves: allSolves.slice(0, 20)
-      })
-    };
+      }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Admin overview error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Failed to generate admin overview' })
-    };
+    return json(500, { error: 'Failed to generate admin overview' });
   }
 };

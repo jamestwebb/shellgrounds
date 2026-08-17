@@ -3,27 +3,24 @@
 
 import { checkSFW } from '../../src/engine/sfw-filter.js';
 import { createSessionToken } from '../../src/engine/crypto-utils.js';
-import { initBlobs, createPlayer } from './utils/store.js';
+import { createPlayer } from './utils/store.js';
 
-export const handler = async (event) => {
-  initBlobs(event);
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Method Not Allowed' })
-    };
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
+  if (req.method !== 'POST') {
+    return json(405, { error: 'Method Not Allowed' });
   }
 
   try {
-    const { handle, classPassword } = JSON.parse(event.body || '{}');
+    const { handle, classPassword } = (await req.json().catch(() => ({})));
 
     if (!handle) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Handle is required' })
-      };
+      return json(400, { error: 'Handle is required' });
     }
 
     // Check class password (announced in lecture). No fallback: fail closed if unconfigured.
@@ -31,30 +28,18 @@ export const handler = async (event) => {
     const sessionSecret = process.env.SESSION_SECRET;
     if (!expectedPassword || !sessionSecret) {
       console.error('Missing CLASS_PASSWORD or SESSION_SECRET environment variable');
-      return {
-        statusCode: 500,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Server is not configured. Contact the instructor.' })
-      };
+      return json(500, { error: 'Server is not configured. Contact the instructor.' });
     }
     if (!classPassword || classPassword.trim() !== expectedPassword.trim()) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      return json(403, {
           error: 'ACCESS DENIED — the door only opens from the inside. Get the password in class.'
-        })
-      };
+        });
     }
 
     // SFW & format validation
     const sfw = checkSFW(handle);
     if (!sfw.safe) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: sfw.reason })
-      };
+      return json(400, { error: sfw.reason });
     }
 
     const cleanHandle = sfw.handle;
@@ -64,36 +49,21 @@ export const handler = async (event) => {
     // the shared class password take over another student's account.
     const { created } = await createPlayer(cleanHandle);
     if (!created) {
-      return {
-        statusCode: 409,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      return json(409, {
           error: `Handle '@${cleanHandle}' is already claimed. If it is yours, open The Gauntlet in the browser you registered with — sessions resume automatically. If you lost access, ask your instructor to reset the handle.`
-        })
-      };
+        });
     }
 
     const token = createSessionToken(sessionSecret, cleanHandle);
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
-      },
-      body: JSON.stringify({
+    return json(200, {
         success: true,
         handle: cleanHandle,
         token,
         message: 'Welcome to The Gauntlet, Analyst. Access granted.'
-      })
-    };
+      }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Registration error:', err);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Internal server error during authentication' })
-    };
+    return json(500, { error: 'Internal server error during authentication' });
   }
 };
