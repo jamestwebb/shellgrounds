@@ -209,6 +209,8 @@ Minimum credible cmdlet set (~20): `Get-ChildItem`, `Set-Location`, `Get-Content
 
 **Decision:** either build the object model or declare PowerShell out of scope in the UI. A text-faked object pipeline teaches students to write `Get-Process | grep chrome`, which fails on a real box.
 
+**Full architecture for this second engine is specified in §9.** Do not begin it before M3.
+
 ---
 
 ## 4. Content-pack architecture
@@ -379,7 +381,7 @@ Sizes: **S** ≈ 1 day · **M** ≈ 3–7 days · **L** ≈ 2–4 weeks. One com
 | **P4 — cmd.exe parity** | ~15 builtins, `%VAR%`, `dir`/`findstr` flags, `REAL_WINDOWS` honesty set. (Tokenizer routing already done in P-1.) | **M** (5d) |
 | **P5 — Authoring & instructor** | Pack Validator CLI + GitHub Action (5.1), instructor console + CSV + cohorts (5.2), Simulation Boundary page (5.3), practice mode (5.4). | **M** (5–7d) |
 | **P6 — Flagship content** | Linux Fundamentals (40), Windows CMD Essentials (25), Forensics extracted (30). Content, not code. | **M-L** (7–10d) |
-| **P7 — PowerShell** | Object model, formatter, tokenizer, ~20 cmdlets, aliases, providers. Fully separable. | **L** (2–4w) |
+| **P7 — PowerShell** | Second engine: object model, formatter, parser, ~23 cmdlets, alias layer, providers, native interop, error model, a 25-challenge pack, differential tests. **Fully specified in §9; gated by §9.12.** | **L** (~6w) |
 | **P8 — Polish** | Accessibility (5.6), replay/share (5.5), editor (`vi`/`nano` minimal), archives. | **M** |
 
 ### Milestones
@@ -390,7 +392,7 @@ Sizes: **S** ≈ 1 day · **M** ≈ 3–7 days · **L** ≈ 2–4 weeks. One com
 
 **M3 — "Credible general Linux + Windows" (M2 + rest of P2 + P3 + P4 + P6).** ≈ **7–9 weeks.**
 
-**M4 — "Complete" (M3 + P7 + P8).** ≈ **11–13 weeks.**
+**M4 — "Complete" (M3 + P7 + P8).** ≈ **15–17 weeks** (P7 re-estimated at 6 weeks in §9.11).
 
 ### Sequencing rules
 1. **P-1 before everything** — it is a live defect.
@@ -453,7 +455,200 @@ Record real `bash` and `cmd.exe` output for a corpus of ~300 commands into fixtu
 
 ---
 
-## 9. Immediate next actions
+## 9. The second engine — PowerShell, specified
+
+§3.4 states the decision. This section specifies the build, at the same depth as the rest of the plan, so it can be costed and started without further design work.
+
+### 9.1 Why it is a second engine, not a mode
+
+The existing engine is **text-in / text-out**: `run()` returns `{stdout: string, stderr: string, status}` and the pipeline threads strings between stages. PowerShell's pipeline threads **objects**. That is not a flag on the existing engine — it changes the type of the thing flowing through it. Three consequences:
+
+1. `Get-ChildItem | Where-Object { $_.Length -gt 1kb }` requires stage 1 to emit objects with a `.Length` property, and stage 2 to evaluate a script block against each.
+2. What the user *sees* is produced by a **formatter** at the end of the pipeline, not by the cmdlet. `Get-ChildItem` emits objects; the console renders them as a table because the formatter chose to.
+3. `Select-String` returns `MatchInfo` objects, not lines. `(Get-Content f).Count` is a number because `Get-Content` emits an array of strings.
+
+Faking any of this with text produces a student who writes `Get-Process | grep chrome` and `Get-ChildItem | wc -l` on a real box and is confused when they fail. **A text-faked PowerShell is worse than no PowerShell**, because it teaches an actively wrong mental model of the one thing that makes PowerShell different.
+
+### 9.2 What it shares with the existing engine (do not fork these)
+
+| Shared | Why it survives the fork |
+|---|---|
+| `vfs/builder.js`, `vfs/ops.js`, `vfs/path.js` | The filesystem is platform-agnostic; only path syntax differs, already handled |
+| Scoring, flags, replay validation (`netlify/functions/*`) | Platform-agnostic; a PowerShell challenge is still `{predicate, args}` |
+| Pack format (§4.3) | Gains a `windows.shell: "pwsh"` option and a `fs.windows.js` reuse |
+| Challenge/act/badge/hint model | Unchanged |
+| Honest-unsimulated messaging | Gains a `REAL_POWERSHELL` set |
+| Terminal UI, coach, reference tab | Shell-agnostic; the reference tab renders `Get-Help` output instead of man pages |
+
+**Roughly 60% of the platform is reused.** The fork is confined to `packages/engine/shell-pwsh/`.
+
+### 9.3 Object model
+
+```js
+// packages/engine/shell-pwsh/psobject.js
+// A PSObject is a typed property bag with a type name that drives formatting.
+{
+  __type: 'System.IO.FileInfo',       // drives default formatter selection
+  Name: 'notes.txt',
+  FullName: 'C:\\Users\\Student\\notes.txt',
+  Length: 1024,                        // Number — comparisons must work
+  Extension: '.txt',
+  LastWriteTime: DateTimeLike,
+  Mode: '-a---',
+  PSIsContainer: false
+}
+```
+
+Minimum type set for a credible pack:
+
+| Type | Emitted by | Key properties |
+|---|---|---|
+| `System.IO.FileInfo` | `Get-ChildItem`, `Get-Item` | Name, FullName, Length, Extension, LastWriteTime, Mode, PSIsContainer |
+| `System.IO.DirectoryInfo` | same | Name, FullName, LastWriteTime, Mode, PSIsContainer=true |
+| `System.String` | `Get-Content` (per line) | Length, plus string methods used by challenges |
+| `Microsoft.PowerShell.Commands.MatchInfo` | `Select-String` | Line, LineNumber, Filename, Path, Matches |
+| `Microsoft.PowerShell.Utility.FileHash` | `Get-FileHash` | Algorithm, Hash, Path |
+| `System.Diagnostics.Process` | `Get-Process` (static fixture set) | Name, Id, CPU, WS |
+| `PSCustomObject` | `Select-Object`, `[pscustomobject]@{}` | arbitrary |
+| `System.Management.Automation.AliasInfo` | `Get-Alias` | Name, Definition |
+
+**Design rule:** properties are real JS values (`Length` is a Number), so `$_.Length -gt 1kb` is a numeric comparison, not string matching. This is the whole point.
+
+### 9.4 Formatter
+
+The formatter is what makes output *look* like PowerShell, and it must be a separate stage.
+
+- **Default view registry:** type name → ordered column list. `FileInfo` → `Mode, LastWriteTime, Length, Name`. Unknown types → all properties.
+- **Auto-selection rule:** ≤ 4 properties → `Format-Table`; > 4 → `Format-List`. (Real PowerShell uses view definitions plus this heuristic; documenting the simplification in the boundary page is acceptable.)
+- **Grouping:** `Get-ChildItem` groups by parent directory with a `Directory:` header.
+- **Explicit formatters:** `Format-Table`, `Format-List`, `Format-Wide` override, and **terminate the pipeline for further object use** — a real and commonly-taught gotcha (`… | Format-Table | Where-Object` silently fails on a real box; ours must too).
+- **Column sizing and truncation** with `…`, matching console behavior.
+
+**Acceptance:** `Get-ChildItem` renders Mode/LastWriteTime/Length/Name with a `Directory:` header; `Get-ChildItem | Select-Object Name` renders a single-column table; `Get-ChildItem | Format-Table | Where-Object Name -like "*.txt"` produces the real "you already formatted it" failure.
+
+### 9.5 Tokenizer and parser differences
+
+A new `shell-pwsh/tokenizer.js`. It is **not** a variant of the bash one:
+
+| Construct | Requirement |
+|---|---|
+| Parameter binding | `-Path x`, `-Path:x`, positional binding by parameter position, partial names (`-Rec` → `-Recurse`), switch parameters |
+| Quoting | `"$var expands"` vs `'$var literal'` — same rule as bash, opposite of cmd |
+| Subexpression | `$(...)` inside strings; `@(...)` array subexpression |
+| Script blocks | `{ $_.Length -gt 1kb }` parsed as a block, evaluated per pipeline item |
+| Comparison operators | `-eq -ne -gt -lt -ge -le -like -match -contains -in -not -and -or`. **Critically: `>` is redirection, not greater-than** — a classic beginner error worth a challenge |
+| Variables | `$name`, `$_`, `$PSItem`, `$true/$false/$null`, `$?`, `$LASTEXITCODE` |
+| Member access | `$_.Name`, `(Get-Content f).Count`, method calls `.ToUpper()` |
+| Numeric literals | `1kb`, `1mb`, `1gb` multipliers |
+| Pipeline | `|` carries objects; `;` statement separator |
+| Redirection | `>`, `>>`, `2>`, `*>` write **formatted text**, not objects — worth teaching explicitly |
+| Comments | `#` to end of line |
+| Case-insensitivity | cmdlet names, parameter names, and operators are all case-insensitive |
+
+### 9.6 Cmdlet contract
+
+```js
+// packages/engine/shell-pwsh/cmdlets/Get-ChildItem.js
+export default {
+  name: 'Get-ChildItem',
+  aliases: ['gci', 'ls', 'dir'],
+  parameters: {
+    Path:    { position: 0, type: 'string[]', default: '.' },
+    Filter:  { type: 'string' },
+    Recurse: { type: 'switch', status: 'implemented' },
+    Force:   { type: 'switch', status: 'implemented' },
+    Depth:   { type: 'int', status: 'notSimulated' }
+  },
+  outputType: 'System.IO.FileInfo',
+  help: { synopsis, description, parameters, examples },   // drives Get-Help
+  run({ params, input, vfs, cwd, env, session }) {
+    return { output: [PSObject...], errors: [ErrorRecord...], newCwd };
+  }
+};
+```
+
+Same three-state parameter status as the Linux registry (§7.1), so `notSimulated` surfaces honestly instead of being ignored.
+
+**Minimum credible cmdlet set (20), phased:**
+
+*Tier A — navigation and files (must have):* `Get-ChildItem`, `Set-Location`, `Get-Location`, `Get-Content`, `Set-Content`, `New-Item`, `Copy-Item`, `Move-Item`, `Remove-Item`, `Test-Path`
+
+*Tier B — the object pipeline (the reason to exist):* `Where-Object`, `Select-Object`, `Sort-Object`, `Measure-Object`, `ForEach-Object`, `Group-Object`
+
+*Tier C — discovery and analysis:* `Get-Help`, `Get-Command`, `Get-Alias`, `Select-String`, `Get-FileHash`, `Format-Table`, `Format-List`
+
+*Tier D — nice to have:* `Get-Process` (fixture data), `ConvertTo-Json`, `Export-Csv`, `Import-Csv`, `Compare-Object`
+
+### 9.7 The alias layer — a feature, not a compatibility shim
+
+`ls`, `dir`, `cat`, `cp`, `mv`, `rm`, `pwd`, `echo`, `man` all exist in PowerShell as aliases to cmdlets. **This is the single richest teaching opportunity in the Windows track**, and it requires the alias layer to be real:
+
+- `ls` works (aliases `Get-ChildItem`) — students are relieved.
+- `ls -l` **fails** — `-l` is not a `Get-ChildItem` parameter. The error must be the real one: `A parameter cannot be found that matches parameter name 'l'.`
+- `Get-Alias ls` explains why. A challenge should require exactly this discovery.
+- `cat file | grep pattern` fails because `grep` does not exist; `Select-String` is the answer.
+
+**Acceptance:** a dedicated act, "Muscle Memory Lies", teaching that familiar names are aliases with different parameters.
+
+### 9.8 Providers
+
+PowerShell's "everything is a drive" model. Scope:
+
+| Provider | Scope | Rationale |
+|---|---|---|
+| `FileSystem` (`C:`) | Full | Reuses the existing VFS |
+| `Env:` | Read + write | `Get-ChildItem Env:`, `$env:PATH` — cheap and conceptually important |
+| `Alias:` | Read | Falls out of the alias layer |
+| `Function:` | Read | Trivial once functions exist |
+| `HKLM:` / `HKCU:` | **Read-only, fixture data** | Genuinely valuable for forensics/IT packs; do not implement writes |
+| `Cert:`, `WSMan:` | **Out of scope, declared** | No pedagogical value here |
+
+### 9.9 Native-command interop boundary
+
+The hardest honest question: what happens when a student runs `ipconfig` or `findstr` inside PowerShell?
+
+**Rule:** native commands emit `System.String` objects (one per line), because that is what PowerShell actually does. `ipconfig | Select-String IPv4` therefore works, and `ipconfig | Where-Object {$_.Length -gt 5}` works on strings. This boundary is itself a teachable concept: **native commands emit text; cmdlets emit objects.**
+
+Implement by wrapping the existing cmd.exe executors: run the command, split stdout on newlines, emit strings.
+
+**Acceptance:** `ipconfig | Select-String IPv4` filters; `Get-ChildItem | Select-String Name` does *not* behave like a property filter (it stringifies), matching real behavior and making a good trap challenge.
+
+### 9.10 Error model
+
+- `ErrorRecord` objects with `Exception.Message`, `CategoryInfo`, `TargetObject`.
+- Terminating vs non-terminating errors; `-ErrorAction Stop|SilentlyContinue|Continue`.
+- `$?` (last command succeeded) and `$LASTEXITCODE` (last native command's status) — **distinct**, and confusing them is a real-world bug worth teaching.
+- `$Error` collection.
+- Rendered in the real red multi-line format, since students must learn to read it.
+
+### 9.11 Phasing within P7
+
+| Step | Contents | Size |
+|---|---|---|
+| P7.1 | `psobject.js` + formatter + view registry. Prove it with a hardcoded object array before any cmdlet exists. | M (4d) |
+| P7.2 | Tokenizer/parser: parameter binding, quoting, operators, `$_`, script blocks, member access. | M (5d) |
+| P7.3 | Tier A cmdlets (10) + provider `FileSystem` + `Env:`. | M (4d) |
+| P7.4 | Tier B object-pipeline cmdlets (6) + script-block evaluation. **This is the milestone that justifies the whole track.** | M (4d) |
+| P7.5 | Tier C (7) + `Get-Help` wired to the reference tab + alias layer (§9.7). | M (4d) |
+| P7.6 | Error model, native interop (§9.9), `HKLM:` fixtures. | M (3d) |
+| P7.7 | Pack: **PowerShell Essentials** (~25 challenges), including the alias-trap act and the format-terminates-the-pipeline trap. | M (5d) |
+| P7.8 | Differential tests against real `pwsh` output (§7.2) on a Windows CI runner. | S-M (2d) |
+
+**Total: ~31 working days ≈ 6 weeks solo**, not the 2–4 weeks estimated in §6. The earlier figure understated the formatter, the interop boundary, and the differential-test work. **Treat 6 weeks as the planning number.**
+
+### 9.12 Gate conditions — do not start P7 until all are true
+
+1. M3 has shipped (general Linux + cmd.exe are credible and fidelity-clean).
+2. The pack format has survived at least one external author writing a pack.
+3. There is demonstrated demand for PowerShell specifically — an instructor asking, not an assumption.
+4. A Windows CI runner exists for differential testing (§7.2), because PowerShell fidelity cannot be eyeballed.
+
+**If any gate is unmet:** ship with PowerShell declared out of scope in the Simulation Boundary page (§5.3). "We do not simulate PowerShell" is a respectable, trust-building statement. A half-built one is not.
+
+
+---
+
+## 10. Immediate next actions
 
 1. **P-1 now:** route Windows through the tokenizer (F2). ~1 day. Fixes a live defect.
 2. Decide the scope target: **M2 (public multi-curriculum release, ~3.5 weeks)** is the recommended first commitment.
