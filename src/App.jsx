@@ -41,9 +41,12 @@ const computeEarnedBadges = (solves) => {
   }).map(b => b.id);
 };
 
-// Where a returning player should land: their first unsolved Linux challenge
-const resumeSelection = (solves) =>
-  CHALLENGES.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
+// Where a returning player should land: their first unsolved challenge on any
+// platform (a player deep in the Windows quest resumes there, not at Act I)
+const resumeSelection = (solves) => {
+  const linux = CHALLENGES.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
+  return linux || CHALLENGES.find(c => !solves[c.id]);
+};
 
 const MANIFEST_WARNING = {
   type: 'output',
@@ -93,6 +96,28 @@ export default function App() {
   // Active filesystem reference
   const activeFs = platform === 'linux' ? linuxFs : windowsFs;
 
+  // Hint reveals persist per handle so a refresh neither hides paid hints
+  // nor quietly resets their penalties.
+  const loadStoredHints = (handle) => {
+    try {
+      return JSON.parse(localStorage.getItem(`gauntlet_hints_${handle}`)) || {};
+    } catch {
+      return {};
+    }
+  };
+  const sessionRef = useRef(null);
+  useEffect(() => { sessionRef.current = session; }, [session]);
+  const setUnlockedHintsPersist = useCallback((updater) => {
+    setUnlockedHints(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      const handle = sessionRef.current?.handle;
+      if (handle) {
+        try { localStorage.setItem(`gauntlet_hints_${handle}`, JSON.stringify(next)); } catch { /* storage full/blocked */ }
+      }
+      return next;
+    });
+  }, []);
+
   // 1. Initial Session Load
   useEffect(() => {
     const init = async () => {
@@ -103,6 +128,7 @@ export default function App() {
           const sess = await fetchSession();
           if (sess && sess.success) {
             setSession(sess);
+            setUnlockedHints(loadStoredHints(sess.handle));
             const map = {};
             (sess.solves || []).forEach(s => {
               map[s.challengeId] = s;
@@ -113,6 +139,10 @@ export default function App() {
             if (resume) {
               setActiveActId(resume.act);
               setSelectedChallengeId(resume.id);
+              if (resume.platform === 'windows') {
+                setPlatform('windows');
+                setCwd('C:\\Users\\Analyst');
+              }
             }
 
             // Fetch manifest and splice flags into VFS
@@ -178,20 +208,35 @@ export default function App() {
 
   // Handle successful authentication
   const handleAuthenticated = async (handle, token) => {
+    // Registration already succeeded and the token is stored: from here on,
+    // NEVER throw — a manifest/session blip must not strand the player on the
+    // Gate where re-registering errors with "already claimed".
     setAuthToken(token);
-    const manifest = await fetchManifest();
-    const serverFlags = manifest.flags || {};
-    const linuxResult = injectFlagsIntoVFS(createWarrenFilesystem(), handle, serverFlags);
-    const windowsResult = injectFlagsIntoVFS(createTopsideFilesystem(), handle, serverFlags);
-    setLinuxFs(linuxResult.fs);
-    setWindowsFs(windowsResult.fs);
-    setFlagMap({ ...linuxResult.flagMap, ...windowsResult.flagMap });
-    if (Object.keys(serverFlags).length === 0) {
+    setUnlockedHints(loadStoredHints(handle));
+
+    try {
+      const manifest = await fetchManifest();
+      const serverFlags = manifest.flags || {};
+      const linuxResult = injectFlagsIntoVFS(createWarrenFilesystem(), handle, serverFlags);
+      const windowsResult = injectFlagsIntoVFS(createTopsideFilesystem(), handle, serverFlags);
+      setLinuxFs(linuxResult.fs);
+      setWindowsFs(windowsResult.fs);
+      setFlagMap({ ...linuxResult.flagMap, ...windowsResult.flagMap });
+      if (Object.keys(serverFlags).length === 0) {
+        setTerminalHistory([MANIFEST_WARNING]);
+      }
+    } catch (err) {
+      console.error('Manifest load error:', err);
       setTerminalHistory([MANIFEST_WARNING]);
     }
 
     // isAdmin and any existing solves come from the server, never from local guesses
-    const sess = await fetchSession();
+    let sess = null;
+    try {
+      sess = await fetchSession();
+    } catch (err) {
+      console.error('Session fetch error after registration:', err);
+    }
     const map = {};
     (sess?.solves || []).forEach(s => {
       map[s.challengeId] = s;
@@ -202,6 +247,10 @@ export default function App() {
     if (resume) {
       setActiveActId(resume.act);
       setSelectedChallengeId(resume.id);
+      if (resume.platform === 'windows') {
+        setPlatform('windows');
+        setCwd('C:\\Users\\Analyst');
+      }
     }
 
     setSession({
@@ -217,7 +266,9 @@ export default function App() {
   // Submit flag handler
   const handleFlagSubmit = async (challengeId, flagText, hintsUsed = 0, commandText = '') => {
     try {
-      const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText);
+      // The per-challenge hint map lets the server charge the penalty against
+      // whichever challenge the flag actually matches, not the selected one.
+      const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText, unlockedHints);
       if (res.success) {
         sounds.playSuccess();
         // The server resolves which challenge a flag actually belongs to.
@@ -443,25 +494,43 @@ export default function App() {
   };
 
   // Switch between Linux (The Warren) and Windows (Topside)
-  const handleSwitchPlatform = (newPlatform) => {
+  const handleSwitchPlatform = (newPlatform, targetChallengeId = null) => {
     setPlatform(newPlatform);
-    if (newPlatform === 'windows') {
-      setCwd('C:\\Users\\Analyst');
-      setActiveActId(6);
-      setSelectedChallengeId('topside-nav');
-    } else {
-      setCwd('/home/analyst');
-      setActiveActId(1);
-      setSelectedChallengeId('act1-pwd');
-    }
-    setTerminalHistory([]);
+    const fallback = newPlatform === 'windows' ? 'topside-nav' : 'act1-pwd';
+    const targetId = targetChallengeId || fallback;
+    const target = CHALLENGES.find(c => c.id === targetId);
+    setCwd(newPlatform === 'windows' ? 'C:\\Users\\Analyst' : '/home/analyst');
+    setActiveActId(target?.act ?? (newPlatform === 'windows' ? 6 : 1));
+    setSelectedChallengeId(targetId);
+    setTerminalHistory([{
+      type: 'output',
+      text: newPlatform === 'windows'
+        ? '(switched to the Windows CMD side — fresh session)'
+        : '(switched to the Linux side — fresh session)',
+      isDim: true
+    }]);
   };
 
-  // Handle logout
+  // Handle logout: reset EVERYTHING a next player on this machine could inherit
+  // (scrollback with flag chips, hint counts, platform, installed tools)
   const handleLogout = () => {
     setAuthToken(null);
     setSession(null);
     setSolvesMap({});
+    setEarnedBadges([]);
+    setNewBadge(null);
+    setFlagMap({});
+    setUnlockedHints({});
+    setTerminalHistory([]);
+    setCurrentInput('');
+    setPlatform('linux');
+    setCwd('/home/analyst');
+    setInstalledPackages(new Set());
+    setLinuxFs(createWarrenFilesystem());
+    setWindowsFs(createTopsideFilesystem());
+    setActiveActId(1);
+    setSelectedChallengeId('act1-pwd');
+    coachCountsRef.current = {};
     setViewState('gate');
   };
 
@@ -491,7 +560,10 @@ export default function App() {
     );
   }
 
-  if (viewState === 'gate' || !session) {
+  // Route on session alone: once a stored session resolves, a stale
+  // viewState of 'gate' (boot skipped before the fetch finished) must not
+  // strand a returning player on the registration form.
+  if (!session) {
     return (
       <Gate
         onAuthenticated={handleAuthenticated}
@@ -629,8 +701,10 @@ export default function App() {
 
       {/* Main Content Body */}
       <main className="flex-1 flex overflow-hidden relative">
-        {activeTab === 'terminal' && (
-          <div className="flex-1 flex overflow-hidden">
+        {/* Keep the terminal MOUNTED when other tabs show: unmounting resets
+            command history (up-arrow recall) and scroll position. */}
+        {(
+          <div className={`flex-1 overflow-hidden ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
             {/* Left Rail: Challenge Navigation & Briefing */}
             <ChallengeSidebar
               acts={ACT_DEFINITIONS}
@@ -642,9 +716,9 @@ export default function App() {
                 setSelectedChallengeId(id);
                 const challenge = CHALLENGES.find(c => c.id === id);
                 if (challenge?.platform && challenge.platform !== platform) {
-                  handleSwitchPlatform(challenge.platform);
+                  handleSwitchPlatform(challenge.platform, id);
                 } else if (!challenge?.platform && platform === 'windows') {
-                  handleSwitchPlatform('linux');
+                  handleSwitchPlatform('linux', id);
                 }
               }}
               solvesMap={solvesMap}
@@ -653,7 +727,7 @@ export default function App() {
               platform={platform}
               onSwitchPlatform={handleSwitchPlatform}
               unlockedHints={unlockedHints}
-              setUnlockedHints={setUnlockedHints}
+              setUnlockedHints={setUnlockedHintsPersist}
             />
 
             {/* Right: Simulated Terminal */}

@@ -21,7 +21,9 @@ export function getTabCompletions(input, cwd, fs, isWindows = false) {
 
   const parts = input.trim().split(/\s+/);
   const command = parts[0] || '';
-  const lastArg = parts[parts.length - 1] || '';
+  // A trailing space means the student is starting a NEW argument: complete
+  // against everything in the directory, not against the previous word.
+  const lastArg = /\s$/.test(input) ? '' : (parts[parts.length - 1] || '');
   const availableCommands = isWindows ? WINDOWS_COMMANDS : LINUX_COMMANDS;
 
   // 1. Command completion (first word being typed)

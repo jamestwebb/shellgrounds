@@ -3,6 +3,16 @@
 
 const API_BASE = '/api';
 
+// A proxy/timeout error page is HTML, not JSON. Never surface a raw parse
+// error ("Unexpected token '<'") to a student as if their answer were wrong.
+async function parseJsonSafe(res) {
+  try {
+    return await res.json();
+  } catch {
+    return { error: 'The server is busy — wait a moment and try again. Your submission was not judged.' };
+  }
+}
+
 export function getAuthToken() {
   return localStorage.getItem('warren_token') || '';
 }
@@ -21,7 +31,7 @@ export async function registerHandle(handle, classPassword) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ handle, classPassword })
   });
-  const data = await res.json();
+  const data = await parseJsonSafe(res);
   if (!res.ok) {
     throw new Error(data.error || 'Registration failed');
   }
@@ -62,7 +72,7 @@ export async function fetchManifest() {
   return await res.json();
 }
 
-export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandText = '') {
+export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge = undefined) {
   const token = getAuthToken();
   if (!token) throw new Error('Not logged in');
 
@@ -72,9 +82,9 @@ export async function submitFlagApi(challengeId, flag, hintsUsed = 0, commandTex
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
-    body: JSON.stringify({ challengeId, flag, hintsUsed, commandText })
+    body: JSON.stringify({ challengeId, flag, hintsUsed, commandText, hintsUsedByChallenge })
   });
-  const data = await res.json();
+  const data = await parseJsonSafe(res);
   if (!res.ok) {
     throw new Error(data.error || 'Flag submission failed');
   }

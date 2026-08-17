@@ -119,13 +119,23 @@ export const ChallengeSidebar = ({
       onSelectChallenge(actChallenges[currentIndex + 1].id);
       setFeedback(null);
     } else {
-      // Find next unlocked act
+      // Find next unlocked act — and always say something at the boundaries
       const nextAct = acts.find(a => a.id === activeActId + 1);
       if (nextAct && isActUnlocked(nextAct)) {
         setActiveActId(nextAct.id);
         const nextActChallenges = challenges.filter(c => c.act === nextAct.id);
         if (nextActChallenges[0]) onSelectChallenge(nextActChallenges[0].id);
         setFeedback(null);
+      } else if (nextAct) {
+        setFeedback({
+          type: 'success',
+          message: `${nextAct.name} is still locked — solve 80% of this act's challenges to open it.`
+        });
+      } else {
+        setFeedback({
+          type: 'success',
+          message: 'That was the last challenge in this act — check the leaderboard, or try the Topside (WIN) quest!'
+        });
       }
     }
   };
@@ -250,7 +260,7 @@ export const ChallengeSidebar = ({
             </div>
 
             {/* Briefing text */}
-            <div className="text-xs text-neutral-300 leading-relaxed bg-term-gray p-3.5 rounded-lg border border-term-border mb-4 font-mono">
+            <div className="text-xs text-neutral-300 leading-relaxed bg-term-gray p-3.5 rounded-lg border border-term-border mb-4 font-mono select-text cursor-text">
               {formatBriefText(currentChallenge.brief)}
             </div>
 
@@ -273,7 +283,7 @@ export const ChallengeSidebar = ({
                   return (
                     <div
                       key={idx}
-                      className="p-3 rounded-lg bg-amber-950/30 border border-amber-800 text-xs text-amber-200 leading-relaxed font-mono"
+                      className="p-3 rounded-lg bg-amber-950/30 border border-amber-800 text-xs text-amber-200 leading-relaxed font-mono select-text cursor-text"
                     >
                       <span className="font-bold text-amber-400">Hint {idx + 1}: </span>
                       {formatBriefText(hint.text)}

@@ -46,7 +46,9 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
     try {
       const res = await registerHandle(cleanHandle, cleanPassword);
       sounds.playSuccess();
-      onAuthenticated(res.handle, res.token);
+      // Await the full session setup: the button must stay disabled until the
+      // player is actually inside, and any failure must surface here.
+      await onAuthenticated(res.handle, res.token);
     } catch (err) {
       setError(err.message || 'Authentication failed');
       sounds.playError();
