@@ -1,8 +1,8 @@
-# The Gauntlet — Forensics CLI 101 (CIS 4400/5544)
+# The Gauntlet — Forensics CLI 101
 
 > A standalone CLI challenge site with a leaderboard — no story, just practice that feels like a game.
 
-A standalone Netlify web application and simulated command-line training ground for **CIS 4400 / 5544 (Cyber Forensics)**. Students claim a handle with a class password and complete forensic CLI challenges across five Acts and a Windows Topside side-quest, competing on a live leaderboard.
+A standalone Netlify web application and simulated command-line training ground for **cyber forensics courses** (or any class that needs to teach the command line). Students claim a handle with a class password and complete forensic CLI challenges across five Acts and a Windows Topside side-quest, competing on a live leaderboard.
 
 ---
 
