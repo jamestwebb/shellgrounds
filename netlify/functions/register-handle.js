@@ -3,9 +3,10 @@
 
 import { checkSFW } from '../../src/engine/sfw-filter.js';
 import { createSessionToken } from '../../src/engine/crypto-utils.js';
-import { createPlayer } from './utils/store.js';
+import { initBlobs, createPlayer } from './utils/store.js';
 
 export const handler = async (event) => {
+  initBlobs(event);
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
