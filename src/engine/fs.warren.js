@@ -52,9 +52,17 @@ TITLE: Unauthorized Access — Practice Scenario
 ANALYST: (you)
 STATUS: TRAINING
 
-Preliminary analysis confirms an unidentified actor reached the Windows side
-of this machine through the WSL mount at /mnt/c. Work the timeline in the logs.
-Always calculate cryptographic digests before and after handling digital artifacts.
+SUMMARY
+An unidentified actor reached the Windows side of this machine through the
+WSL mount at /mnt/c. The evidence is scattered across this workstation:
+
+  Documents/access.log ......... the access timeline
+  Documents/logs.txt ........... application errors
+  evidence/ .................... seized files to identify and hash
+
+You do NOT need to act on any of this yet. The next challenges will walk you
+through each piece, one command at a time. For now, reading this file with
+'cat' was the whole job — and you just did it.
 `),
           'access.log': file(
 `2026-08-17 01:12:04 - DAEMON: System initialized on tty1
