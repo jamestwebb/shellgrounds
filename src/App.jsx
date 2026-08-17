@@ -756,7 +756,7 @@ export default function App() {
             />
 
             {/* Right: Simulated Terminal */}
-            <div className="flex-1 flex flex-col p-3 overflow-hidden bg-term-void">
+            <div className="flex-1 flex flex-col p-3 overflow-hidden bg-term-shell-deep">
               <Terminal
                 platform={platform}
                 cwd={cwd}

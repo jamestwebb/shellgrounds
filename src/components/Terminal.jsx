@@ -186,7 +186,7 @@ export const Terminal = ({
 
   return (
     <div
-      className="flex-1 bg-term-void flex flex-col h-full overflow-hidden relative font-mono text-sm select-text border border-term-border rounded-xl shadow-2xl"
+      className="flex-1 bg-term-shell flex flex-col h-full overflow-hidden relative font-mono text-sm select-text border-2 border-term-shell-border rounded-xl shadow-2xl"
       onClick={handleContainerClick}
     >
       {/* CRT Scanline Overlay */}
@@ -195,7 +195,7 @@ export const Terminal = ({
       )}
 
       {/* Terminal Title Bar */}
-      <div className="flex-none bg-term-panel border-b border-term-border px-4 py-2.5 flex items-center justify-between z-10 select-none">
+      <div className="flex-none bg-term-shell-bar border-b border-term-shell-border px-4 py-2.5 flex items-center justify-between z-10 select-none">
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full bg-red-500/80 border border-red-600" />
@@ -214,7 +214,7 @@ export const Terminal = ({
             className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer border ${
               coachEnabled
                 ? 'bg-cyan-950/40 text-cyan-300 border-cyan-700/50'
-                : 'bg-term-gray text-neutral-500 border-term-border'
+                : 'bg-term-shell-deep text-neutral-500 border-term-shell-border'
             }`}
             title={coachEnabled
               ? 'Coach ON: explains each command and error. Click to turn off.'
@@ -233,7 +233,7 @@ export const Terminal = ({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onClearHistory(); }}
-            className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-term-gray transition-all cursor-pointer"
+            className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-term-shell-deep transition-all cursor-pointer"
             title="Clear Screen (Ctrl+L)"
           >
             <Trash2 size={13} />
@@ -260,7 +260,7 @@ export const Terminal = ({
             <div className="text-xs text-neutral-400">
               Recover flags and submit them with: <code className="text-term-green font-bold">submit FLAG{'{...}'}</code>
             </div>
-            <div className="border-b border-term-border pt-1 opacity-50" />
+            <div className="border-b border-term-shell-border pt-1 opacity-50" />
           </div>
         )}
 

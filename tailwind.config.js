@@ -13,6 +13,17 @@ export default {
         'term-panel': '#111111',
         'term-panel-light': '#181818',
         'term-border': '#262626',
+        // Two deliberately different surfaces so students can tell at a glance
+        // which pane is which: the sidebar is a neutral gray "workbook"...
+        'term-sidebar': '#17181b',
+        'term-sidebar-deep': '#101113',
+        'term-sidebar-raised': '#212327',
+        'term-sidebar-border': '#33363d',
+        // ...and the terminal is deep navy — the machine you type into.
+        'term-shell': '#0a1220',
+        'term-shell-deep': '#060c16',
+        'term-shell-bar': '#101c30',
+        'term-shell-border': '#1e3a5f',
         'term-border-bright': '#3a3a3a',
         'term-green': '#22c55e',
         'term-green-dim': '#15803d',
