@@ -2,6 +2,7 @@
 // Windows Command Executor for Topside (Windows CMD Environment)
 
 import { WINDOWS_HELP } from './help.js';
+import { unknownCommandMessage } from './unknown-command.js';
 import { md5, sha256Sync } from './crypto-utils.js';
 
 export function executeWindowsCommand(argv, cwd, fs, stdin = '', context = {}) {
@@ -245,10 +246,6 @@ export function executeWindowsCommand(argv, cwd, fs, stdin = '', context = {}) {
       };
 
     default:
-      return {
-        stdout: '',
-        stderr: `'${command}' is not recognized as an internal or external command,\r\noperable program or batch file.`,
-        newCwd: cwd
-      };
+      return { stdout: '', stderr: unknownCommandMessage(command, 'windows'), newCwd: cwd };
   }
 }

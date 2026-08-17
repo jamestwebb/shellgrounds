@@ -2,6 +2,7 @@
 // Linux Command Executor for The Gauntlet
 
 import { LINUX_HELP, formatManPage } from './help.js';
+import { unknownCommandMessage } from './unknown-command.js';
 import { md5, sha256Sync } from './crypto-utils.js';
 
 export function executeLinuxCommand(argv, cwd, fs, stdin = '', context = {}) {
@@ -724,6 +725,6 @@ MASTER FORENSIC FLAG: [[FLAG:act5-capstone]]
       };
 
     default:
-      return { stdout: '', stderr: `${command}: command not found`, newCwd: cwd };
+      return { stdout: '', stderr: unknownCommandMessage(command, 'linux'), newCwd: cwd };
   }
 }
