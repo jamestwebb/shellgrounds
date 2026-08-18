@@ -1,0 +1,156 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Windows CMD Essentials — Instructor Guide</title>
+<style>
+@page { size: letter; margin: 0.6in; }
+body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 10pt; line-height: 1.45; color: #111; }
+h1 { font-size: 20pt; margin: 0 0 2px; }
+h2 { font-size: 13pt; margin: 18px 0 6px; border-bottom: 2px solid #222; padding-bottom: 3px; page-break-after: avoid; }
+h3 { font-size: 10.5pt; margin: 12px 0 3px; page-break-after: avoid; }
+code { font-family: "SF Mono", Consolas, monospace; background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 9pt; }
+.sub { color: #555; margin: 0 0 12px; }
+.box { border: 1px solid #bbb; border-radius: 5px; padding: 9px 11px; margin: 10px 0; background: #fafafa; }
+.key { background: #fffbe6; border-color: #e0c000; }
+table { width: 100%; border-collapse: collapse; margin: 7px 0; font-size: 9pt; }
+th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; vertical-align: top; }
+th { background: #eee; }
+.ch { border: 1px solid #ddd; border-left: 3px solid #2b7; border-radius: 4px; padding: 8px 10px; margin: 8px 0; page-break-inside: avoid; }
+.ch h3 { margin-top: 0; }
+.pts { float: right; font-weight: normal; color: #666; font-size: 9pt; }
+.ans { background: #eefaf0; border: 1px solid #b8e0c2; border-radius: 4px; padding: 6px 8px; margin: 5px 0; }
+.hint { color: #555; font-size: 9pt; margin: 3px 0 0 12px; }
+.note { color: #a05000; font-size: 9pt; font-style: italic; margin-top: 4px; }
+.act { page-break-before: always; }
+.act:first-of-type { page-break-before: avoid; }
+footer { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 6px; font-size: 8pt; color: #777; }
+</style></head><body>
+<h1>Windows CMD Essentials — Instructor Guide</h1>
+<p class="sub">Every challenge, answer, and accepted variant · generated 2026-08-18 from the live pack data</p>
+
+<div class="box key">
+<strong>Quick reference</strong><br>
+Set your own site URL and class password before handing this out. Admin handle: <code>warden</code>.<br>
+Handles: 3–20 characters, letters/numbers/underscore/hyphen, <strong>claimed once only</strong>.<br>
+27 challenges · 535 points total · flags look like <code>FLAG{ABCD2345EFGH}</code> and are <strong>different for every student</strong>.
+</div>
+
+<div class="box">
+<strong>How the difficulty fades</strong> — Act I briefs show the whole command, and the free hint repeats it. From Act II the brief names the tool but not its flags or arguments, and the exact line moves into a hint that costs XP. By the last act the brief states only the objective. A student who never buys a hint has genuinely recalled every command. Hint spend is visible in the instructor dashboard, so it reads as a difficulty signal rather than as cheating.
+</div>
+
+<h2>If a student says "it's not working"</h2>
+<table>
+<tr><th>Symptom</th><th>Cause &amp; what to say</th></tr>
+<tr><td>"My flag is rejected"</td><td>Flags are per-student — a classmate's flag never validates. Tell them to <strong>click the green flag in the terminal</strong> to copy it exactly, rather than retyping.</td></tr>
+<tr><td>"Handle already claimed"</td><td>Someone took it, or they registered before and cleared their browser. Pick a new handle. (To free one, delete that player in Netlify Blobs.)</td></tr>
+<tr><td>"I ran the command, nothing happened"</td><td>Check the blue path in their prompt — they may be in a different directory. Most challenges accept short or full paths, but the file must exist from where they stand. <code>cd ~</code> returns home.</td></tr>
+<tr><td>"It says command not found"</td><td>If it's a real command we don't simulate (<code>top</code>, <code>nano</code>), the game says so explicitly. Genuine typos say "command not found".</td></tr>
+<tr><td>"I don't know which command to use"</td><td>Intended from Act II on. Point them at the free hint first, then the Reference tab. The costed hint is the safety net, not a failure.</td></tr>
+<tr><td>"The act is locked"</td><td>Each act opens after solving all but one of the previous act's challenges.</td></tr>
+<tr><td>"Nothing printed"</td><td>Correct for <code>cd</code> and redirects. The game prints "(no output — in a shell, silence usually means success)".</td></tr>
+<tr><td>Lost all progress</td><td>Progress is tied to the browser token. Same browser = resumes automatically. Different machine = new handle needed.</td></tr>
+</table>
+
+<h2>Act structure &amp; unlocking</h2>
+<table><tr><th>Act</th><th>Teaches</th><th>Challenges</th><th>Points</th><th>Unlock</th></tr><tr><td><strong>Act I: Navigation &amp; Inspection</strong></td><td>CMD directory traversal, DIR switches, TYPE, and TREE</td><td>10</td><td>145</td><td>Always open</td></tr><tr><td><strong>Act II: File Management &amp; Batch</strong></td><td>COPY, MOVE, REN, DEL, ATTRIB, and %ENVIRONMENT% variables</td><td>10</td><td>200</td><td>Solve 8 of 10 in the prior act</td></tr><tr><td><strong>Act III: Filtering &amp; Diagnostics</strong></td><td>FINDSTR, FIND, pipelines, TASKLIST, IPCONFIG, and CERTUTIL</td><td>7</td><td>190</td><td>Solve 8 of 10 in the prior act</td></tr></table>
+<p style="font-size:9pt;color:#555">Students may skip <strong>one</strong> challenge per act and still advance.</p><div class="act"><h2>Act I: Navigation &amp; Inspection</h2><p class="sub">CMD directory traversal, DIR switches, TYPE, and TREE</p><div class="ch"><h3><span class="pts">10 pts · w1-cd-pwd · OK</span>Where Am I? (CD)</h3>
+      <div><strong>Task:</strong> In Windows CMD, running <code>cd</code> with no arguments prints the current directory. Run <code>cd</code> to see where you stand.</div>
+      <div class="ans"><strong>Answer:</strong> <code>cd</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> Type <code>cd</code> and press Enter.</div><div class="hint"><strong>Also accepted:</strong> <code>chdir</code></div></div><div class="ch"><h3><span class="pts">10 pts · w1-dir · OK</span>Directory Listing (DIR)</h3>
+      <div><strong>Task:</strong> Use <code>dir</code> to list files and subdirectories in the current folder.</div>
+      <div class="ans"><strong>Answer:</strong> <code>dir</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> Type <code>dir</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>dir .</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-dir-a · OK</span>Show All Files (DIR /A)</h3>
+      <div><strong>Task:</strong> Windows hides a file with an attribute letter (H for Hidden) rather than a leading dot. Make <code>dir</code> show every file, hidden ones included.</div>
+      <div class="ans"><strong>Answer:</strong> <code>dir /a</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>dir</code> takes switches that start with a forward slash. The one for attributes is <code>/a</code>.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>dir /a</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>dir /a:h</code>, <code>dir /ah</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-dir-b · OK</span>Bare Listing (DIR /B)</h3>
+      <div><strong>Task:</strong> Produce a clean listing of this folder: names only, with no header, no sizes and no summary line. Use <code>dir</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>dir /b</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The <code>dir</code> switch for a bare listing is <code>/b</code>.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>dir /b</code>.</div></div><div class="ch"><h3><span class="pts">20 pts · w1-dir-s · OK</span>Recursive Search (DIR /S)</h3>
+      <div><strong>Task:</strong> Search the <code>Documents</code> folder AND every folder inside it in one go. Use <code>dir</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>dir /s Documents</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The <code>dir</code> switch that recurses into subfolders is <code>/s</code>.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>dir /s Documents</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>dir /s</code>, <code>dir /s .</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-cd-nav · OK</span>Enter Documents (CD)</h3>
+      <div><strong>Task:</strong> Use <code>cd Documents</code> to move into the Documents directory.</div>
+      <div class="ans"><strong>Answer:</strong> <code>cd Documents</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: cwdIs</div><div class="hint"><strong>Hint 1 (free):</strong> Type <code>cd Documents</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>cd .\Documents</code>, <code>cd C:\Users\Student\Documents</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-cd-parent · OK</span>Climb to Parent (CD ..)</h3>
+      <div><strong>Task:</strong> Use <code>cd ..</code> from <code>Documents</code> to move back up to <code>C:\Users\Student</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>cd ..</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: cwdIs</div><div class="hint"><strong>Hint 1 (free):</strong> Type <code>cd ..</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>cd C:\Users\Student</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-type · OK</span>Display File Content (TYPE)</h3>
+      <div><strong>Task:</strong> Print the contents of <code>Documents\notes.txt</code> to the prompt. Windows has no <code>cat</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>type Documents\notes.txt</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command that prints a file is <code>type</code>.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>type Documents\notes.txt</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>type Documents/notes.txt</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-tree · OK</span>Directory Tree (TREE)</h3>
+      <div><strong>Task:</strong> Display this directory and everything under it as a visual hierarchy rather than a flat list.</div>
+      <div class="ans"><strong>Answer:</strong> <code>tree</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The command is <code>tree</code>. Adding <code>/f</code> also lists the files.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>tree</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>tree /f</code></div></div><div class="ch"><h3><span class="pts">15 pts · w1-where · OK</span>Locate Binaries (WHERE)</h3>
+      <div><strong>Task:</strong> Find out where on disk the Windows command interpreter itself lives — the file <code>cmd</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>where cmd</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>where</code> searches the PATH for a named program, the way <code>which</code> does on Linux.</div><div class="hint"><strong>Hint 2 (−5 XP):</strong> Run <code>where cmd</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>where cmd.exe</code></div></div></div><div class="act"><h2>Act II: File Management &amp; Batch</h2><p class="sub">COPY, MOVE, REN, DEL, ATTRIB, and %ENVIRONMENT% variables</p><div class="ch"><h3><span class="pts">20 pts · w2-copy · OK</span>Copy Files (COPY)</h3>
+      <div><strong>Task:</strong> Make a duplicate of <code>Documents\notes.txt</code> called <code>Documents\notes_backup.txt</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>copy Documents\notes.txt Documents\notes_backup.txt</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: fileExists</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>copy</code>. It takes the source path first, then the destination.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>copy Documents\notes.txt Documents\notes_backup.txt</code>.</div></div><div class="ch"><h3><span class="pts">20 pts · w2-move · OK</span>Move Files (MOVE)</h3>
+      <div><strong>Task:</strong> Move <code>Desktop\todo.txt</code> into the <code>Documents</code> folder, keeping the same filename.</div>
+      <div class="ans"><strong>Answer:</strong> <code>move Desktop\todo.txt Documents\todo.txt</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: fileExists</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>move</code>. Source first, destination second.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>move Desktop\todo.txt Documents\todo.txt</code>.</div></div><div class="ch"><h3><span class="pts">20 pts · w2-ren · OK</span>Rename Files (REN)</h3>
+      <div><strong>Task:</strong> Rename <code>Desktop\Shortcut.lnk</code> to <code>AppShortcut.lnk</code>. It must stay on the Desktop.</div>
+      <div class="ans"><strong>Answer:</strong> <code>ren Desktop\Shortcut.lnk AppShortcut.lnk</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: fileExists</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>ren</code>. Give it the existing path, then the NEW NAME only — not a second full path.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>ren Desktop\Shortcut.lnk AppShortcut.lnk</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>rename Desktop\Shortcut.lnk AppShortcut.lnk</code></div></div><div class="ch"><h3><span class="pts">20 pts · w2-del · OK</span>Delete Files (DEL)</h3>
+      <div><strong>Task:</strong> Delete the file <code>Downloads\archive.zip</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>del Downloads\archive.zip</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>del</code>. There is no Recycle Bin from the command prompt.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>del Downloads\archive.zip</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>erase Downloads\archive.zip</code></div></div><div class="ch"><h3><span class="pts">20 pts · w2-md · OK</span>Create Directories (MD / MKDIR)</h3>
+      <div><strong>Task:</strong> Create a new folder called <code>Projects</code> inside <code>C:\Users\Student</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>md Projects</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: dirExists</div><div class="hint"><strong>Hint 1 (free):</strong> cmd.exe accepts either <code>md</code> or the longer <code>mkdir</code>.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>md Projects</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>mkdir Projects</code></div></div><div class="ch"><h3><span class="pts">20 pts · w2-rd · OK</span>Remove Directories (RD / RMDIR)</h3>
+      <div><strong>Task:</strong> Remove the <code>Projects</code> folder you just created.</div>
+      <div class="ans"><strong>Answer:</strong> <code>rd Projects</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> cmd.exe accepts either <code>rd</code> or the longer <code>rmdir</code>. The folder must be empty.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>rd Projects</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>rmdir Projects</code></div></div><div class="ch"><h3><span class="pts">25 pts · w2-attrib · OK</span>Inspect File Attributes (ATTRIB)</h3>
+      <div><strong>Task:</strong> <code>Documents\hidden_config.ini</code> does not appear in a plain <code>dir</code>. Show which attributes are set on it.</div>
+      <div class="ans"><strong>Answer:</strong> <code>attrib Documents\hidden_config.ini</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>attrib</code> reports a file's attribute letters. H is Hidden, R is Read-only, S is System.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>attrib Documents\hidden_config.ini</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>attrib Documents/hidden_config.ini</code></div></div><div class="ch"><h3><span class="pts">20 pts · w2-env-var · OK</span>Environment Variables (%VAR%)</h3>
+      <div><strong>Task:</strong> cmd.exe wraps an environment variable in percent signs, like <code>%NAME%</code>. Print the value of your <code>USERPROFILE</code> variable.</div>
+      <div class="ans"><strong>Answer:</strong> <code>echo %USERPROFILE%</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>echo</code> prints text, and the shell substitutes the variable before <code>echo</code> sees it.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>echo %USERPROFILE%</code>.</div></div><div class="ch"><h3><span class="pts">25 pts · w2-set · OK</span>Setting Variables (SET)</h3>
+      <div><strong>Task:</strong> Create a new environment variable called <code>MY_VAR</code> and give it the value <code>123</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>set MY_VAR=123</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>set</code>. Write the assignment with no spaces around the equals sign.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>set MY_VAR=123</code>.</div></div><div class="ch"><h3><span class="pts">10 pts · w2-cls · OK</span>Clear the Console (CLS)</h3>
+      <div><strong>Task:</strong> The screen is cluttered. Clear it.</div>
+      <div class="ans"><strong>Answer:</strong> <code>cls</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>cls</code>, short for clear screen.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>cls</code>.</div></div></div><div class="act"><h2>Act III: Filtering &amp; Diagnostics</h2><p class="sub">FINDSTR, FIND, pipelines, TASKLIST, IPCONFIG, and CERTUTIL</p><div class="ch"><h3><span class="pts">25 pts · w3-findstr · OK</span>Pattern Search (FINDSTR)</h3>
+      <div><strong>Task:</strong> Show every line in <code>logs\eventlog.txt</code> that contains the phrase <code>EVENT ID</code>. Windows has no <code>grep</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>findstr "EVENT ID" logs\eventlog.txt</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe search command is <code>findstr</code>. Quote the phrase, because it contains a space.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>findstr "EVENT ID" logs\eventlog.txt</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>findstr 'EVENT ID' logs\eventlog.txt</code></div></div><div class="ch"><h3><span class="pts">25 pts · w3-findstr-i · OK</span>Case-Insensitive FINDSTR (/I)</h3>
+      <div><strong>Task:</strong> Find every mention of <code>defender</code> in <code>logs\eventlog.txt</code>, no matter how it is capitalised.</div>
+      <div class="ans"><strong>Answer:</strong> <code>findstr /i "defender" logs\eventlog.txt</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>findstr</code> switches start with a forward slash. The one that ignores case is <code>/i</code>.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>findstr /i "defender" logs\eventlog.txt</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>findstr /i "defender" logs\eventlog.txt</code></div></div><div class="ch"><h3><span class="pts">30 pts · w3-find-count · OK</span>Count Lines (FIND /C /V "")</h3>
+      <div><strong>Task:</strong> Count how many lines <code>logs\firewall.log</code> contains. cmd.exe has no <code>wc</code>, so the standard trick is to print the file and pipe it into a counter that counts every line NOT matching an empty pattern.</div>
+      <div class="ans"><strong>Answer:</strong> <code>type logs\firewall.log | find /c /v ""</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>type</code> prints the file, <code>|</code> pipes it onward, and <code>find</code> counts with <code>/c</code>. Add <code>/v ""</code> so it counts the lines that do not match nothing — that is, all of them.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>type logs\firewall.log | find /c /v ""</code>.</div><div class="note">Instructor note: The find /c /v "" idiom is genuinely unguessable — expect most of the class to buy the hint.</div></div><div class="ch"><h3><span class="pts">25 pts · w3-tasklist · OK</span>Process List (TASKLIST)</h3>
+      <div><strong>Task:</strong> Show every process running on this machine, with its memory use.</div>
+      <div class="ans"><strong>Answer:</strong> <code>tasklist</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe equivalent of Task Manager is a single command: <code>tasklist</code>.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>tasklist</code>.</div></div><div class="ch"><h3><span class="pts">25 pts · w3-ipconfig · OK</span>Network Configuration (IPCONFIG)</h3>
+      <div><strong>Task:</strong> Show this machine's IP address and network adapter configuration.</div>
+      <div class="ans"><strong>Answer:</strong> <code>ipconfig</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> The cmd.exe command is <code>ipconfig</code>. Adding <code>/all</code> shows much more detail.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>ipconfig</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>ipconfig /all</code></div></div><div class="ch"><h3><span class="pts">25 pts · w3-systeminfo · OK</span>System Information (SYSTEMINFO)</h3>
+      <div><strong>Task:</strong> Display the operating system build, installed memory and hardware summary for this machine.</div>
+      <div class="ans"><strong>Answer:</strong> <code>systeminfo</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> One command reports the whole system summary: <code>systeminfo</code>.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>systeminfo</code>.</div></div><div class="ch"><h3><span class="pts">35 pts · w3-certutil · OK</span>Cryptographic Hash (CERTUTIL)</h3>
+      <div><strong>Task:</strong> Compute the MD5 checksum of <code>Documents\data.csv</code> for a chain-of-custody record. Windows has no <code>md5sum</code>; the built-in tool is <code>certutil</code>.</div>
+      <div class="ans"><strong>Answer:</strong> <code>certutil -hashfile Documents\data.csv MD5</code></div>
+      <div style="font-size:9pt;color:#555"><strong>Completion:</strong> Auto-completes on: commandMatches</div><div class="hint"><strong>Hint 1 (free):</strong> <code>certutil</code> needs the <code>-hashfile</code> switch, then the file path, then the algorithm name in capitals.</div><div class="hint"><strong>Hint 2 (−10 XP):</strong> Run <code>certutil -hashfile Documents\data.csv MD5</code>.</div><div class="hint"><strong>Also accepted:</strong> <code>certutil -hashfile Documents/data.csv MD5</code></div></div></div><h2>Accepted command variants</h2>
+<p style="font-size:9pt">Auto-completing challenges accept the natural variations a beginner types, so a correct command is never silently ignored:</p>
+<ul style="font-size:9pt">
+<li>Optional quotes around a path</li>
+<li>Path prefixes: <code>./Documents</code>, <code>~/Documents</code>, or the full absolute path</li>
+<li>Short paths when already inside the folder</li>
+<li>Flag spacing: <code>head -n 5</code>, <code>head -n5</code>, <code>head -5</code></li>
+<li>Windows: forward or back slashes, any capitalization (<code>md5</code> or <code>MD5</code>)</li>
+<li>Trailing spaces are ignored everywhere</li>
+</ul>
+
+<h2>Teaching notes</h2>
+<ul style="font-size:9.5pt">
+<li><strong>The Coach</strong> (toggle in the terminal title bar) explains every command and error in plain language. Explanations fade after the second use of a command. Leave it ON for beginners.</li>
+<li><strong>Reference tab</strong> holds a manual page for every command, and tells students the real-shell equivalent. Point stuck students there before they buy a hint.</li>
+<li><strong>Unsimulated tools</strong> reply with what they are, rather than a bare "command not found".</li>
+<li><strong>Hints:</strong> the first is free and conceptual; the one that gives the exact command costs XP. Hint use is visible in the instructor dashboard as a signal of where the class is struggling.</li>
+<li><strong>Watch the stuck points.</strong> The dashboard flags any challenge with a solve rate under 35%. Now that briefs no longer contain the answer, that number means something: it marks a concept the class did not get, not a typing error.</li>
+</ul>
+
+<footer>Windows CMD Essentials · pack <code>windows-cmd-essentials</code> v1.0.0 · Generated from live pack data — regenerate with <code>node scripts/build-instructor-guide.mjs windows-cmd-essentials</code></footer>
+</body></html>
