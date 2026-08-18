@@ -76,15 +76,56 @@ export async function getSolves(handle) {
   return (await store().get(solvesKey(handle), { type: 'json' })) || {};
 }
 
-export async function addSolve(handle, challengeId, points, hintPenalty) {
+/**
+ * Records one solve. Takes the whole record, because the caller already knows
+ * the hint penalty and the earned total.
+ *
+ * This used to take (handle, challengeId, points, hintPenalty) positionally
+ * while submit-flag.js passed an object as the third argument. The payload
+ * therefore landed nested under `.points`, and every reader computed
+ * `object - 0`, so every score and every leaderboard rank read NaN. Records
+ * written in that period are still in the store; normalizeSolve reads them.
+ */
+export async function addSolve(handle, challengeId, record = {}) {
   const s = store();
   const solves = (await s.get(solvesKey(handle), { type: 'json' })) || {};
   if (solves[challengeId]) {
     return { alreadySolved: true, solves };
   }
-  solves[challengeId] = { points, hintPenalty, solvedAt: new Date().toISOString() };
+  const points = Number(record.points) || 0;
+  const hintPenalty = Number(record.hintPenalty) || 0;
+  solves[challengeId] = {
+    points,
+    hintPenalty,
+    earnedPoints: Number.isFinite(Number(record.earnedPoints))
+      ? Number(record.earnedPoints)
+      : Math.max(0, points - hintPenalty),
+    solvedAt: record.solvedAt || new Date().toISOString()
+  };
   await s.setJSON(solvesKey(handle), solves);
   return { alreadySolved: false, solves };
+}
+
+/**
+ * Reads a stored solve in either shape and returns flat, finite numbers.
+ * Every consumer of a solve record must go through this: reading `.points`
+ * directly is what produced NaN scores, and the malformed records survive in
+ * the live store until they are re-earned.
+ */
+export function normalizeSolve(record) {
+  const nested = record && typeof record.points === 'object' && record.points !== null;
+  const r = nested
+    ? { ...record.points, solvedAt: record.solvedAt || record.points.solvedAt }
+    : (record || {});
+  const points = Number(r.points) || 0;
+  const hintPenalty = Number(r.hintPenalty) || 0;
+  const earned = Number(r.earnedPoints);
+  return {
+    points,
+    hintPenalty,
+    netPoints: Math.max(0, Number.isFinite(earned) ? earned : points - hintPenalty),
+    solvedAt: r.solvedAt
+  };
 }
 
 export async function listPlayers() {

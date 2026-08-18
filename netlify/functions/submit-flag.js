@@ -7,6 +7,7 @@ import { evaluatePredicate } from '../../packages/engine/validate/predicates.js'
 import { ERROR_MARKERS } from '../../packages/engine/constants.js';
 import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 import { getPlayer, getSolves, addSolve } from './utils/store.js';
+import { isAdminHandle } from './utils/admin.js';
 
 function isActUnlocked(actId, acts, challenges, solvedIdSet) {
   const act = acts.find(a => a.id === actId);
@@ -172,7 +173,12 @@ export default async (req) => {
     const existingSolves = await getSolves(handle);
     const solvedSet = new Set(Object.keys(existingSolves));
 
-    if (!isActUnlocked(challenge.act, pack.manifest.acts, pack.challenges, solvedSet)) {
+    // An instructor works the material in whatever order they like: they are
+    // building a lesson, not being paced by one. Students keep the gate.
+    // Without this the sidebar would let an instructor OPEN a later act and
+    // then reject the solve with a 403.
+    if (!isAdminHandle(handle)
+        && !isActUnlocked(challenge.act, pack.manifest.acts, pack.challenges, solvedSet)) {
       return json(403, {
         error: 'ACT LOCKED — solve previous act challenges first.'
       });
