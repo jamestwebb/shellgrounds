@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // API client for The Gauntlet backend services
 
-const API_BASE = '/api';
+// Same-origin '/api' in production. In local dev VITE_API_BASE can point
+// straight at scripts/dev-functions.mjs, which avoids Vite's proxy — on this
+// machine that proxy accepts the connection and then never answers.
+const API_BASE = import.meta.env?.VITE_API_BASE || '/api';
 
 // A proxy/timeout error page is HTML, not JSON. Never surface a raw parse
 // error ("Unexpected token '<'") to a student as if their answer were wrong.
