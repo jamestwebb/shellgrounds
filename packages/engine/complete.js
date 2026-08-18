@@ -55,7 +55,17 @@ export function getTabCompletions(input, cwd, fs, isWindows = false, context = {
         ? `${dirKey}\\${entry}`
         : (dirKey === '/' ? `/${entry}` : `${dirKey}/${entry}`);
       const isDir = fs[childKey]?.type === 'dir';
-      return isDir ? `${entry}${sep}` : entry;
+
+      if (isWindows) {
+        // cmd.exe completes to the bare name — no trailing separator and no
+        // trailing space — and wraps anything containing a space in quotes,
+        // because `cd Program Files` would otherwise parse as two arguments.
+        return entry.includes(' ') ? `"${entry}"` : entry;
+      }
+      // bash/readline: a directory gets a trailing '/' so you can keep typing;
+      // a completed FILE gets a trailing space, which is how the shell tells
+      // you the completion was unique and finished.
+      return isDir ? `${entry}/` : `${entry} `;
     })
     .sort();
 
