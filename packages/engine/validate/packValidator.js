@@ -266,8 +266,11 @@ export async function validatePack(packObj, options = {}) {
   }
 
   // ── CHECK 5: commands quoted in briefs and hints must actually run ──────────
+  // getAll() defaults to linux. Asking for one platform silently skipped every
+  // Windows command quoted in a brief, so those snippets were never executed.
   const knownCommands = new Set([
-    ...registry.getAll().map(c => c.name),
+    ...registry.getAll('linux').map(c => c.name),
+    ...registry.getAll('windows').map(c => c.name),
     ...Object.keys(commands || {})
   ]);
   for (const c of challenges) {

@@ -121,7 +121,7 @@
     "act": 1,
     "title": "Sideways Move",
     "points": 15,
-    "brief": "Now reach `training/level_2` \u2014 a SIBLING of level_1, not a child. If you are inside level_1, you must go up before you can go over. Read `checkpoint_beta.txt` and submit the flag.",
+    "brief": "Now reach `training/level_2` — a SIBLING of level_1, not a child. If you are inside level_1, you must go up before you can go over. Read `checkpoint_beta.txt` and submit the flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -132,11 +132,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `cd ..` then `cd level_2` or from home `cd training/level_2`."
+        "text": "A sibling directory is reached by going UP first, then over. From your home directory the whole trip is one command: `cd training/level_2`."
       },
       {
         "cost": 5,
-        "text": "Run `cat checkpoint_beta.txt` and submit the flag."
+        "text": "Once you are inside, run `cat checkpoint_beta.txt` and submit the flag."
       }
     ],
     "successMessage": "`..` represents the parent directory. `cd ..` moves you up one level toward the root.",
@@ -182,14 +182,14 @@
     "commandCheckExemptSnippets": [
       "cd Doc"
     ],
-    "commandCheckExemptReason": "Intentionally incomplete prefix \u2014 the challenge is to press Tab to complete it."
+    "commandCheckExemptReason": "Intentionally incomplete prefix — the challenge is to press Tab to complete it."
   },
   {
     "id": "act1-history",
     "act": 1,
     "title": "Recall the Past (History)",
     "points": 10,
-    "brief": "Your recent commands are saved. Press the Up Arrow key to bring back a command you ran earlier \u2014 like `pwd` \u2014 then press Enter.",
+    "brief": "Your recent commands are saved. Press the Up Arrow key to bring back a command you ran earlier — like `pwd` — then press Enter.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -217,7 +217,7 @@
     "act": 2,
     "title": "Read the Case File",
     "points": 15,
-    "brief": "Every investigation starts by opening the case file. Use `cat` to display `Documents/case_notes.txt` on screen.",
+    "brief": "Every investigation starts by opening the case file. Display `Documents/case_notes.txt` on screen using `cat`.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -228,7 +228,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Type `cat Documents/case_notes.txt`."
+        "text": "`cat` takes the path to the file you want printed."
+      },
+      {
+        "cost": 5,
+        "text": "Run `cat Documents/case_notes.txt`."
       }
     ],
     "successMessage": "`cat` concatenates and prints entire file contents. Great for dossiers, configurations, and small text files.",
@@ -246,7 +250,7 @@
     "act": 2,
     "title": "The Earliest Anomaly",
     "points": 15,
-    "brief": "`Documents/access.log` contains extensive records. Use `head -n 5 Documents/access.log` to view only the first 5 log entries.",
+    "brief": "`Documents/access.log` holds a long record. Show only its first 5 entries using `head`.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -257,7 +261,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `head -n 5 Documents/access.log`"
+        "text": "`head` prints the top of a file. One flag sets how many lines."
+      },
+      {
+        "cost": 5,
+        "text": "Run `head -n 5 Documents/access.log`."
       }
     ],
     "successMessage": "`head` outputs the start of a file (default 10 lines). `-n 5` restricts it to the first 5 records.",
@@ -276,7 +284,7 @@
     "act": 2,
     "title": "The Sensor Freeze",
     "points": 20,
-    "brief": "The critical incident occurred right before sensors went dark. Use `tail` on `Documents/access.log` to read the final log entries and submit the flag.",
+    "brief": "The incident happened right before the sensors went dark, so the evidence is at the END of `Documents/access.log`. Read the final entries and submit the flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -287,11 +295,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `tail -n 10 Documents/access.log` or `tail Documents/access.log`."
+        "text": "`tail` prints the bottom of a file, the opposite end from `head`."
       },
       {
         "cost": 5,
-        "text": "Find the flag on the final line and submit it."
+        "text": "Run `tail Documents/access.log`, then submit the flag on the last line."
       }
     ],
     "successMessage": "`tail` displays the final lines of a file. In live forensics, `tail -f` streams incoming logs in real-time.",
@@ -305,7 +313,7 @@
     "act": 2,
     "title": "Don't Trust Extensions",
     "points": 20,
-    "brief": "Never trust a filename \u2014 analysts identify files by their contents. Use `file evidence/mystery_file` to reveal its true format.",
+    "brief": "Never trust a filename — an analyst identifies a file by its contents. Determine the true format of `evidence/mystery_file`.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -316,7 +324,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `file evidence/mystery_file`"
+        "text": "One command reads a file's magic bytes and reports what it really is."
+      },
+      {
+        "cost": 5,
+        "text": "Run `file evidence/mystery_file`."
       }
     ],
     "successMessage": "The `file` command examines file signatures (magic bytes). Never assume a file is safe or text based on its extension!",
@@ -335,7 +347,7 @@
     "act": 2,
     "title": "Carving Binary Artifacts",
     "points": 25,
-    "brief": "`evidence/binary_data` is an executable containing compiled instructions. Use `strings evidence/binary_data` to extract embedded readable text and submit the discovered flag.",
+    "brief": "`evidence/binary_data` is a compiled executable, so `cat` gives you garbage. Pull the readable text out of it and submit the flag hidden inside.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -346,11 +358,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `strings evidence/binary_data`"
+        "text": "One command extracts printable character sequences from a binary."
       },
       {
         "cost": 5,
-        "text": "Look for the hidden recovery token in the output and submit it."
+        "text": "Run `strings evidence/binary_data`, then submit the recovery token in the output."
       }
     ],
     "successMessage": "`strings` extracts 4+ character ASCII/printable strings from binaries, memory dumps, and corrupt files. It is standard for malware triage.",
@@ -364,7 +376,7 @@
     "act": 2,
     "title": "Integrity Checksum (MD5)",
     "points": 25,
-    "brief": "Digital evidence must be hashed to prove it was not altered. Run `md5sum evidence/evidence.img` to compute its hash, then read the image header with `cat evidence/evidence.img` to find and submit the flag.",
+    "brief": "Digital evidence must be hashed to prove nobody altered it. Compute the MD5 hash of `evidence/evidence.img`, then read the image header to find and submit the acquisition flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -375,11 +387,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `md5sum evidence/evidence.img` to compute the hash."
+        "text": "One command computes an MD5 digest. Reading the header afterwards is a plain `cat`."
       },
       {
         "cost": 5,
-        "text": "Run `cat evidence/evidence.img` to find and submit the acquisition flag."
+        "text": "Run `md5sum evidence/evidence.img`, then `cat evidence/evidence.img`."
       }
     ],
     "successMessage": "Always hash evidence upon acquisition and before/after examination to prove the forensic image was not altered.",
@@ -393,7 +405,7 @@
     "act": 3,
     "title": "Secrets in Plain Sight",
     "points": 25,
-    "brief": "Search `Documents/secrets.txt` for the line containing `vault_passcode` using `grep`, then submit the flag.",
+    "brief": "`Documents/secrets.txt` is long, and only one line matters. Find the line containing `vault_passcode` and submit the flag on it.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -404,11 +416,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `grep vault_passcode Documents/secrets.txt`"
+        "text": "`grep` searches a file for a pattern. Give it the pattern first, then the file."
       },
       {
         "cost": 5,
-        "text": "Submit the resulting flag."
+        "text": "Run `grep vault_passcode Documents/secrets.txt`."
       }
     ],
     "successMessage": "`grep` searches files for matching text strings. It is one of the most powerful utilities in the Unix ecosystem.",
@@ -421,7 +433,7 @@
     "act": 3,
     "title": "Case-Insensitive Searching",
     "points": 30,
-    "brief": "`Documents/logs.txt` logs errors inconsistently as 'error', 'ERROR', and 'Error'. Use `grep -i \"error\" Documents/logs.txt` to see every error line, then submit the flag you find.",
+    "brief": "`Documents/logs.txt` records errors inconsistently as 'error', 'ERROR' and 'Error'. Find every error line with a single search, then submit the flag one of them carries.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -432,11 +444,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Use the `-i` flag: `grep -i \"error\" Documents/logs.txt`"
+        "text": "One short `grep` flag makes the match ignore letter case."
       },
       {
-        "cost": 5,
-        "text": "One of the matching ERROR lines ends with a FLAG{...}. Submit it."
+        "cost": 10,
+        "text": "Run `grep -i \"error\" Documents/logs.txt`."
       }
     ],
     "successMessage": "`grep -i` ignores case distinctions, making it essential when analyzing unstructured application logs.",
@@ -449,7 +461,7 @@
     "act": 3,
     "title": "Needle in /var/log",
     "points": 30,
-    "brief": "Locate all log files in `/var/log` using `find /var/log -name \"*.log\"`. Read the sensor audit log and submit the keycode flag.",
+    "brief": "Log files are scattered somewhere under `/var/log`. List every file there whose name ends in `.log`, then read the sensor audit log and submit the keycode flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -460,11 +472,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `find /var/log -name \"*.log\"` to see every log."
+        "text": "`find` walks a directory tree, and it can filter on the filename. Quote the wildcard pattern."
       },
       {
         "cost": 10,
-        "text": "Run `cat /var/log/sensor_audit.log` and submit the keycode flag."
+        "text": "Run `find /var/log -name \"*.log\"`, then `cat /var/log/sensor_audit.log`."
       }
     ],
     "successMessage": "`find` traverses entire directory hierarchies searching by filename patterns, file types, timestamps, and sizes.",
@@ -478,7 +490,7 @@
     "act": 3,
     "title": "The WSL Bridge",
     "points": 40,
-    "brief": "This machine has a Windows side mounted at `/mnt/c`. Read `/mnt/c/Users/analyst/Desktop/CASE_FILES/intake.txt` and submit the flag.",
+    "brief": "This machine has a Windows side mounted at `/mnt/c`. Read the intake sheet at `/mnt/c/Users/analyst/Desktop/CASE_FILES/intake.txt` and submit the flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -489,7 +501,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "WSL mounts Windows drives under `/mnt/c`."
+        "text": "WSL mounts each Windows drive under `/mnt`, so drive C: appears as `/mnt/c`."
       },
       {
         "cost": 10,
@@ -507,7 +519,7 @@
     "act": 3,
     "title": "The Bridge, Unassisted",
     "points": 45,
-    "brief": "A second dossier sits on the Windows side at `C:\\Users\\analyst\\Documents\\surface_notes.txt`. Reach it from this Linux shell and submit the flag inside.",
+    "brief": "A second dossier sits on the Windows side at `C:\\Users\\analyst\\Documents\\surface_notes.txt`. Reach it from this Linux shell and submit the flag inside. Nobody will translate the path for you.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -518,7 +530,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Translate the Windows path: `C:\\` becomes `/mnt/c/` and backslashes become forward slashes."
+        "text": "Translate the Windows path yourself: `C:\\` becomes `/mnt/c/`, and every backslash becomes a forward slash."
       },
       {
         "cost": 15,
@@ -536,7 +548,7 @@
     "act": 3,
     "title": "Consult the Manual",
     "points": 30,
-    "brief": "Use `man tracker` to inspect the on-line manual page for the tracker sensor suite, uncover the secret manual override code, and submit it.",
+    "brief": "The `tracker` sensor suite has an undocumented manual override code, but it is written in the tool's own manual page. Read the manual, find the code, and submit it.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -546,11 +558,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `man tracker` in the terminal."
+        "text": "Every serious Linux tool ships a manual page. One command opens it."
       },
       {
         "cost": 10,
-        "text": "Read the DESCRIPTION section carefully for the override code."
+        "text": "Run `man tracker` and read the DESCRIPTION section."
       }
     ],
     "successMessage": "`man` renders standard UNIX manual documentation.",
@@ -563,7 +575,7 @@
     "act": 3,
     "title": "Deploy the Sensor Suite (apt-get)",
     "points": 35,
-    "brief": "Install the tracker tool: `sudo apt-get update && sudo apt-get install tracker -y`, then execute `tracker -a` to run a sensor sweep and submit the flag.",
+    "brief": "The `tracker` tool is not installed on this machine. Install it from the package repository, then run a sensor sweep with it and submit the flag.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -574,11 +586,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `sudo apt-get update && sudo apt-get install tracker -y`"
+        "text": "Refresh the package lists first, then install. Both steps need administrator rights. The sweep flag for `tracker` is `-a`."
       },
       {
         "cost": 10,
-        "text": "Once installed, run `tracker -a` and submit the flag."
+        "text": "Run `sudo apt-get update && sudo apt-get install tracker -y`, then `tracker -a`."
       }
     ],
     "successMessage": "`apt-get` is Debian/Ubuntu's package management suite.",
@@ -593,7 +605,7 @@
     "act": 4,
     "title": "Filter the Noise (Inverted Grep)",
     "points": 40,
-    "brief": "`Documents/network_stream.log` is filled with normal `ALLOW` traffic. Use `grep -v \"ALLOW\" Documents/network_stream.log` to filter out benign packets and submit the flag.",
+    "brief": "`Documents/network_stream.log` is almost entirely normal `ALLOW` traffic. Show only the packets that are NOT allowed, and submit the flag on the CRITICAL_DATA_LEAK entry.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -604,11 +616,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `grep -v \"ALLOW\" Documents/network_stream.log`"
+        "text": "`grep` normally keeps the matching lines. One flag inverts that and keeps everything else."
       },
       {
         "cost": 10,
-        "text": "Find the CRITICAL_DATA_LEAK entry and submit the flag."
+        "text": "Run `grep -v \"ALLOW\" Documents/network_stream.log`."
       }
     ],
     "successMessage": "`grep -v` inverts matches, displaying all lines that do NOT match the pattern.",
@@ -622,7 +634,7 @@
     "act": 4,
     "title": "First Pipeline (grep | wc -l)",
     "points": 45,
-    "brief": "Pipe non-allowed network packets into `wc -l` to count anomalies: `grep -v \"ALLOW\" Documents/network_stream.log | wc -l`.",
+    "brief": "You now know how to isolate the non-`ALLOW` packets in `Documents/network_stream.log`. This time do not read them — count them, in a single line, without writing anything to a file.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -633,7 +645,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Type: `grep -v \"ALLOW\" Documents/network_stream.log | wc -l`"
+        "text": "The `|` operator feeds one command's output straight into the next. `wc -l` counts lines."
+      },
+      {
+        "cost": 10,
+        "text": "Run `grep -v \"ALLOW\" Documents/network_stream.log | wc -l`."
       }
     ],
     "successMessage": "The pipe `|` sends the output of `grep` into the input of `wc -l`. You constructed your first pipeline!",
@@ -651,7 +667,7 @@
     "act": 4,
     "title": "Extracting Fields (cut & grep)",
     "points": 45,
-    "brief": "Pipe `grep \"FLAG_EMIT\" Documents/security_events.csv | cut -d, -f6` to extract the flag column and submit the token.",
+    "brief": "`Documents/security_events.csv` is comma separated. The rows tagged `FLAG_EMIT` carry a token in column 6. Isolate those rows, extract just that column, and submit the token.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -662,11 +678,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `grep \"FLAG_EMIT\" Documents/security_events.csv | cut -d, -f6`."
+        "text": "Two commands joined by a pipe: `grep` selects the rows, `cut` selects the column. `cut` needs the delimiter and the field number."
       },
       {
         "cost": 10,
-        "text": "Submit the extracted flag."
+        "text": "Run `grep \"FLAG_EMIT\" Documents/security_events.csv | cut -d, -f6`."
       }
     ],
     "successMessage": "Combining `grep` with `cut -d, -f<N>` lets you slice columns out of structured logs without complex spreadsheets.",
@@ -681,7 +697,7 @@
     "act": 4,
     "title": "Output Redirection (>)",
     "points": 50,
-    "brief": "Extract all ERROR lines from `Documents/logs.txt` and save them into `/tmp/errors.log`: `grep -i \"error\" Documents/logs.txt > /tmp/errors.log`. Then `cat /tmp/errors.log`.",
+    "brief": "Pull every error line out of `Documents/logs.txt` and save them into a new file at `/tmp/errors.log` instead of printing them. Then read that file back to confirm it worked.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -702,11 +718,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `grep -i \"error\" Documents/logs.txt > /tmp/errors.log`"
+        "text": "`>` sends output into a file rather than the screen. Remember the flag that makes the search ignore case."
       },
       {
         "cost": 10,
-        "text": "Run the redirect command first, then `cat /tmp/errors.log`."
+        "text": "Run `grep -i \"error\" Documents/logs.txt > /tmp/errors.log`, then `cat /tmp/errors.log`."
       }
     ],
     "successMessage": "Redirection `>` writes stdout directly into the filesystem.",
@@ -724,7 +740,7 @@
     "act": 5,
     "title": "Partition Geometry Inspection",
     "points": 60,
-    "brief": "Run `scan evidence/suspect_drive.raw` to analyze the partition table and identify the starting sector offset of the Evidence Vault partition.",
+    "brief": "`evidence/suspect_drive.raw` is a raw disk image. Analyze its partition table with the `scan` tool and note the starting sector offset of the Evidence Vault partition. You will need that number next.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -735,7 +751,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `scan evidence/suspect_drive.raw`"
+        "text": "`scan` takes the path to the image."
+      },
+      {
+        "cost": 10,
+        "text": "Run `scan evidence/suspect_drive.raw` and read the Start Sector Offset it reports."
       }
     ],
     "successMessage": "The partition table identifies partition 2 (Evidence Vault) beginning at sector offset 206848.",
@@ -753,7 +773,7 @@
     "act": 5,
     "title": "Carve the Evidence (Finish Line)",
     "points": 120,
-    "brief": "Take the sector offset `206848` discovered in the partition scan and pass it to the forensic carver: `extract -o 206848 evidence/suspect_drive.raw`. Submit the decrypted Master Capstone Flag.",
+    "brief": "Carve the Evidence Vault partition out of `evidence/suspect_drive.raw` with the `extract` tool. It needs the sector offset you recovered in the partition scan — go back and read it if you did not write it down. Submit the Master Capstone Flag it decrypts.",
     "setup": {
       "cwd": "/home/analyst"
     },
@@ -764,11 +784,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `extract -o 206848 evidence/suspect_drive.raw`"
+        "text": "`extract` takes the offset with the `-o` flag, then the image path. The offset came from the `scan` output; the tool rejects a wrong one."
       },
       {
         "cost": 20,
-        "text": "Submit the master flag printed in the terminal."
+        "text": "Run `extract -o 206848 evidence/suspect_drive.raw`, then submit the master flag it prints."
       }
     ],
     "successMessage": "Congratulations, Analyst! You read partition geometry, carried an offset from one tool into another, and carved out the master evidence.",
@@ -784,7 +804,7 @@
     "platform": "windows",
     "title": "Windows Navigation (dir & cd)",
     "points": 15,
-    "brief": "In Windows CMD, `cd` alone displays your current working directory, and `dir` lists files. Run `dir` to inspect `C:\\Users\\Analyst`.",
+    "brief": "You are now on the Windows side. List the files in `C:\\Users\\Analyst` using the Windows equivalent of `ls`.",
     "setup": {
       "cwd": "C:\\Users\\Analyst"
     },
@@ -795,7 +815,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Type `dir` and press Enter."
+        "text": "In cmd.exe the listing command is `dir`. On its own, `cd` prints where you are."
+      },
+      {
+        "cost": 5,
+        "text": "Run `dir`."
       }
     ],
     "successMessage": "`dir` is the Windows equivalent of `ls`. Notice Windows paths use backslashes.",
@@ -814,7 +838,7 @@
     "platform": "windows",
     "title": "Hidden File Attributes (attrib)",
     "points": 20,
-    "brief": "Windows uses attributes rather than dotfiles for hidden files. Run `attrib evidence\\mystery_file`, then `type evidence\\mystery_file` to recover the hidden Topside flag.",
+    "brief": "Windows hides files with an attribute flag, not with a leading dot. Inspect the attributes of `evidence\\mystery_file`, then read it and recover the flag.",
     "setup": {
       "cwd": "C:\\Users\\Analyst"
     },
@@ -825,11 +849,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run `attrib evidence\\mystery_file` to view its H (Hidden) attribute."
+        "text": "`attrib` shows a file's attribute letters; H means Hidden. `type` prints a file, the way `cat` does on Linux."
       },
       {
         "cost": 5,
-        "text": "Run `type evidence\\mystery_file` and submit the flag."
+        "text": "Run `attrib evidence\\mystery_file`, then `type evidence\\mystery_file`."
       }
     ],
     "successMessage": "`attrib` displays and modifies file attributes: R=Read-only, H=Hidden, S=System, A=Archive.",
@@ -845,7 +869,7 @@
     "platform": "windows",
     "title": "Windows String Search (findstr /i)",
     "points": 25,
-    "brief": "Use `findstr /i \"marker\" Documents\\logs.txt` to search the Windows event log for the flagged event and submit the flag.",
+    "brief": "Search the Windows event log at `Documents\\logs.txt` for the flagged event containing `marker`, ignoring letter case, and submit the flag. Windows does not have `grep`.",
     "setup": {
       "cwd": "C:\\Users\\Analyst"
     },
@@ -856,11 +880,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `findstr /i \"marker\" Documents\\logs.txt`"
+        "text": "The cmd.exe search command is `findstr`. Its switches start with a forward slash, and `/i` ignores case."
       },
       {
         "cost": 5,
-        "text": "Submit the discovered flag."
+        "text": "Run `findstr /i \"marker\" Documents\\logs.txt`."
       }
     ],
     "successMessage": "`findstr /i` is the Windows CMD equivalent of `grep -i`.",
@@ -875,7 +899,7 @@
     "platform": "windows",
     "title": "CertUtil Hashing",
     "points": 20,
-    "brief": "In Windows environments, `certutil -hashfile <file> MD5` is used for forensic integrity checks. Calculate the MD5 hash of `evidence\\evidence.img`.",
+    "brief": "Compute the MD5 hash of `evidence\\evidence.img` for the chain of custody. Windows has no `md5sum`; the built-in tool for this is `certutil`.",
     "setup": {
       "cwd": "C:\\Users\\Analyst"
     },
@@ -886,7 +910,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Run: `certutil -hashfile evidence\\evidence.img MD5`"
+        "text": "`certutil` needs the `-hashfile` switch, then the file, then the algorithm name."
+      },
+      {
+        "cost": 5,
+        "text": "Run `certutil -hashfile evidence\\evidence.img MD5`."
       }
     ],
     "successMessage": "`certutil -hashfile` supports MD5, SHA1, and SHA256 without needing third-party utilities on Windows workstations.",
