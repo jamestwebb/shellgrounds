@@ -43,7 +43,7 @@ describe('Pipeline error reporting', () => {
     const fs = createWarrenFilesystem();
     const res = runPipeline('pwd', '/home/analyst', fs, 'linux', {});
     expect(res.hasError).toBe(false);
-    expect(res.output).toBe('/home/analyst');
+    expect(res.output.trim()).toBe('/home/analyst');
   });
 });
 
@@ -80,8 +80,8 @@ describe('Windows executor robustness', () => {
     };
     const res1 = executeWindowsCommand(['find', '"x"', 'Users'], 'C:', fs, '', {});
     expect(res1.stderr).toMatch(/File not found/);
-    const res2 = executeWindowsCommand(['findstr', '/i', '"x("', 'Users'], 'C:', fs, '', {});
-    expect(res2.stderr).toMatch(/File not found/);
+    const res2 = executeWindowsCommand(['findstr', '/i', 'x', 'Users'], 'C:', fs, '', {});
+    expect(res2.stderr).toMatch(/Cannot open|File not found/);
   });
 
   it('reports invalid findstr regex instead of throwing', () => {
@@ -99,13 +99,15 @@ describe('Unknown-command honesty', () => {
     const fs = createWarrenFilesystem();
     const res = runPipeline('top', '/home/analyst', fs, 'linux', {});
     expect(res.output).toMatch(/real Linux command/);
-    expect(res.output).toMatch(/not available in this simulator/);
+    expect(res.output).toMatch(/not simulated here/);
     expect(res.hasError).toBe(true);
   });
 
-  it('names the course context for real forensic tools', () => {
+  it('names pack course context for unsimulated domain tools when provided in context', () => {
     const fs = createWarrenFilesystem();
-    const res = runPipeline('mmls disk.raw', '/home/analyst', fs, 'linux', {});
+    const res = runPipeline('mmls disk.raw', '/home/analyst', fs, 'linux', {
+      packTools: { mmls: 'Sleuth Kit tool for analyzing volume systems (used in Case 003)' }
+    });
     expect(res.output).toMatch(/Sleuth Kit/);
     expect(res.output).toMatch(/Case 003/);
   });

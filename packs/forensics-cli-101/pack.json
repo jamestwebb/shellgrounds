@@ -1,0 +1,152 @@
+{
+  "id": "forensics-cli-101",
+  "name": "Forensics CLI 101",
+  "version": "1.0.0",
+  "platforms": ["linux", "windows"],
+  "linux": {
+    "home": "/home/analyst",
+    "user": "analyst",
+    "host": "warren",
+    "shell": "bash"
+  },
+  "windows": {
+    "home": "C:\\Users\\Analyst",
+    "user": "Analyst",
+    "shell": "cmd"
+  },
+  "theme": {
+    "accent": "#10b981",
+    "titleBar": "WARREN TTY1",
+    "sidebarTone": "emerald"
+  },
+  "messages": {
+    "unsimulated": "That is a real command, but not simulated in this lab. Type `help` to see what works here.",
+    "unsupportedSyntax": "That shell syntax is not simulated here."
+  },
+  "courseTools": {
+    "dd": "a raw imaging tool used for disk acquisition",
+    "hexdump": "a hex viewer used to inspect file headers",
+    "xxd": "a hex viewer used to inspect file headers",
+    "sha1sum": "a hashing tool (this simulator has md5sum and sha256sum)",
+    "openssl": "a crypto toolkit used for hashing and certificates",
+    "mmls": "a Sleuth Kit tool for reading partition tables",
+    "fsstat": "a Sleuth Kit tool for filesystem details",
+    "fls": "a Sleuth Kit tool for listing files, including deleted ones",
+    "icat": "a Sleuth Kit tool for extracting file content by inode",
+    "mactime": "a Sleuth Kit tool for building timelines",
+    "tsk_recover": "a Sleuth Kit recovery tool",
+    "exiftool": "a metadata reader for documents and images",
+    "volatility": "a memory-forensics framework",
+    "vol": "the Volatility 3 command for memory forensics",
+    "binwalk": "a firmware and embedded-file carver",
+    "foremost": "a file-carving tool",
+    "photorec": "a file-recovery tool",
+    "testdisk": "a partition-recovery tool",
+    "autopsy": "the graphical front end to the Sleuth Kit",
+    "wireshark": "a network protocol analyzer",
+    "tshark": "the command-line version of Wireshark",
+    "sqlite3": "a command-line SQLite client"
+  },
+  "acts": [
+    {
+      "id": 1,
+      "name": "Act I: First Steps",
+      "tagline": "Basic navigation, paths, prompt, and directory structure",
+      "icon": "🧭",
+      "glyph": "─·─",
+      "unlockThreshold": 0.0
+    },
+    {
+      "id": 2,
+      "name": "Act II: Reading the Evidence",
+      "tagline": "Inspecting files, headers, and forensic checksums",
+      "icon": "📜",
+      "glyph": "─··─",
+      "unlockThreshold": 0.8
+    },
+    {
+      "id": 3,
+      "name": "Act III: Search & Discovery",
+      "tagline": "Pattern search, find, manual pages, and the WSL /mnt/c bridge",
+      "icon": "🔎",
+      "glyph": "─···─",
+      "unlockThreshold": 0.8
+    },
+    {
+      "id": 4,
+      "name": "Act IV: The Plumbing",
+      "tagline": "Pipes, redirection, filters, and multi-stage analysis",
+      "icon": "🔧",
+      "glyph": "─[|||]─",
+      "unlockThreshold": 0.8
+    },
+    {
+      "id": 5,
+      "name": "Act V: The Capstone",
+      "tagline": "Multi-step investigation: partition offsets and evidence carving",
+      "icon": "🏁",
+      "glyph": "═★═",
+      "unlockThreshold": 0.8
+    },
+    {
+      "id": 6,
+      "name": "Topside (Windows Quest)",
+      "tagline": "Windows CMD parity: dir /a, type, findstr, attrib, and certutil",
+      "icon": "🪟",
+      "glyph": "[ C:\\>_ ]",
+      "unlockThreshold": 0.0,
+      "platform": "windows"
+    }
+  ],
+  "badges": [
+    {
+      "id": "badge-groundbreaker",
+      "name": "Groundbreaker",
+      "description": "Completed Act I and found your bearings in the terminal.",
+      "icon": "⛏️",
+      "color": "from-emerald-500 to-green-600",
+      "act": 1
+    },
+    {
+      "id": "badge-signal",
+      "name": "Signal in the Noise",
+      "description": "Excavated hidden evidence using cryptographic hashes and file headers.",
+      "icon": "🔍",
+      "color": "from-cyan-500 to-blue-600",
+      "act": 2
+    },
+    {
+      "id": "badge-crossed-over",
+      "name": "Crossed Over",
+      "description": "Bridged Linux and Windows through the WSL mount at /mnt/c.",
+      "icon": "🌉",
+      "color": "from-purple-500 to-indigo-600",
+      "act": 3
+    },
+    {
+      "id": "badge-plumber",
+      "name": "Master Plumber",
+      "description": "Constructed multi-stage data pipelines and redirected standard streams.",
+      "icon": "🚰",
+      "color": "from-amber-500 to-yellow-600",
+      "act": 4
+    },
+    {
+      "id": "badge-out-of-warren",
+      "name": "Gauntlet Champion",
+      "description": "Solved the Capstone investigation and recovered the master evidence.",
+      "icon": "🏆",
+      "color": "from-yellow-400 to-amber-500",
+      "special": true,
+      "act": 5
+    },
+    {
+      "id": "badge-topsider",
+      "name": "Topsider",
+      "description": "Explored the Windows CMD environment and recovered Topside artifacts.",
+      "icon": "🪟",
+      "color": "from-sky-500 to-indigo-600",
+      "act": 6
+    }
+  ]
+}

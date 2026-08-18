@@ -1,0 +1,490 @@
+[
+  {
+    "id": "w1-cd-pwd",
+    "act": 1,
+    "title": "Where Am I? (CD)",
+    "points": 10,
+    "brief": "In Windows CMD, running `cd` with no arguments prints the current directory. Run `cd` to see where you stand.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^cd\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `cd` and press Enter." }
+    ],
+    "successMessage": "In cmd.exe, `cd` alone displays the current drive and directory.",
+    "teaches": ["cd", "current-directory"],
+    "acceptedVariants": ["cd", "chdir"]
+  },
+  {
+    "id": "w1-dir",
+    "act": 1,
+    "title": "Directory Listing (DIR)",
+    "points": 10,
+    "brief": "Use `dir` to list files and subdirectories in the current folder.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^dir(\\s+\\.)?\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `dir`." }
+    ],
+    "successMessage": "`dir` lists directory contents with creation dates, file sizes, and directory markers.",
+    "teaches": ["dir"],
+    "acceptedVariants": ["dir", "dir ."]
+  },
+  {
+    "id": "w1-dir-a",
+    "act": 1,
+    "title": "Show All Files (DIR /A)",
+    "points": 15,
+    "brief": "Windows hides files based on attributes (such as the Hidden attribute H). Use `dir /a` to view all files, including hidden files.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^dir\\s+/a.*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `dir /a` or `dir /a:h`." }
+    ],
+    "successMessage": "`/a` displays files with specified attributes (hidden, system, archive).",
+    "teaches": ["dir /a", "hidden-attributes"],
+    "acceptedVariants": ["dir /a", "dir /a:h", "dir /ah"]
+  },
+  {
+    "id": "w1-dir-b",
+    "act": 1,
+    "title": "Bare Listing (DIR /B)",
+    "points": 15,
+    "brief": "Use `dir /b` to display a clean bare listing containing only file and folder names without header or footer text.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^dir\\s+/b.*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `dir /b`." }
+    ],
+    "successMessage": "`dir /b` produces clean output ideal for batch processing and scripts.",
+    "teaches": ["dir /b"],
+    "acceptedVariants": ["dir /b"]
+  },
+  {
+    "id": "w1-dir-s",
+    "act": 1,
+    "title": "Recursive Search (DIR /S)",
+    "points": 20,
+    "brief": "Use `dir /s Documents` to search through the Documents folder and all its subfolders.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^dir\\s+/s.*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `dir /s Documents` or `dir /s`." }
+    ],
+    "successMessage": "`dir /s` walks subdirectories recursively.",
+    "teaches": ["dir /s", "recursive-search"],
+    "acceptedVariants": ["dir /s Documents", "dir /s", "dir /s ."]
+  },
+  {
+    "id": "w1-cd-nav",
+    "act": 1,
+    "title": "Enter Documents (CD)",
+    "points": 15,
+    "brief": "Use `cd Documents` to move into the Documents directory.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "cwdIs",
+      "path": "C:\\Users\\Student\\Documents"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `cd Documents`." }
+    ],
+    "successMessage": "You changed your working directory to `C:\\Users\\Student\\Documents`.",
+    "teaches": ["cd", "navigation"],
+    "acceptedVariants": ["cd Documents", "cd .\\Documents", "cd C:\\Users\\Student\\Documents"]
+  },
+  {
+    "id": "w1-cd-parent",
+    "act": 1,
+    "title": "Climb to Parent (CD ..)",
+    "points": 15,
+    "brief": "Use `cd ..` from `Documents` to move back up to `C:\\Users\\Student`.",
+    "setup": { "cwd": "C:\\Users\\Student\\Documents" },
+    "success": {
+      "predicate": "cwdIs",
+      "path": "C:\\Users\\Student"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `cd ..`." }
+    ],
+    "successMessage": "`cd ..` navigates up to the parent directory.",
+    "teaches": ["cd ..", "parent-directory"],
+    "acceptedVariants": ["cd ..", "cd C:\\Users\\Student"]
+  },
+  {
+    "id": "w1-type",
+    "act": 1,
+    "title": "Display File Content (TYPE)",
+    "points": 15,
+    "brief": "Use `type Documents\\notes.txt` to print the notes file to the command prompt.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^type\\s+[\"']?(?:(?:C:\\\\Users\\\\Student\\\\)?Documents[\\\\/])?notes\\.txt[\"']?\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `type Documents\\notes.txt`." }
+    ],
+    "successMessage": "`type` prints file contents to the screen (the Windows counterpart of `cat`).",
+    "teaches": ["type"],
+    "acceptedVariants": ["type Documents\\notes.txt", "type Documents/notes.txt"]
+  },
+  {
+    "id": "w1-tree",
+    "act": 1,
+    "title": "Directory Tree (TREE)",
+    "points": 15,
+    "brief": "Use `tree` to display a visual ASCII hierarchy of the current directory tree.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^tree(\\s+.*)?$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `tree`." }
+    ],
+    "successMessage": "`tree` renders directory graphs. Add `/f` to include file names as well.",
+    "teaches": ["tree"],
+    "acceptedVariants": ["tree", "tree /f"]
+  },
+  {
+    "id": "w1-where",
+    "act": 1,
+    "title": "Locate Binaries (WHERE)",
+    "points": 15,
+    "brief": "Use `where cmd` to locate the binary executable for the Windows command interpreter.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^where\\s+cmd(\\.exe)?\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `where cmd`." }
+    ],
+    "successMessage": "`where` searches directories in PATH for matching executables.",
+    "teaches": ["where", "path"],
+    "acceptedVariants": ["where cmd", "where cmd.exe"]
+  },
+
+  {
+    "id": "w2-copy",
+    "act": 2,
+    "title": "Copy Files (COPY)",
+    "points": 20,
+    "brief": "Create a duplicate of notes: `copy Documents\\notes.txt Documents\\notes_backup.txt`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "fileExists",
+      "path": "C:\\Users\\Student\\Documents\\notes_backup.txt"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `copy Documents\\notes.txt Documents\\notes_backup.txt`." }
+    ],
+    "successMessage": "`copy` creates duplicates of files.",
+    "teaches": ["copy"],
+    "acceptedVariants": ["copy Documents\\notes.txt Documents\\notes_backup.txt"]
+  },
+  {
+    "id": "w2-move",
+    "act": 2,
+    "title": "Move Files (MOVE)",
+    "points": 20,
+    "brief": "Move `Desktop\\todo.txt` to Documents: `move Desktop\\todo.txt Documents\\todo.txt`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "fileExists",
+      "path": "C:\\Users\\Student\\Documents\\todo.txt"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `move Desktop\\todo.txt Documents\\todo.txt`." }
+    ],
+    "successMessage": "`move` relocates files to a new directory destination.",
+    "teaches": ["move"],
+    "acceptedVariants": ["move Desktop\\todo.txt Documents\\todo.txt"]
+  },
+  {
+    "id": "w2-ren",
+    "act": 2,
+    "title": "Rename Files (REN)",
+    "points": 20,
+    "brief": "Rename `Desktop\\Shortcut.lnk` to `AppShortcut.lnk`: `ren Desktop\\Shortcut.lnk AppShortcut.lnk`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "fileExists",
+      "path": "C:\\Users\\Student\\Desktop\\AppShortcut.lnk"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `ren Desktop\\Shortcut.lnk AppShortcut.lnk`." }
+    ],
+    "successMessage": "`ren` (rename) changes file names.",
+    "teaches": ["ren", "rename"],
+    "acceptedVariants": ["ren Desktop\\Shortcut.lnk AppShortcut.lnk", "rename Desktop\\Shortcut.lnk AppShortcut.lnk"]
+  },
+  {
+    "id": "w2-del",
+    "act": 2,
+    "title": "Delete Files (DEL)",
+    "points": 20,
+    "brief": "Delete `Downloads\\archive.zip` using `del Downloads\\archive.zip`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^del\\s+.*archive\\.zip\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `del Downloads\\archive.zip`." }
+    ],
+    "successMessage": "`del` deletes files from disk.",
+    "teaches": ["del", "erase"],
+    "acceptedVariants": ["del Downloads\\archive.zip", "erase Downloads\\archive.zip"]
+  },
+  {
+    "id": "w2-md",
+    "act": 2,
+    "title": "Create Directories (MD / MKDIR)",
+    "points": 20,
+    "brief": "Create a new directory `C:\\Users\\Student\\Projects` using `md Projects`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "dirExists",
+      "path": "C:\\Users\\Student\\Projects"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `md Projects` or `mkdir Projects`." }
+    ],
+    "successMessage": "`md` (Make Directory) creates folders in Windows.",
+    "teaches": ["md", "mkdir"],
+    "acceptedVariants": ["md Projects", "mkdir Projects"]
+  },
+  {
+    "id": "w2-rd",
+    "act": 2,
+    "title": "Remove Directories (RD / RMDIR)",
+    "points": 20,
+    "brief": "Remove the newly created folder: `rd Projects`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^rd\\s+Projects\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `rd Projects`." }
+    ],
+    "successMessage": "`rd` (Remove Directory) deletes empty folders.",
+    "teaches": ["rd", "rmdir"],
+    "acceptedVariants": ["rd Projects", "rmdir Projects"]
+  },
+  {
+    "id": "w2-attrib",
+    "act": 2,
+    "title": "Inspect File Attributes (ATTRIB)",
+    "points": 25,
+    "brief": "Inspect the hidden attribute on `Documents\\hidden_config.ini` using `attrib Documents\\hidden_config.ini`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^attrib\\s+.*hidden_config\\.ini\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `attrib Documents\\hidden_config.ini`." }
+    ],
+    "successMessage": "`attrib` displays R (Read-only), H (Hidden), A (Archive), and S (System) attributes.",
+    "teaches": ["attrib"],
+    "acceptedVariants": ["attrib Documents\\hidden_config.ini", "attrib Documents/hidden_config.ini"]
+  },
+  {
+    "id": "w2-env-var",
+    "act": 2,
+    "title": "Environment Variables (%VAR%)",
+    "points": 20,
+    "brief": "In Windows CMD, environment variables are wrapped in percent signs `%...%`. Run `echo %USERPROFILE%` to print your user profile directory.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^echo\\s+%USERPROFILE%\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `echo %USERPROFILE%`." }
+    ],
+    "successMessage": "`%USERPROFILE%` expands to `C:\\Users\\Student`.",
+    "teaches": ["%VAR%", "environment-variables"],
+    "acceptedVariants": ["echo %USERPROFILE%"]
+  },
+  {
+    "id": "w2-set",
+    "act": 2,
+    "title": "Setting Variables (SET)",
+    "points": 25,
+    "brief": "Set a new environment variable `MY_VAR=123` using `set MY_VAR=123`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^set\\s+MY_VAR=123\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `set MY_VAR=123`." }
+    ],
+    "successMessage": "`set` creates and manages environment variables in CMD.",
+    "teaches": ["set"],
+    "acceptedVariants": ["set MY_VAR=123"]
+  },
+  {
+    "id": "w2-cls",
+    "act": 2,
+    "title": "Clear the Console (CLS)",
+    "points": 10,
+    "brief": "Use `cls` to clear the Command Prompt screen.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^cls\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `cls`." }
+    ],
+    "successMessage": "`cls` clears the terminal screen in Windows CMD.",
+    "teaches": ["cls"],
+    "acceptedVariants": ["cls"]
+  },
+
+  {
+    "id": "w3-findstr",
+    "act": 3,
+    "title": "Pattern Search (FINDSTR)",
+    "points": 25,
+    "brief": "Search `logs\\eventlog.txt` for lines containing `EVENT ID` using `findstr \"EVENT ID\" logs\\eventlog.txt`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^findstr\\s+[\"']?EVENT\\s+ID[\"']?\\s+logs[\\\\/]eventlog\\.txt\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `findstr \"EVENT ID\" logs\\eventlog.txt`." }
+    ],
+    "successMessage": "`findstr` is the Windows CMD counterpart of `grep`.",
+    "teaches": ["findstr"],
+    "acceptedVariants": ["findstr \"EVENT ID\" logs\\eventlog.txt", "findstr 'EVENT ID' logs\\eventlog.txt"]
+  },
+  {
+    "id": "w3-findstr-i",
+    "act": 3,
+    "title": "Case-Insensitive FINDSTR (/I)",
+    "points": 25,
+    "brief": "Search `logs\\eventlog.txt` for `defender` ignoring case: `findstr /i \"defender\" logs\\eventlog.txt`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^findstr\\s+/i\\s+[\"']?defender[\"']?\\s+logs[\\\\/]eventlog\\.txt\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `findstr /i \"defender\" logs\\eventlog.txt`." }
+    ],
+    "successMessage": "`/i` specifies case-insensitive matching in `findstr`.",
+    "teaches": ["findstr /i"],
+    "acceptedVariants": ["findstr /i defender logs\\eventlog.txt", "findstr /i \"defender\" logs\\eventlog.txt"]
+  },
+  {
+    "id": "w3-find-count",
+    "act": 3,
+    "title": "Count Lines (FIND /C /V \"\")",
+    "points": 30,
+    "brief": "In Windows CMD, line counting is canonically performed by piping to `find /c /v \"\"`. Count the lines in `logs\\firewall.log`: `type logs\\firewall.log | find /c /v \"\"`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^type\\s+logs[\\\\/]firewall\\.log\\s*\\|\\s*find\\s+/c\\s+/v\\s+[\"'][\"']\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `type logs\\firewall.log | find /c /v \"\"`." }
+    ],
+    "successMessage": "`find /c /v \"\"` counts every non-empty line — the standard Windows CMD equivalent of `wc -l`.",
+    "teaches": ["find", "line-counting", "pipes"],
+    "acceptedVariants": ["type logs\\firewall.log | find /c /v \"\""]
+  },
+  {
+    "id": "w3-tasklist",
+    "act": 3,
+    "title": "Process List (TASKLIST)",
+    "points": 25,
+    "brief": "Use `tasklist` to view all active processes and memory usage.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^tasklist(\\s+.*)?$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `tasklist`." }
+    ],
+    "successMessage": "`tasklist` displays running applications and system services.",
+    "teaches": ["tasklist", "processes"],
+    "acceptedVariants": ["tasklist"]
+  },
+  {
+    "id": "w3-ipconfig",
+    "act": 3,
+    "title": "Network Configuration (IPCONFIG)",
+    "points": 25,
+    "brief": "Use `ipconfig` to inspect your IP address and network adapter configuration.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^ipconfig(\\s+/all)?\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `ipconfig`." }
+    ],
+    "successMessage": "`ipconfig` displays TCP/IP network parameters.",
+    "teaches": ["ipconfig", "network"],
+    "acceptedVariants": ["ipconfig", "ipconfig /all"]
+  },
+  {
+    "id": "w3-systeminfo",
+    "act": 3,
+    "title": "System Information (SYSTEMINFO)",
+    "points": 25,
+    "brief": "Use `systeminfo` to display the operating system build, memory, and hardware summary.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^systeminfo\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Type `systeminfo`." }
+    ],
+    "successMessage": "`systeminfo` outputs full system diagnostic metrics.",
+    "teaches": ["systeminfo"],
+    "acceptedVariants": ["systeminfo"]
+  },
+  {
+    "id": "w3-certutil",
+    "act": 3,
+    "title": "Cryptographic Hash (CERTUTIL)",
+    "points": 35,
+    "brief": "Calculate the MD5 checksum of `Documents\\data.csv` using `certutil -hashfile Documents\\data.csv MD5`.",
+    "setup": { "cwd": "C:\\Users\\Student" },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^certutil\\s+-hashfile\\s+[\"']?(?:Documents[\\\\/])?data\\.csv[\"']?\\s+MD5\\s*$"
+    },
+    "hints": [
+      { "cost": 0, "text": "Run `certutil -hashfile Documents\\data.csv MD5`." }
+    ],
+    "successMessage": "Congratulations! You have completed Windows CMD Essentials and mastered the Windows command-line toolset.",
+    "teaches": ["certutil", "hashing"],
+    "acceptedVariants": ["certutil -hashfile Documents\\data.csv MD5", "certutil -hashfile Documents/data.csv MD5"]
+  }
+]

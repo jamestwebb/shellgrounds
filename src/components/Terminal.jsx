@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Terminal component: Simulated CLI shell with history, tab completion, and redirection
+// Terminal component: Accessible Simulated CLI shell with history, tab completion, and redirection
 
 import React, { useRef, useEffect, useCallback } from 'react';
 import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin } from 'lucide-react';
@@ -11,6 +11,8 @@ const FLAG_PATTERN = /(FLAG\{[A-Z2-7]{12}\})/g;
 export const Terminal = ({
   platform = 'linux',
   cwd = '/home/analyst',
+  user = 'student',
+  host = 'sandbox',
   terminalHistory = [],
   currentInput = '',
   setCurrentInput,
@@ -36,8 +38,7 @@ export const Terminal = ({
     }).catch(() => {});
   };
 
-  // Render FLAG{...} tokens as click-to-copy chips so novices never have to
-  // fight text selection to capture a flag.
+  // Render FLAG{...} tokens as click-to-copy chips
   const renderOutputText = (text) => {
     if (!text || !text.includes('FLAG{')) return text;
     const parts = text.split(FLAG_PATTERN);
@@ -63,8 +64,7 @@ export const Terminal = ({
     });
   };
 
-  // Auto-scroll to bottom on output — but only when the student is already at
-  // the bottom. Never yank the view away from someone reading earlier output.
+  // Auto-scroll to bottom on output
   const stickToBottomRef = useRef(true);
   useEffect(() => {
     if (stickToBottomRef.current && terminalRef.current) {
@@ -78,199 +78,194 @@ export const Terminal = ({
     stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
   };
 
-  // Focus input when clicking anywhere in terminal — but never steal an active
-  // text selection: refocusing the input clears it, which breaks copy/paste.
-  const handleContainerClick = () => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().length > 0) return;
-    if (inputRef.current && !disabled) {
+  // Keep focus in terminal input
+  const focusInput = useCallback(() => {
+    if (inputRef.current) {
       inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    focusInput();
+  }, [focusInput, cwd, platform]);
+
+  // Tab completion
+  const handleTabComplete = (e) => {
+    e.preventDefault();
+    sounds.playKey();
+
+    const isWindows = platform === 'windows';
+    const result = getTabCompletions(currentInput, cwd, fs, isWindows);
+
+    if (result.type === 'command' || result.type === 'path') {
+      if (result.matches.length === 1) {
+        const match = result.matches[0];
+        const parts = currentInput.trim().split(/\s+/);
+
+        if (result.type === 'command') {
+          setCurrentInput(match + ' ');
+        } else {
+          parts.pop();
+          const prefix = parts.length > 0 ? parts.join(' ') + ' ' : '';
+          const lastArg = currentInput.trim().split(/\s+/).pop() || '';
+          const sep = isWindows ? '\\' : '/';
+          const lastSlash = lastArg.lastIndexOf(sep);
+
+          if (lastSlash !== -1) {
+            const dirPart = lastArg.substring(0, lastSlash + 1);
+            setCurrentInput(prefix + dirPart + match);
+          } else {
+            setCurrentInput(prefix + match);
+          }
+        }
+      } else if (result.matches.length > 1) {
+        onExecuteCommand(null, {
+          isTabList: true,
+          matches: result.matches,
+          promptLine: currentInput
+        });
+      }
     }
   };
 
-  const handleKeyDown = useCallback((e) => {
-    if (disabled) return;
+  // Key navigation
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      handleTabComplete(e);
+      return;
+    }
 
     if (e.key === 'Enter') {
-      const trimmed = currentInput.trim();
-      if (trimmed) {
-        commandHistoryRef.current.push(trimmed);
-        historyIndexRef.current = commandHistoryRef.current.length;
-        stickToBottomRef.current = true; // running a command always follows its output
-        sounds.playKeypress();
-        onExecuteCommand(trimmed);
-        setCurrentInput('');
-      }
-    } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (historyIndexRef.current > 0) {
-        historyIndexRef.current--;
-        setCurrentInput(commandHistoryRef.current[historyIndexRef.current] || '');
+      const cmd = currentInput.trim();
+
+      if (cmd) {
+        commandHistoryRef.current.push(cmd);
+        historyIndexRef.current = commandHistoryRef.current.length;
       }
-    } else if (e.key === 'ArrowDown') {
+
+      sounds.playEnter();
+      onExecuteCommand(currentInput);
+      setCurrentInput('');
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (commandHistoryRef.current.length === 0) return;
+
+      if (historyIndexRef.current > 0) {
+        historyIndexRef.current -= 1;
+        setCurrentInput(commandHistoryRef.current[historyIndexRef.current] || '');
+        sounds.playKey();
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (historyIndexRef.current < commandHistoryRef.current.length - 1) {
-        historyIndexRef.current++;
+        historyIndexRef.current += 1;
         setCurrentInput(commandHistoryRef.current[historyIndexRef.current] || '');
-      } else if (historyIndexRef.current === commandHistoryRef.current.length - 1) {
-        // Stepping past the newest entry returns to an empty line...
+        sounds.playKey();
+      } else {
         historyIndexRef.current = commandHistoryRef.current.length;
         setCurrentInput('');
       }
-      // ...but at the bottom already, do nothing — never erase what the
-      // student is typing (real shells don't either).
-    } else if (e.key === 'Tab') {
+      return;
+    }
+
+    if (e.key === 'c' && e.ctrlKey) {
       e.preventDefault();
-      sounds.playKeypress();
+      onExecuteCommand('^C', { isCancel: true });
+      setCurrentInput('');
+      return;
+    }
 
-      const completions = getTabCompletions(currentInput, cwd, fs, platform === 'windows');
-      if (!completions || completions.matches.length === 0) {
-        return;
-      }
-
-      if (completions.matches.length === 1) {
-        const match = completions.matches[0];
-        const parts = currentInput.trim().split(/\s+/);
-
-        if (completions.type === 'command') {
-          setCurrentInput(match + ' ');
-        } else {
-          const lastArg = parts[parts.length - 1] || '';
-          let completed;
-
-          if (completions.isWindows) {
-            if (lastArg.includes('\\')) {
-              const lastSlash = lastArg.lastIndexOf('\\');
-              completed = lastArg.substring(0, lastSlash + 1) + match;
-            } else {
-              completed = match;
-            }
-          } else {
-            if (lastArg.includes('/')) {
-              const lastSlash = lastArg.lastIndexOf('/');
-              completed = lastArg.substring(0, lastSlash + 1) + match;
-            } else {
-              completed = match;
-            }
-          }
-
-          const sep = completions.isWindows ? '\\' : '/';
-          const fullPath = completions.searchDir
-            ? `${completions.searchDir}${sep}${match}`
-            : (completions.isWindows ? `${cwd}\\${match}` : (cwd === '/' ? `/${match}` : `${cwd}/${match}`));
-
-          const isDir = fs[fullPath]?.type === 'dir';
-
-          if (currentInput.endsWith(' ')) {
-            // Starting a fresh argument: append rather than replace the last word
-            setCurrentInput(currentInput + completed + (isDir ? sep : ' '));
-          } else if (parts.length > 1) {
-            parts[parts.length - 1] = completed + (isDir ? sep : '');
-            setCurrentInput(parts.join(' ') + (isDir ? '' : ' '));
-          } else {
-            setCurrentInput(completed + (isDir ? sep : ' '));
-          }
-        }
-      } else {
-        // Multi-match: show available options
-        const matchText = completions.matches.join('    ');
-        onExecuteCommand(null, { showCompletions: matchText, input: currentInput });
-      }
-    } else if (e.ctrlKey && e.key === 'l') {
+    if (e.key === 'l' && e.ctrlKey) {
       e.preventDefault();
       onClearHistory();
+      return;
     }
-  }, [currentInput, cwd, fs, platform, onExecuteCommand, onClearHistory, setCurrentInput, disabled]);
+
+    sounds.playKey();
+  };
 
   const isLinux = platform === 'linux';
 
   return (
     <div
-      className="flex-1 bg-term-shell flex flex-col h-full overflow-hidden relative font-mono text-sm select-text border-2 border-term-shell-border rounded-xl shadow-2xl"
-      onClick={handleContainerClick}
+      onClick={focusInput}
+      className="flex-1 flex flex-col bg-term-black border border-term-border rounded-lg shadow-2xl overflow-hidden relative cursor-text font-mono select-text"
+      role="region"
+      aria-label="Interactive CLI Terminal"
     >
-      {/* CRT Scanline Overlay */}
+      {/* Optional CRT Scanlines Effect */}
       {scanlines && (
-        <div className="absolute inset-0 pointer-events-none z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-40" />
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] z-20 opacity-30" />
       )}
 
-      {/* Terminal Title Bar */}
-      <div className="flex-none bg-term-shell-bar border-b border-term-shell-border px-4 py-2.5 flex items-center justify-between z-10 select-none">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full bg-red-500/80 border border-red-600" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500/80 border border-yellow-600" />
-            <div className="w-3 h-3 rounded-full bg-green-500/80 border border-green-600" />
+      {/* Terminal Top Window Bar */}
+      <div className="bg-term-gray border-b border-term-border px-4 py-2 flex items-center justify-between z-10 select-none">
+        <div className="flex items-center space-x-2">
+          <div className="flex space-x-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
           </div>
-          <span className="text-xs font-bold tracking-wider text-green-400 flex items-center gap-1.5 ml-2">
-            <TerminalIcon size={13} className="text-term-green" />
-            {isLinux ? 'GAUNTLET TTY1 (/dev/pts/0)' : 'TOPSIDE CMD (C:\\Windows\\System32\\cmd.exe)'}
+          <span className="text-xs font-bold text-neutral-400 pl-2 flex items-center gap-1.5">
+            <TerminalIcon size={12} className={isLinux ? 'text-term-green' : 'text-amber-400'} />
+            {isLinux ? `${user.toUpperCase()}@${host.toUpperCase()} TTY1` : `Command Prompt — C:\\Windows\\System32\\cmd.exe`}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleCoach(); }}
-            className={`px-2 py-1 rounded text-xs font-bold transition-all cursor-pointer border ${
-              coachEnabled
-                ? 'bg-cyan-950/40 text-cyan-300 border-cyan-700/50'
-                : 'bg-term-shell-deep text-neutral-500 border-term-shell-border'
-            }`}
-            title={coachEnabled
-              ? 'Coach ON: explains each command and error. Click to turn off.'
-              : 'Coach OFF: no explanations. Click to turn on.'}
-          >
-            COACH {coachEnabled ? 'ON' : 'OFF'}
-          </button>
-          {isLinux && (
+        <div className="flex items-center space-x-2">
+          {onOpenMap && isLinux && (
             <button
               onClick={(e) => { e.stopPropagation(); onOpenMap(); }}
-              className="px-2 py-1 rounded bg-term-green-faint text-term-green hover:bg-term-green hover:text-term-black text-xs font-bold transition-all flex items-center gap-1 cursor-pointer border border-term-green/30"
-              title="Show Filesystem Map (or type 'map')"
+              className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer"
+              title="View Topographical Map"
             >
               <MapPin size={11} /> MAP
             </button>
           )}
+
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleCoach(); }}
+            className={`text-[11px] font-bold px-2 py-0.5 rounded border transition-all flex items-center gap-1 cursor-pointer ${
+              coachEnabled
+                ? 'text-cyan-400 bg-cyan-950/30 border-cyan-500/40'
+                : 'text-neutral-500 bg-term-gray border-term-border hover:text-neutral-300'
+            }`}
+            title="Toggle Coach Explanations"
+          >
+            <Sparkles size={11} /> COACH {coachEnabled ? 'ON' : 'OFF'}
+          </button>
+
           <button
             onClick={(e) => { e.stopPropagation(); onClearHistory(); }}
-            className="p-1 rounded text-neutral-400 hover:text-red-400 hover:bg-term-shell-deep transition-all cursor-pointer"
+            className="text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-800 p-1 rounded transition-all cursor-pointer"
             title="Clear Screen (Ctrl+L)"
           >
-            <Trash2 size={13} />
+            <Trash2 size={12} />
           </button>
         </div>
       </div>
 
-      {/* Terminal Output Stream */}
+      {/* Terminal Screen / Output Log */}
       <div
         ref={terminalRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-4 space-y-2 text-neutral-200 scrollbar-thin scrollbar-thumb-neutral-800"
+        aria-live="polite"
+        className="flex-1 p-4 overflow-y-auto space-y-2 text-xs md:text-sm leading-relaxed z-10"
       >
-        {terminalHistory.length === 0 && (
-          <div className="text-neutral-400 space-y-1 select-none mb-4">
-            <div className="text-term-green font-bold">
-              {isLinux ? '== THE GAUNTLET — FORENSICS CLI 101 ==' : '== TOPSIDE WINDOWS CMD SIMULATOR v1.0 =='}
-            </div>
-            <div className="text-xs">
-              {isLinux
-                ? 'Type "help" for available commands. Type "map" to view the filesystem map.'
-                : 'Microsoft Windows [Version 10.0.19045.3693]. Type "help" for commands.'}
-            </div>
-            <div className="text-xs text-neutral-400">
-              Recover flags and submit them with: <code className="text-term-green font-bold">submit FLAG{'{...}'}</code>
-            </div>
-            <div className="border-b border-term-shell-border pt-1 opacity-50" />
-          </div>
-        )}
-
-        {terminalHistory.map((item, idx) => (
-          <div key={idx} className="leading-relaxed">
+        {terminalHistory.map((item, index) => (
+          <div key={index} className="space-y-0.5">
             {item.type === 'input' ? (
               <div className="flex items-start gap-2 text-xs md:text-sm font-semibold">
                 {isLinux ? (
                   <>
-                    <span className="text-green-400 shrink-0">analyst@lab</span>
+                    <span className="text-green-400 shrink-0">{user}@{host}</span>
                     <span className="text-neutral-400">:</span>
                     <span className="text-cyan-400 shrink-0">{item.cwd || cwd}</span>
                     <span className="text-neutral-400 shrink-0">$</span>
@@ -304,7 +299,7 @@ export const Terminal = ({
         <div className="flex items-center gap-2 text-xs md:text-sm font-semibold pt-1">
           {isLinux ? (
             <>
-              <span className="text-green-400 shrink-0">analyst@lab</span>
+              <span className="text-green-400 shrink-0">{user}@{host}</span>
               <span className="text-neutral-400">:</span>
               <span className="text-cyan-400 shrink-0">{cwd}</span>
               <span className="text-neutral-400 shrink-0">$</span>
@@ -325,6 +320,7 @@ export const Terminal = ({
             autoComplete="off"
             autoCapitalize="off"
             spellCheck="false"
+            aria-label="Shell input"
           />
         </div>
       </div>

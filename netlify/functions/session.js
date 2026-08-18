@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // Netlify Function: GET /api/session
 
-import { verifySessionToken, createSessionToken } from '../../src/engine/crypto-utils.js';
+import { verifySessionToken, createSessionToken } from '../../packages/engine/crypto-utils.js';
+import { DEFAULT_PACK_ID } from '../../packs/index.js';
 import { getPlayer, getSolves } from './utils/store.js';
 
 const json = (status, obj, extraHeaders = {}) =>
@@ -26,7 +27,8 @@ export default async (req) => {
   }
 
   const handle = verified.handle;
-  // No default admin handles: an unset ADMIN_HANDLES means no admins, not guessable ones.
+  const packId = verified.packId || DEFAULT_PACK_ID;
+
   const adminHandles = (process.env.ADMIN_HANDLES || '')
     .split(',')
     .map(h => h.trim().toLowerCase())
@@ -47,15 +49,14 @@ export default async (req) => {
     const totalScore = solves.reduce((sum, s) => sum + s.netPoints, 0);
 
     return json(200, {
-        success: true,
-        handle,
-        isAdmin,
-        solves,
-        totalScore,
-        // Rolling refresh: handles cannot be re-registered, so the session must not
-        // hard-expire for any student who visits at least once every 72 hours.
-        token: createSessionToken(sessionSecret, handle)
-      }, { 'Cache-Control': 'no-store' });
+      success: true,
+      handle,
+      packId,
+      isAdmin,
+      solves,
+      totalScore,
+      token: createSessionToken(sessionSecret, handle, packId)
+    }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Session retrieval error:', err);
     return json(500, { error: 'Failed to retrieve session data' });

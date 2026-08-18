@@ -1,0 +1,73 @@
+{
+  "id": "windows-cmd-essentials",
+  "name": "Windows CMD Essentials",
+  "version": "1.0.0",
+  "platforms": ["windows"],
+  "windows": {
+    "home": "C:\\Users\\Student",
+    "user": "Student",
+    "shell": "cmd"
+  },
+  "theme": {
+    "accent": "#3b82f6",
+    "titleBar": "Command Prompt - C:\\Windows\\System32\\cmd.exe",
+    "sidebarTone": "blue"
+  },
+  "messages": {
+    "unsimulated": "'%s' is a real Windows command, but not simulated here.",
+    "unsupportedSyntax": "That CMD syntax is not simulated here."
+  },
+  "acts": [
+    {
+      "id": 1,
+      "name": "Act I: Navigation & Inspection",
+      "tagline": "CMD directory traversal, DIR switches, TYPE, and TREE",
+      "icon": "🪟",
+      "glyph": "─·─",
+      "unlockThreshold": 0.0
+    },
+    {
+      "id": 2,
+      "name": "Act II: File Management & Batch",
+      "tagline": "COPY, MOVE, REN, DEL, ATTRIB, and %ENVIRONMENT% variables",
+      "icon": "📁",
+      "glyph": "─··─",
+      "unlockThreshold": 0.8
+    },
+    {
+      "id": 3,
+      "name": "Act III: Filtering & Diagnostics",
+      "tagline": "FINDSTR, FIND, pipelines, TASKLIST, IPCONFIG, and CERTUTIL",
+      "icon": "⚙️",
+      "glyph": "═★═",
+      "unlockThreshold": 0.8
+    }
+  ],
+  "badges": [
+    {
+      "id": "badge-cmd-explorer",
+      "name": "CMD Explorer",
+      "description": "Completed Act I: Mastered Windows CMD navigation, switches, and tree listings.",
+      "icon": "🪟",
+      "color": "from-sky-500 to-blue-600",
+      "act": 1
+    },
+    {
+      "id": "badge-batch-operator",
+      "name": "Batch Operator",
+      "description": "Completed Act II: Managed Windows files, attributes, and environment variables.",
+      "icon": "📁",
+      "color": "from-blue-500 to-indigo-600",
+      "act": 2
+    },
+    {
+      "id": "badge-win-admin",
+      "name": "Windows Administrator",
+      "description": "Completed Act III: Mastered FINDSTR filtering, system diagnostics, and CertUtil hashing.",
+      "icon": "🏆",
+      "color": "from-indigo-500 to-purple-600",
+      "special": true,
+      "act": 3
+    }
+  ]
+}
