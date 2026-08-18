@@ -140,3 +140,53 @@ describe('Windows path tolerance', () => {
     expect(res.output).toMatch(/MD5 hash of/);
   });
 });
+
+describe('Audit fixes: flags live in the filesystem, not just in output', () => {
+  it('injects flags into VFS content so filters can match them', async () => {
+    const { injectFlagsIntoVFS } = await import('../src/utils/vfs-injector.js');
+    const { getPack } = await import('../packs/index.js');
+    const { runPipeline } = await import('../packages/engine/shell/exec.js');
+    const pack = getPack('forensics-cli-101');
+    const flags = { 'act3-grepi': 'FLAG{ABCDEF234567}' };
+    const { fs } = injectFlagsIntoVFS(pack.createFs('linux'), 'stu', flags, pack.challenges);
+    // grep must see the real flag, not the raw placeholder
+    const res = runPipeline('grep -c "FLAG{" Documents/logs.txt', '/home/analyst', fs, 'linux',
+      { packCommands: pack.commands, user: 'analyst' });
+    expect(Number(String(res.output).trim())).toBeGreaterThan(0);
+    const raw = runPipeline('grep -c "\\[\\[FLAG:" Documents/logs.txt', '/home/analyst', fs, 'linux',
+      { packCommands: pack.commands, user: 'analyst' });
+    expect(String(raw.output).trim()).toBe('0');
+  });
+
+  it('a failed redirection prints nothing and reports failure', async () => {
+    const { getPack } = await import('../packs/index.js');
+    const { runPipeline } = await import('../packages/engine/shell/exec.js');
+    const pack = getPack('forensics-cli-101');
+    const res = runPipeline('echo secret > /etc/passwd', '/home/analyst', pack.createFs('linux'), 'linux',
+      { packCommands: pack.commands, user: 'analyst' });
+    expect(res.stdout || '').not.toContain('secret');
+    expect(res.status).not.toBe(0);
+  });
+
+  it('stdin redirection feeds the command', async () => {
+    const { getPack } = await import('../packs/index.js');
+    const { runPipeline } = await import('../packages/engine/shell/exec.js');
+    const pack = getPack('forensics-cli-101');
+    const res = runPipeline('wc -l < Documents/logs.txt', '/home/analyst', pack.createFs('linux'), 'linux',
+      { packCommands: pack.commands, user: 'analyst' });
+    expect(res.hasError).toBeFalsy();
+    expect(Number(String(res.output).trim())).toBeGreaterThan(0);
+  });
+
+  it('act unlocking honours the threshold but always permits one skip', async () => {
+    const { getPack } = await import('../packs/index.js');
+    const pack = getPack('forensics-cli-101');
+    for (const act of pack.manifest.acts.filter(a => a.unlockThreshold)) {
+      const prior = pack.challenges.filter(c => c.act === act.id - 1);
+      if (!prior.length) continue;
+      const byThreshold = Math.ceil(prior.length * act.unlockThreshold);
+      const required = Math.min(Math.max(1, byThreshold), Math.max(1, prior.length - 1));
+      expect(required, `act ${act.id} demands 100% of the previous act`).toBeLessThan(prior.length);
+    }
+  });
+});

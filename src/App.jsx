@@ -25,7 +25,7 @@ import { runPipeline } from '../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../packages/engine/constants.js';
 import { fetchSession, fetchManifest, submitFlagApi, getAuthToken, setAuthToken } from './utils/api';
-import { replaceFlagTokens } from './utils/vfs-injector';
+import { replaceFlagTokens, injectFlagsIntoVFS } from './utils/vfs-injector';
 import { explainCommand } from '../packages/engine/coach.js';
 import { sounds } from './utils/audio';
 
@@ -81,6 +81,18 @@ export default function App() {
     () => Object.values(solvesMap).reduce((sum, s) => sum + (s.netPoints || 0), 0),
     [solvesMap]
   );
+
+  // Flags must live in the FILESYSTEM, not just in rendered output: commands
+  // read raw file content, so an un-injected VFS makes `grep "FLAG{" file`
+  // silently find nothing. The manifest arrives after mount, so re-inject when
+  // it lands (and whenever the pack changes).
+  useEffect(() => {
+    if (!Object.keys(flagMap).length) return;
+    const handle = session?.handle || 'analyst';
+    const challenges = currentPack.challenges;
+    setLinuxFs(injectFlagsIntoVFS(currentPack.createFs('linux'), handle, flagMap, challenges).fs);
+    setWindowsFs(injectFlagsIntoVFS(currentPack.createFs('windows'), handle, flagMap, challenges).fs);
+  }, [flagMap, currentPack, session?.handle]);
 
   // Load / Switch Pack
   const handleSelectPack = useCallback((newPackId) => {

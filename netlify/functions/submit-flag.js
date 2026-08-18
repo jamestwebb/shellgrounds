@@ -13,7 +13,11 @@ function isActUnlocked(actId, acts, challenges, solvedIdSet) {
   if (!act || !act.unlockThreshold) return true;
   const prior = challenges.filter(c => c.act === actId - 1);
   if (prior.length === 0) return true;
-  const required = Math.max(1, prior.length - 1);
+  // Honour the author's configured threshold, but never require 100%: a
+  // student stuck on a single challenge must still be able to progress.
+  // (0.8 x 4 challenges = 3.2 -> ceil 4 = every one, which deadlocked Act V.)
+  const byThreshold = Math.ceil(prior.length * (act.unlockThreshold ?? 0.8));
+  const required = Math.min(Math.max(1, byThreshold), Math.max(1, prior.length - 1));
   const solved = prior.filter(c => solvedIdSet.has(c.id)).length;
   return solved >= required;
 }
@@ -57,7 +61,11 @@ function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd,
   const res = runPipeline(commandText.trim(), cwd, fs, isWindows ? 'windows' : 'linux', {
     packCommands: pack.commands,
     packHelp: pack.help,
-    user: isWindows ? 'Student' : 'student'
+    // Must match the browser: the pack declares who the student is, and file
+    // permissions are evaluated against it. A hardcoded user makes the server
+    // deny commands the client allowed.
+    user: (isWindows ? pack.manifest.windows?.user : pack.manifest.linux?.user)
+      || (isWindows ? 'Student' : 'student')
   });
 
   const ok = !res.hasError && (!ERROR_MARKERS.test(res.output || '') || commandText.includes('||'));

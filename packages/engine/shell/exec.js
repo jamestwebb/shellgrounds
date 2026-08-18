@@ -218,6 +218,11 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
       workingFs = redirRes.fs;
       stageStdout = redirRes.stdout;
       stageStderr = redirRes.stderr;
+      // A redirection that could not be opened fails the stage.
+      if (redirRes.redirectFailed) {
+        stageStatus = 1;
+        lastStatus = 1;
+      }
 
       if (stage.pipeBoth) {
         currentStdin = `${stageStdout}${stageStderr}`;
