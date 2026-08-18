@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "validate": "node bin/gauntlet.js validate"
+    "validate": "node bin/gauntlet.js validate",
+    "dev:functions": "node scripts/dev-functions.mjs",
+    "dev:local": "./scripts/start-dev.sh"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.13",
