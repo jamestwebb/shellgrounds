@@ -21,8 +21,9 @@ const isPathLike = (s, isWindows) =>
 
 // Mirrors netlify/functions/submit-flag.js isActUnlocked — a student may skip
 // one challenge per act. If these ever diverge the pack ships a deadlock.
-function requiredToUnlock(priorCount) {
-  return Math.max(1, priorCount - 1);
+function requiredToUnlock(priorCount, threshold = 0.8) {
+  const byThreshold = Math.ceil(priorCount * threshold);
+  return Math.min(Math.max(1, byThreshold), Math.max(1, priorCount - 1));
 }
 
 /** Every place a flag placeholder could legitimately reach a student. */
@@ -253,9 +254,13 @@ export async function validatePack(packObj, options = {}) {
     const prior = challenges.filter(c => c.act === act.id - 1);
     if (prior.length === 0) continue;
     results.checks.actProgression.gatedActsChecked++;
+    const rawRequired = Math.ceil(prior.length * (act.unlockThreshold ?? 0.8));
+    if (rawRequired > Math.max(1, prior.length - 1)) {
+      results.warnings.push(`Act ${act.id}: unlockThreshold ${act.unlockThreshold} would require all ${prior.length} prior challenges; clamped so a student may still skip one.`);
+    }
     // Simulate a student who skipped exactly one challenge in the prior act.
     const solved = new Set(prior.slice(0, prior.length - 1).map(c => c.id));
-    if (solved.size < requiredToUnlock(prior.length)) {
+    if (solved.size < requiredToUnlock(prior.length, act.unlockThreshold ?? 0.8)) {
       fail('actProgression', `Act ${act.id} ('${act.name}') cannot be unlocked after skipping one challenge in act ${act.id - 1} (${prior.length} challenges, ${requiredToUnlock(prior.length)} required). A stuck student is locked out.`);
     }
   }

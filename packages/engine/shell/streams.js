@@ -45,6 +45,7 @@ export function applyRedirections({
   let finalStdout = stdoutText;
   let finalStderr = stderrText;
   let finalStdin = stdinText;
+  let redirectFailed = false;
 
   // Stdin Redirection (< file or << heredoc)
   if (stage.redirectIn) {
@@ -105,7 +106,12 @@ export function applyRedirections({
         workingFs = writeRes.fs;
         finalStdout = ''; // suppressed from downstream pipeline and terminal
       } else {
+        // A failed redirection must not leak the payload. Real shells open the
+        // target BEFORE running the command: on failure nothing is printed,
+        // nothing flows downstream, and the status is non-zero.
         finalStderr = writeRes.error;
+        finalStdout = '';
+        redirectFailed = true;
       }
     }
   }
@@ -114,6 +120,7 @@ export function applyRedirections({
     fs: workingFs,
     stdout: finalStdout,
     stderr: finalStderr,
-    stdin: finalStdin
+    stdin: finalStdin,
+    redirectFailed
   };
 }
