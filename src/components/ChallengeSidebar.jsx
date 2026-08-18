@@ -40,6 +40,9 @@ export const ChallengeSidebar = ({
   onSubmitFlag,
   platform = 'linux',
   onSwitchPlatform,
+  // Instructors need to read and work every challenge in any order to build a
+  // lesson. Students keep the act gate: it is the pacing mechanism.
+  isAdmin = false,
   // Hint state lives in App so the terminal `submit` path counts revealed hints too
   unlockedHints = {},
   setUnlockedHints = () => {}
@@ -56,8 +59,12 @@ export const ChallengeSidebar = ({
   const solvedCountInAct = actChallenges.filter(c => solvesMap[c.id]).length;
   const actProgress = actChallenges.length > 0 ? (solvedCountInAct / actChallenges.length) * 100 : 0;
 
-  // Check which acts are unlocked
-  const isActUnlocked = (act) => isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
+  // Check which acts are unlocked. An instructor is never gated.
+  const isActUnlocked = (act) =>
+    isAdmin || isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
+  // What a STUDENT would see, so the instructor can tell the gate still works.
+  const isActUnlockedForStudent = (act) =>
+    isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
 
   const hintsRevealedCount = (currentChallenge && unlockedHints[currentChallenge.id]) || 0;
 
@@ -151,11 +158,20 @@ export const ChallengeSidebar = ({
           </div>
         </div>
 
-        {/* Act Switcher Tabs */}
-        <div className="grid grid-cols-6 gap-1 bg-term-sidebar-deep p-1 rounded-lg border border-term-sidebar-border">
+        {/* Act Switcher Tabs. The column count follows the pack: hardcoding six
+            left three empty cells on the 3-act and 4-act packs. */}
+        <div
+          className="grid gap-1 bg-term-sidebar-deep p-1 rounded-lg border border-term-sidebar-border"
+          style={{ gridTemplateColumns: `repeat(${Math.max(acts.length, 1)}, minmax(0, 1fr))` }}
+        >
           {acts.map((act) => {
             const unlocked = isActUnlocked(act);
+            const studentUnlocked = isActUnlockedForStudent(act);
             const isActive = act.id === activeActId;
+            // A Windows-only act reads as WIN rather than as a number; this was
+            // hardcoded to act 6, which is only true of one pack.
+            const actCs = challenges.filter(c => c.act === act.id);
+            const label = actCs.length && actCs.every(c => c.platform === 'windows') ? 'WIN' : act.id;
             return (
               <button
                 key={act.id}
@@ -172,16 +188,30 @@ export const ChallengeSidebar = ({
                   isActive
                     ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.4)]'
                     : unlocked
-                      ? 'text-neutral-400 hover:text-white hover:bg-term-sidebar-raised'
+                      ? `text-neutral-400 hover:text-white hover:bg-term-sidebar-raised${!studentUnlocked ? ' ring-1 ring-amber-500/50' : ''}`
                       : 'text-neutral-500 opacity-40 cursor-not-allowed'
                 }`}
-                title={`${act.name}${!unlocked ? ` (Locked — solve ${requiredSolvesToUnlock(act.id, challenges)} of the previous act's challenges)` : ''}`}
+                title={
+                  isAdmin && !studentUnlocked
+                    ? `${act.name} — open to you as instructor. A student would still need ${requiredSolvesToUnlock(act.id, challenges)} solves in the previous act.`
+                    : `${act.name}${!unlocked ? ` (Locked — solve ${requiredSolvesToUnlock(act.id, challenges)} of the previous act's challenges)` : ''}`
+                }
               >
-                <span>{act.id === 6 ? 'WIN' : act.id}</span>
+                <span>{label}</span>
               </button>
             );
           })}
         </div>
+
+        {isAdmin && (
+          <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+            <Layers size={11} />
+            <span>Instructor view — every act open</span>
+            <span className="ml-auto font-normal normal-case tracking-normal text-amber-200/70">
+              amber outline = still locked for students
+            </span>
+          </div>
+        )}
 
         {/* Act Progress Bar */}
         <div className="mt-3">

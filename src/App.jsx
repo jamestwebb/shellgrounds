@@ -169,6 +169,11 @@ export default function App() {
   const handleAuthenticated = async (handle, token) => {
     setAuthToken(token);
     setSession({ handle, isAdmin: false });
+    // Only the server knows who is an instructor (ADMIN_HANDLES). Without this
+    // an instructor who logs in fresh stays gated until they reload the page.
+    fetchSession()
+      .then(d => { if (d?.success) setSession({ handle: d.handle, isAdmin: !!d.isAdmin }); })
+      .catch(() => { /* keep the non-admin view; the reload path will correct it */ });
     try {
       const manifestRes = await fetchManifest();
       if (manifestRes.success) {
@@ -549,6 +554,7 @@ export default function App() {
             onSwitchPlatform={handleSwitchPlatform}
             unlockedHints={unlockedHints}
             setUnlockedHints={setUnlockedHints}
+            isAdmin={!!session?.isAdmin}
           />
 
           {/* Right: Simulated Terminal */}

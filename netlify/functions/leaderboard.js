@@ -1,8 +1,24 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
 // Netlify Function: GET /api/leaderboard
 
-import { listPlayers, getSolves } from './utils/store.js';
-import { BADGE_DEFINITIONS, CHALLENGES } from '../../src/data/challenges.js';
+import { listPlayers, getSolves, normalizeSolve } from './utils/store.js';
+import { PACKS } from '../../packs/index.js';
+
+// Badges were read from a single superseded challenge module, so only the
+// forensics pack could ever award one and students in the other two packs
+// earned nothing. Each pack defines its own badges in its pack.json; award
+// from whichever pack a solved challenge id belongs to. Solve records are not
+// pack-scoped yet, and challenge ids are unique across packs, so intersecting
+// per pack is both correct and cheap.
+const BADGE_RULES = Object.values(PACKS).flatMap(pack =>
+  (pack.manifest.badges || [])
+    .filter(b => b.act)
+    .map(b => ({
+      id: b.id,
+      required: pack.challenges.filter(c => c.act === b.act).map(c => c.id)
+    }))
+    .filter(rule => rule.required.length > 0)
+);
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -29,9 +45,10 @@ export default async (req) => {
       let solveCount = 0;
       const solvedIds = [];
 
-      for (const [challengeId, s] of Object.entries(solvesObj)) {
+      for (const [challengeId, raw] of Object.entries(solvesObj)) {
+        const s = normalizeSolve(raw);
         if (isWeekly && new Date(s.solvedAt).getTime() < oneWeekAgo) continue;
-        score += Math.max(0, (s.points || 0) - (s.hintPenalty || 0));
+        score += s.netPoints;
         solveCount += 1;
         solvedIds.push(challengeId);
       }
@@ -52,17 +69,11 @@ export default async (req) => {
     });
 
     const leaderboard = rows.slice(0, 50).map((player, idx) => {
-      const earnedBadges = [];
       const solvedSet = new Set(player.solves);
-      BADGE_DEFINITIONS.forEach(b => {
-        if (b.act) {
-          const actChallenges = CHALLENGES.filter(c => c.act === b.act);
-          const solvedInAct = actChallenges.filter(c => solvedSet.has(c.id));
-          if (actChallenges.length > 0 && solvedInAct.length >= Math.ceil(actChallenges.length * 0.8)) {
-            earnedBadges.push(b.id);
-          }
-        }
-      });
+      const earnedBadges = BADGE_RULES
+        .filter(rule =>
+          rule.required.filter(id => solvedSet.has(id)).length >= Math.ceil(rule.required.length * 0.8))
+        .map(rule => rule.id);
 
       return {
         rank: idx + 1,

@@ -4,6 +4,7 @@
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 import { listPlayers, getSolves } from './utils/store.js';
+import { isAdminHandle } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -27,12 +28,7 @@ export default async (req) => {
   }
 
   const handle = verified.handle;
-  const adminHandles = (process.env.ADMIN_HANDLES || '')
-    .split(',')
-    .map(h => h.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (!adminHandles.includes(handle.toLowerCase())) {
+  if (!isAdminHandle(handle)) {
     return json(403, { error: 'Forbidden: Admin clearance required' });
   }
 
