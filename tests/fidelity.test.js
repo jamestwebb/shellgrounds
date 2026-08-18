@@ -162,3 +162,51 @@ describe('Differential Fidelity Standards (Uplift §2)', () => {
     expect(res.stdout).toContain('notes.txt');
   });
 });
+
+describe('Tab completion matches real shell whitespace rules', () => {
+  const load = async () => {
+    const m = await import('../packages/engine/complete.js');
+    const getCompletions = m.getCompletions || m.getTabCompletions || Object.values(m)[0];
+    const { getPack } = await import('../packs/index.js');
+    return { getCompletions, pack: getPack('forensics-cli-101') };
+  };
+
+  it('bash: a completed FILE gets a trailing space', async () => {
+    const { getCompletions, pack } = await load();
+    const r = getCompletions('cat wel', '/home/analyst', pack.createFs('linux'), false);
+    expect(r.matches).toEqual(['welcome.txt ']);
+  });
+
+  it('bash: a completed DIRECTORY gets a trailing slash and no space', async () => {
+    const { getCompletions, pack } = await load();
+    const r = getCompletions('cd Doc', '/home/analyst', pack.createFs('linux'), false);
+    expect(r.matches).toEqual(['Documents/']);
+  });
+
+  it('cmd.exe: no trailing separator and no trailing space', async () => {
+    const { getCompletions, pack } = await load();
+    const r = getCompletions('cd Doc', 'C:\\Users\\Analyst', pack.createFs('windows'), true);
+    expect(r.matches).toEqual(['Documents']);
+  });
+
+  it('cmd.exe: names containing spaces are quoted so the result is runnable', async () => {
+    const { getCompletions, pack } = await load();
+    const r = getCompletions('cd Prog', 'C:', pack.createFs('windows'), true);
+    expect(r.matches).toEqual(['"Program Files"']);
+  });
+
+  it('every completion produces a command that actually runs', async () => {
+    const { runPipeline } = await import('../packages/engine/shell/exec.js');
+    const { getPack } = await import('../packs/index.js');
+    const pack = getPack('forensics-cli-101');
+    const cases = [
+      ['cat welcome.txt ', 'linux', '/home/analyst', 'analyst'],
+      ['cd Documents/', 'linux', '/home/analyst', 'analyst'],
+      ['cd "Program Files"', 'windows', 'C:', 'Analyst']
+    ];
+    for (const [cmd, plat, cwd, user] of cases) {
+      const res = runPipeline(cmd, cwd, pack.createFs(plat), plat, { packCommands: pack.commands, user });
+      expect(res.hasError, `${cmd} failed: ${res.output}`).toBeFalsy();
+    }
+  });
+});
