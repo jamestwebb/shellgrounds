@@ -7,7 +7,7 @@ describe('Windows Command Executor', () => {
 
   it('handles cd alone to show current path', () => {
     const res = executeWindowsCommand(['cd'], 'C:\\Users\\Analyst', fs);
-    expect(res.stdout).toBe('C:\\Users\\Analyst');
+    expect(res.stdout.trim()).toBe('C:\\Users\\Analyst');
   });
 
   it('handles dir and dir /a', () => {

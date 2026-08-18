@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// The Gauntlet — Forensics CLI 101 — a standalone Netlify CLI challenge site for cyber forensics courses
+// The Gauntlet — Interactive Proving Ground
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Terminal as TerminalIcon, Trophy, MapPin, Shield, LogOut,
-  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen
+  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen, Package, Layers
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
 import { Boot } from './components/Boot';
@@ -17,692 +17,485 @@ import { AdminOverview } from './components/AdminOverview';
 import { CommandReference } from './components/CommandReference';
 import { BadgeCelebration } from './components/BadgeCelebration';
 import { KeyboardGuard } from './components/KeyboardGuard';
+import SimulationBoundary from './components/SimulationBoundary';
+import PackSelector from './components/PackSelector';
 
-import { createWarrenFilesystem } from './engine/fs.warren';
-import { createTopsideFilesystem } from './engine/fs.topside';
-import { runPipeline } from './engine/pipeline';
-import { ACT_DEFINITIONS, BADGE_DEFINITIONS, CHALLENGES, isActUnlockedFor } from './data/challenges';
+import { getPack, DEFAULT_PACK_ID, listPacks } from '../packs/index.js';
+import { runPipeline } from '../packages/engine/shell/exec.js';
+import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
+import { ERROR_MARKERS } from '../packages/engine/constants.js';
 import { fetchSession, fetchManifest, submitFlagApi, getAuthToken, setAuthToken } from './utils/api';
-import { injectFlagsIntoVFS, replaceFlagTokens } from './utils/vfs-injector';
-import { explainCommand } from './engine/coach';
+import { replaceFlagTokens } from './utils/vfs-injector';
+import { explainCommand } from '../packages/engine/coach.js';
 import { sounds } from './utils/audio';
 
-// A command that "ran" but errored must not satisfy a challenge (kept in sync with submit-flag.js)
-const ERROR_MARKERS = /command not found|not available in this simulator|that is the (Linux|Windows) name|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
-
-// Badges implied by an existing solve set — used to seed state silently on
-// session load so returning players don't get re-celebrated with confetti.
-const computeEarnedBadges = (solves) => {
-  const solvedSet = new Set(Object.keys(solves));
-  return BADGE_DEFINITIONS.filter(b => {
-    if (!b.act) return false;
-    const actChallenges = CHALLENGES.filter(c => c.act === b.act);
-    const solvedInAct = actChallenges.filter(c => solvedSet.has(c.id));
-    return actChallenges.length > 0 && solvedInAct.length >= Math.ceil(actChallenges.length * 0.8);
-  }).map(b => b.id);
-};
-
-// Where a returning player should land: their first unsolved challenge on any
-// platform (a player deep in the Windows quest resumes there, not at Act I)
-const resumeSelection = (solves) => {
-  const linux = CHALLENGES.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
-  return linux || CHALLENGES.find(c => !solves[c.id]);
-};
-
-const MANIFEST_WARNING = {
-  type: 'output',
-  text: '[!] WARNING: Could not load your personal flag set from HQ. Refresh the page before hunting flags.',
-  isError: true
+const resumeSelection = (challenges, solves) => {
+  const linux = challenges.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
+  return linux || challenges.find(c => !solves[c.id]) || challenges[0];
 };
 
 export default function App() {
   // Navigation & Session States
-  const [viewState, setViewState] = useState(() => {
-    // If returning user has token, go to boot; otherwise gate
-    return 'boot';
-  });
-  const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'leaderboard' | 'map' | 'admin'
+  const [viewState, setViewState] = useState('boot');
+  const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'leaderboard' | 'map' | 'admin' | 'reference'
   const [session, setSession] = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+
+  // Active Pack Configuration
+  const [activePackId, setActivePackId] = useState(DEFAULT_PACK_ID);
+  const currentPack = useMemo(() => getPack(activePackId), [activePackId]);
 
   // Terminal & Filesystem State
   const [platform, setPlatform] = useState('linux'); // 'linux' | 'windows'
   const [cwd, setCwd] = useState('/home/analyst');
-  const [linuxFs, setLinuxFs] = useState(() => createWarrenFilesystem());
-  const [windowsFs, setWindowsFs] = useState(() => createTopsideFilesystem());
+  const [linuxFs, setLinuxFs] = useState(() => currentPack.createFs('linux'));
+  const [windowsFs, setWindowsFs] = useState(() => currentPack.createFs('windows'));
   const [installedPackages, setInstalledPackages] = useState(new Set());
   const [terminalHistory, setTerminalHistory] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
 
   // Challenge Progression State
   const [activeActId, setActiveActId] = useState(1);
-  const [selectedChallengeId, setSelectedChallengeId] = useState('act1-pwd');
-  const [flagMap, setFlagMap] = useState({}); // challengeId -> per-user flag (from server manifest)
-  const [unlockedHints, setUnlockedHints] = useState({}); // challengeId -> number of hints revealed
-  const [solvesMap, setSolvesMap] = useState({}); // challengeId -> { points, hintPenalty, netPoints, solvedAt }
-  // Derived, never stored: a second source of truth would drift under concurrent submissions
-  const totalScore = useMemo(
-    () => Object.values(solvesMap).reduce((sum, s) => sum + (s.netPoints || 0), 0),
-    [solvesMap]
-  );
+  const [selectedChallengeId, setSelectedChallengeId] = useState(() => currentPack.challenges[0]?.id || 'act1-pwd');
+  const [flagMap, setFlagMap] = useState({});
+  const [unlockedHints, setUnlockedHints] = useState({});
+  const [solvesMap, setSolvesMap] = useState({});
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [newBadge, setNewBadge] = useState(null);
+
+  // Modals
+  const [showBoundaryModal, setShowBoundaryModal] = useState(false);
+  const [showPackModal, setShowPackModal] = useState(false);
 
   // Settings
   const [scanlines, setScanlines] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [coachEnabled, setCoachEnabled] = useState(true);
-  const coachCountsRef = useRef({}); // command -> times a success explainer was shown
 
   // Active filesystem reference
-  const activeFs = platform === 'linux' ? linuxFs : windowsFs;
+  const activeFs = platform === 'windows' ? windowsFs : linuxFs;
 
-  // Hint reveals persist per handle so a refresh neither hides paid hints
-  // nor quietly resets their penalties.
-  const loadStoredHints = (handle) => {
-    try {
-      return JSON.parse(localStorage.getItem(`gauntlet_hints_${handle}`)) || {};
-    } catch {
-      return {};
-    }
-  };
-  const sessionRef = useRef(null);
-  useEffect(() => { sessionRef.current = session; }, [session]);
-  const setUnlockedHintsPersist = useCallback((updater) => {
-    setUnlockedHints(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      const handle = sessionRef.current?.handle;
-      if (handle) {
-        try { localStorage.setItem(`gauntlet_hints_${handle}`, JSON.stringify(next)); } catch { /* storage full/blocked */ }
+  // Total score calculation
+  const totalScore = useMemo(
+    () => Object.values(solvesMap).reduce((sum, s) => sum + (s.netPoints || 0), 0),
+    [solvesMap]
+  );
+
+  // Load / Switch Pack
+  const handleSelectPack = useCallback((newPackId) => {
+    setActivePackId(newPackId);
+    const pack = getPack(newPackId);
+    const plat = pack.manifest.platforms?.[0] || 'linux';
+    setPlatform(plat);
+    setCwd(plat === 'windows' ? (pack.manifest.windows?.home || 'C:\\Users\\Student') : (pack.manifest.linux?.home || '/home/student'));
+    setLinuxFs(pack.createFs('linux'));
+    setWindowsFs(pack.createFs('windows'));
+    setActiveActId(1);
+    setSelectedChallengeId(pack.challenges[0]?.id || '');
+    setTerminalHistory([
+      {
+        type: 'output',
+        text: `[+] Switched active curriculum to: ${pack.manifest.name} (v${pack.manifest.version})`,
+        isSuccess: true
       }
-      return next;
-    });
+    ]);
   }, []);
 
-  // 1. Initial Session Load
+  // Initialize session on mount
   useEffect(() => {
-    const init = async () => {
-      setLoadingSession(true);
+    async function init() {
       const token = getAuthToken();
-      if (token) {
-        try {
-          const sess = await fetchSession();
-          if (sess && sess.success) {
-            setSession(sess);
-            setUnlockedHints(loadStoredHints(sess.handle));
-            const map = {};
-            (sess.solves || []).forEach(s => {
-              map[s.challengeId] = s;
-            });
-            setSolvesMap(map);
-            setEarnedBadges(computeEarnedBadges(map)); // silent — no confetti replay
-            const resume = resumeSelection(map);
-            if (resume) {
-              setActiveActId(resume.act);
-              setSelectedChallengeId(resume.id);
-              if (resume.platform === 'windows') {
-                setPlatform('windows');
-                setCwd('C:\\Users\\Analyst');
-              }
-            }
+      if (!token) {
+        setLoadingSession(false);
+        setViewState('gate');
+        return;
+      }
 
-            // Fetch manifest and splice flags into VFS
-            const manifest = await fetchManifest();
-            const serverFlags = manifest.flags || {};
-            const linuxResult = injectFlagsIntoVFS(createWarrenFilesystem(), sess.handle, serverFlags);
-            const windowsResult = injectFlagsIntoVFS(createTopsideFilesystem(), sess.handle, serverFlags);
-            setLinuxFs(linuxResult.fs);
-            setWindowsFs(windowsResult.fs);
-            setFlagMap({ ...linuxResult.flagMap, ...windowsResult.flagMap });
-            if (Object.keys(serverFlags).length === 0) {
-              setTerminalHistory([MANIFEST_WARNING]);
-            }
+      try {
+        const data = await fetchSession();
+        if (data.success) {
+          setSession({ handle: data.handle, isAdmin: data.isAdmin });
+          if (data.packId && data.packId !== activePackId) {
+            handleSelectPack(data.packId);
           }
-        } catch (err) {
-          console.error('Session load error:', err);
+
+          const solves = {};
+          (data.solves || []).forEach(s => {
+            solves[s.challengeId] = s;
+          });
+          setSolvesMap(solves);
+
+          const manifestRes = await fetchManifest();
+          if (manifestRes.success) {
+            setFlagMap(manifestRes.flags || {});
+          }
+
+          setViewState('app');
+        } else {
+          setViewState('gate');
         }
+      } catch (err) {
+        console.warn('Session init failed:', err);
+        setViewState('gate');
+      } finally {
+        setLoadingSession(false);
       }
-      setLoadingSession(false);
-    };
+    }
     init();
-  }, []);
+  }, [handleSelectPack, activePackId]);
 
-  // Sync sound settings
-  useEffect(() => {
-    sounds.enabled = soundEnabled;
-  }, [soundEnabled]);
+  // Practice Mode Login
+  const handleStartPractice = () => {
+    setIsPracticeMode(true);
+    setSession({ handle: 'guest_analyst', isAdmin: false });
+    setViewState('app');
+    sounds.playSuccess();
+  };
 
-  // Check and award badges
-  const checkBadges = useCallback((currentSolves) => {
-    const solvedSet = new Set(Object.keys(currentSolves));
-    const newlyEarned = [];
-
-    BADGE_DEFINITIONS.forEach(badge => {
-      if (earnedBadges.includes(badge.id)) return;
-
-      let earned = false;
-      if (badge.act) {
-        const actChallenges = CHALLENGES.filter(c => c.act === badge.act);
-        const solvedInAct = actChallenges.filter(c => solvedSet.has(c.id));
-        if (actChallenges.length > 0 && solvedInAct.length >= Math.ceil(actChallenges.length * 0.8)) {
-          earned = true;
-        }
-      }
-
-      if (earned) {
-        newlyEarned.push(badge);
-      }
-    });
-
-    if (newlyEarned.length > 0) {
-      const newIds = newlyEarned.map(b => b.id);
-      setEarnedBadges(prev => [...prev, ...newIds]);
-      setNewBadge(newlyEarned[0]);
-    }
-  }, [earnedBadges]);
-
-  // Badges react to the solve map itself, so every solve path (sidebar, terminal
-  // submit, auto-solve) is covered without threading the updated map around.
-  useEffect(() => {
-    checkBadges(solvesMap);
-  }, [solvesMap, checkBadges]);
-
-  // Handle successful authentication
+  // Authenticated Login
   const handleAuthenticated = async (handle, token) => {
-    // Registration already succeeded and the token is stored: from here on,
-    // NEVER throw — a manifest/session blip must not strand the player on the
-    // Gate where re-registering errors with "already claimed".
     setAuthToken(token);
-    setUnlockedHints(loadStoredHints(handle));
-
+    setSession({ handle, isAdmin: false });
     try {
-      const manifest = await fetchManifest();
-      const serverFlags = manifest.flags || {};
-      const linuxResult = injectFlagsIntoVFS(createWarrenFilesystem(), handle, serverFlags);
-      const windowsResult = injectFlagsIntoVFS(createTopsideFilesystem(), handle, serverFlags);
-      setLinuxFs(linuxResult.fs);
-      setWindowsFs(windowsResult.fs);
-      setFlagMap({ ...linuxResult.flagMap, ...windowsResult.flagMap });
-      if (Object.keys(serverFlags).length === 0) {
-        setTerminalHistory([MANIFEST_WARNING]);
+      const manifestRes = await fetchManifest();
+      if (manifestRes.success) {
+        setFlagMap(manifestRes.flags || {});
       }
-    } catch (err) {
-      console.error('Manifest load error:', err);
-      setTerminalHistory([MANIFEST_WARNING]);
+    } catch (e) {
+      console.error(e);
     }
-
-    // isAdmin and any existing solves come from the server, never from local guesses
-    let sess = null;
-    try {
-      sess = await fetchSession();
-    } catch (err) {
-      console.error('Session fetch error after registration:', err);
-    }
-    const map = {};
-    (sess?.solves || []).forEach(s => {
-      map[s.challengeId] = s;
-    });
-    setSolvesMap(map);
-    setEarnedBadges(computeEarnedBadges(map));
-    const resume = resumeSelection(map);
-    if (resume) {
-      setActiveActId(resume.act);
-      setSelectedChallengeId(resume.id);
-      if (resume.platform === 'windows') {
-        setPlatform('windows');
-        setCwd('C:\\Users\\Analyst');
-      }
-    }
-
-    setSession({
-      handle,
-      token,
-      isAdmin: sess?.isAdmin || false,
-      solves: sess?.solves || [],
-      totalScore: sess?.totalScore || 0
-    });
-    setViewState('warren');
+    setViewState('app');
   };
 
-  // Submit flag handler
-  const handleFlagSubmit = async (challengeId, flagText, hintsUsed = 0, commandText = '', submitCwd = undefined) => {
-    try {
-      // The per-challenge hint map lets the server charge the penalty against
-      // whichever challenge the flag actually matches, not the selected one.
-      // submitCwd lets the server replay the command from where it really ran.
-      const res = await submitFlagApi(challengeId, flagText, hintsUsed, commandText, unlockedHints, submitCwd);
-      if (res.success) {
-        sounds.playSuccess();
-        // The server resolves which challenge a flag actually belongs to.
-        // Functional update: concurrent submissions (terminal auto-solve racing a
-        // sidebar submit) must not clobber each other via a stale closure, and a
-        // repeat solve must not overwrite the original entry with 0 points.
-        const solvedId = res.challengeId || challengeId;
-        setSolvesMap(prev => {
-          if (res.alreadySolved && prev[solvedId]) return prev;
-          return {
-            ...prev,
-            [solvedId]: {
-              challengeId: solvedId,
-              points: res.basePoints || 20,
-              hintPenalty: res.hintPenalty || 0,
-              netPoints: res.alreadySolved
-                ? Math.max(0, (res.basePoints || 0) - (res.hintPenalty || 0))
-                : (res.pointsAwarded || 0),
-              solvedAt: new Date().toISOString()
-            }
-          };
-        });
+  const handleLogout = () => {
+    setAuthToken('');
+    setSession(null);
+    setIsPracticeMode(false);
+    setViewState('gate');
+  };
 
-        return {
-          success: true,
-          successMessage: res.successMessage,
-          pointsAwarded: res.pointsAwarded,
-          challengeId: solvedId,
-          challengeTitle: res.challengeTitle,
-          alreadySolved: res.alreadySolved
-        };
-      } else {
-        sounds.playError();
-        return { success: false, error: res.error || 'Incorrect flag' };
-      }
-    } catch (err) {
-      sounds.playError();
-      return { success: false, error: err.message || 'Submission failed' };
+  // Switch Platform (Linux <-> Windows)
+  const handleSwitchPlatform = (newPlatform, targetChallengeId = null) => {
+    setPlatform(newPlatform);
+    if (newPlatform === 'windows') {
+      setCwd(currentPack.manifest.windows?.home || 'C:\\Users\\Analyst');
+    } else {
+      setCwd(currentPack.manifest.linux?.home || '/home/analyst');
+    }
+    if (targetChallengeId) {
+      setSelectedChallengeId(targetChallengeId);
     }
   };
 
-  // After a terminal-driven solve, move the sidebar to the next unsolved challenge
-  // so students never hunt for what comes next. Only fires when the current
-  // selection is the solved challenge or is itself already solved.
-  const advanceAfterSolve = useCallback((solvedId) => {
-    const solved = CHALLENGES.find(c => c.id === solvedId);
-    if (!solved) return;
-    const isSolvedNow = (id) => id === solvedId || !!solvesMap[id];
-    if (selectedChallengeId !== solvedId && !isSolvedNow(selectedChallengeId)) return;
-    const actList = CHALLENGES.filter(c => c.act === solved.act);
-    let next = actList.find(c => !isSolvedNow(c.id));
-    if (!next && solved.act < 5) {
-      next = CHALLENGES.find(c =>
-        c.act === solved.act + 1 &&
-        (c.platform || 'linux') === platform &&
-        !isSolvedNow(c.id)
-      );
-    }
-    if (next) {
-      setActiveActId(next.act);
-      setSelectedChallengeId(next.id);
-    }
-  }, [solvesMap, selectedChallengeId, platform]);
-
-  // Execute terminal command handler
-  const handleExecuteCommand = useCallback(async (input, options = {}) => {
-    if (options.showCompletions) {
+  // Command Execution in Terminal
+  const handleExecuteCommand = (cmdText, meta = {}) => {
+    if (meta.isTabList) {
       setTerminalHistory(prev => [
         ...prev,
-        { type: 'input', text: options.input, cwd },
-        { type: 'output', text: options.showCompletions }
+        { type: 'input', text: meta.promptLine, cwd },
+        { type: 'output', text: meta.matches.join('   '), isDim: true }
       ]);
       return;
     }
 
-    if (!input || !input.trim()) return;
-
-    const trimmed = input.trim();
-
-    // Run command through pipeline engine
-    const res = runPipeline(trimmed, cwd, activeFs, platform, {
-      installedPackages,
-      session
-    });
-
-    // Update packages if newly installed
-    if (res.installedPackage) {
-      setInstalledPackages(prev => {
-        const updated = new Set(prev);
-        updated.add(res.installedPackage);
-        return updated;
-      });
-    }
-
-    // Handle clear screen
-    if (res.clear) {
-      setTerminalHistory([]);
-      setCwd(res.newCwd);
+    if (meta.isCancel) {
+      setTerminalHistory(prev => [
+        ...prev,
+        { type: 'input', text: currentInput + '^C', cwd }
+      ]);
       return;
     }
 
-    // Update VFS and CWD
-    if (platform === 'linux') {
-      setLinuxFs(res.fs);
-    } else {
-      setWindowsFs(res.fs);
+    const trimmed = (cmdText || '').trim();
+    if (!trimmed) {
+      setTerminalHistory(prev => [...prev, { type: 'input', text: '', cwd }]);
+      return;
     }
-    setCwd(res.newCwd);
 
-    // Append to terminal history. Command output can carry [[FLAG:id]] tokens
-    // (e.g. from `tracker` and `extract`) — resolve them with the user's flag map.
-    const outputText = replaceFlagTokens(res.output, flagMap);
-    const historyItems = [
-      { type: 'input', text: trimmed, cwd },
-      ...(outputText ? [{ type: 'output', text: outputText, isError: res.hasError }] : [])
+    // Execute through core engine pipeline
+    const prevCwd = cwd;
+    const isWin = platform === 'windows';
+    const res = runPipeline(trimmed, cwd, activeFs, isWin ? 'windows' : 'linux', {
+      installedPackages,
+      packCommands: currentPack.commands,
+      packHelp: currentPack.help,
+      user: isWin ? (currentPack.manifest.windows?.user || 'Student') : (currentPack.manifest.linux?.user || 'student')
+    });
+
+    if (res.newCwd) setCwd(res.newCwd);
+    if (res.fs) {
+      if (isWin) setWindowsFs(res.fs);
+      else setLinuxFs(res.fs);
+    }
+
+    if (res.clear) {
+      setTerminalHistory([]);
+      return;
+    }
+
+    const newHistory = [
+      ...terminalHistory,
+      { type: 'input', text: trimmed, cwd: prevCwd }
     ];
 
-    // Explicit null feedback: silence is indistinguishable from a freeze for novices
-    if (!outputText && !res.hasError && !res.submitFlag) {
-      historyItems.push({
+    if (res.output) {
+      newHistory.push({
         type: 'output',
-        text: '(no output — in a shell, silence usually means success)',
-        isDim: true
+        // Pack commands emit [[FLAG:id]] placeholders in their output (the VFS
+        // is substituted at load, command output is not). Without this the
+        // student sees a raw placeholder instead of their flag.
+        text: replaceFlagTokens(res.output, flagMap),
+        isError: res.hasError
       });
     }
 
-    // Coach line: explain what just happened. Errors are always explained;
-    // success explanations fade out after the second use of a command.
+    // Coach explanation
     if (coachEnabled) {
-      const tip = explainCommand(trimmed, res, platform, cwd);
-      if (tip) {
-        const cmdKey = trimmed.split(/\s+/)[0].toLowerCase();
-        let show = true;
-        if (!res.hasError) {
-          coachCountsRef.current[cmdKey] = (coachCountsRef.current[cmdKey] || 0) + 1;
-          show = coachCountsRef.current[cmdKey] <= 2;
-        }
-        if (show) {
-          historyItems.push({ type: 'output', text: tip, isCoach: true });
-        }
+      const explainer = explainCommand(trimmed, res, platform, prevCwd, {});
+      if (explainer) {
+        newHistory.push({
+          type: 'output',
+          text: explainer,
+          isCoach: true
+        });
       }
     }
-    setTerminalHistory(prev => [...prev, ...historyItems]);
 
-    // Handle in-terminal 'submit' command. The server matches the flag against
-    // every challenge, so it does not matter which one is selected in the sidebar.
-    if (res.submitFlag) {
-      const subResult = await handleFlagSubmit(
-        selectedChallengeId,
-        res.submitFlag,
-        unlockedHints[selectedChallengeId] || 0
-      );
-      if (subResult.success) {
-        const solvedTitle = subResult.challengeTitle
-          || CHALLENGES.find(c => c.id === subResult.challengeId)?.title
-          || 'challenge';
-        const already = subResult.alreadySolved ? ' (already solved — no new XP)' : '';
+    setTerminalHistory(newHistory);
+
+    // Auto check if this command completes the selected command/state challenge
+    const currentChallenge = currentPack.challenges.find(c => c.id === selectedChallengeId);
+    if (currentChallenge && (currentChallenge.success?.kind === 'command' || currentChallenge.success?.predicate || currentChallenge.success?.kind === 'state')) {
+      const passes = !res.hasError && evaluatePredicate(currentChallenge.success, {
+        fs: res.fs || activeFs,
+        cwd: res.newCwd || cwd,
+        commandText: trimmed,
+        stdout: res.stdout,
+        stderr: res.stderr,
+        output: res.output,
+        status: res.status,
+        isWindows: isWin,
+        trusted: true
+      });
+
+      if (passes && !ERROR_MARKERS.test(res.output || '')) {
+        handleChallengeSuccess(currentChallenge, trimmed);
+      }
+    }
+  };
+
+  const handleChallengeSuccess = async (challenge, proofCommand = '') => {
+    if (solvesMap[challenge.id]) return;
+
+    if (isPracticeMode) {
+      setSolvesMap(prev => ({
+        ...prev,
+        [challenge.id]: {
+          points: challenge.points || 0,
+          hintPenalty: 0,
+          netPoints: challenge.points || 0,
+          solvedAt: new Date().toISOString()
+        }
+      }));
+      sounds.playSuccess();
+      setTerminalHistory(prev => [
+        ...prev,
+        {
+          type: 'output',
+          text: `[★] CHALLENGE COMPLETE (+${challenge.points} XP): ${challenge.title}\n${challenge.successMessage || ''}`,
+          isSuccess: true
+        }
+      ]);
+      return;
+    }
+
+    try {
+      const res = await submitFlagApi(challenge.id, null, unlockedHints[challenge.id] || 0, proofCommand, cwd);
+      if (res.success) {
+        sounds.playSuccess();
+        setSolvesMap(prev => ({
+          ...prev,
+          [challenge.id]: {
+            points: challenge.points || 0,
+            hintPenalty: 0,
+            netPoints: res.points,
+            solvedAt: new Date().toISOString()
+          }
+        }));
         setTerminalHistory(prev => [
           ...prev,
           {
             type: 'output',
-            text: `[+] SUCCESS: Flag accepted for '${solvedTitle}'! (+${subResult.pointsAwarded} XP)${already}\n${subResult.successMessage || ''}`,
+            text: `[★] CHALLENGE COMPLETE (+${res.points} XP): ${challenge.title}\n${res.successMessage || ''}`,
             isSuccess: true
           }
         ]);
-        advanceAfterSolve(subResult.challengeId);
-      } else {
+      }
+    } catch (err) {
+      console.warn('Auto-submit failed:', err);
+    }
+  };
+
+  const handleFlagSubmit = async (flagValue) => {
+    if (!flagValue || !flagValue.trim()) return;
+
+    if (isPracticeMode) {
+      // Find matching challenge
+      const c = currentPack.challenges.find(ch => ch.id === selectedChallengeId);
+      if (c) {
+        setSolvesMap(prev => ({
+          ...prev,
+          [c.id]: { points: c.points, hintPenalty: 0, netPoints: c.points, solvedAt: new Date().toISOString() }
+        }));
+        sounds.playSuccess();
         setTerminalHistory(prev => [
           ...prev,
-          {
-            type: 'output',
-            text: `[-] REJECTED: ${subResult.error || 'Incorrect flag string.'}`,
-            isError: true
-          }
+          { type: 'output', text: `[★] FLAG ACCEPTED (+${c.points} XP): ${c.title}`, isSuccess: true }
         ]);
       }
+      return;
     }
 
-    // Command- and state-kind challenges score no matter which challenge is
-    // selected in the sidebar: the executed command is tested against the first
-    // unsolved matching challenge on this platform (in act order).
-    if (!res.hasError && !ERROR_MARKERS.test(res.output || '')) {
-      // Mirrors the server's act gating: never auto-submit into a locked act
-      const solvedIds = new Set(Object.keys(solvesMap));
-      const actUnlocked = (actId) =>
-        isActUnlockedFor(ACT_DEFINITIONS.find(a => a.id === actId), solvedIds, CHALLENGES);
-      const candidate = CHALLENGES.find(c => {
-        if (solvesMap[c.id]) return false;
-        if ((c.platform || 'linux') !== platform) return false;
-        if (!actUnlocked(c.act)) return false;
-        if (c.success.kind === 'command') {
-          return !!c.success.matchRegex && new RegExp(c.success.matchRegex, 'i').test(trimmed);
-        }
-        if (c.success.kind === 'state') {
-          return typeof c.success.check === 'function' && !!c.success.check(res.fs);
-        }
-        return false;
-      });
-      if (candidate) {
-        const subResult = await handleFlagSubmit(candidate.id, '', unlockedHints[candidate.id] || 0, trimmed, cwd);
-        if (!subResult.success) {
-          // Never fail silently: the student's command LOOKED right locally
-          setTerminalHistory(prev => [
-            ...prev,
-            {
-              type: 'output',
-              text: `[!] '${candidate.title}' matched your command, but validation failed: ${subResult.error || 'unknown error'}. Try again, or refresh the page if this repeats.`,
-              isError: true
-            }
-          ]);
-        }
-        if (subResult.success) {
-          setTerminalHistory(prev => [
-            ...prev,
-            {
-              type: 'output',
-              text: `[+] CHALLENGE COMPLETE: '${candidate.title}' (+${subResult.pointsAwarded} XP)\n${subResult.successMessage || ''}`,
-              isSuccess: true
-            }
-          ]);
-          advanceAfterSolve(candidate.id);
-        }
+    try {
+      const res = await submitFlagApi(selectedChallengeId, flagValue.trim(), unlockedHints[selectedChallengeId] || 0, '', cwd);
+      if (res.success) {
+        sounds.playSuccess();
+        setSolvesMap(prev => ({
+          ...prev,
+          [res.challengeId || selectedChallengeId]: {
+            points: res.points,
+            netPoints: res.points,
+            solvedAt: new Date().toISOString()
+          }
+        }));
+        setTerminalHistory(prev => [
+          ...prev,
+          { type: 'output', text: `[★] FLAG ACCEPTED (+${res.points} XP)\n${res.successMessage || ''}`, isSuccess: true }
+        ]);
       }
+    } catch (err) {
+      sounds.playError();
+      setTerminalHistory(prev => [
+        ...prev,
+        { type: 'output', text: `[!] ${err.message || 'Incorrect flag.'}`, isError: true }
+      ]);
     }
-  }, [cwd, activeFs, platform, installedPackages, session, selectedChallengeId, solvesMap, handleFlagSubmit, flagMap, unlockedHints, coachEnabled, advanceAfterSolve]);
+  };
 
-  // Clear terminal screen
   const handleClearHistory = () => {
     setTerminalHistory([]);
   };
 
-  // Switch between Linux (The Warren) and Windows (Topside)
-  const handleSwitchPlatform = (newPlatform, targetChallengeId = null) => {
-    setPlatform(newPlatform);
-    const fallback = newPlatform === 'windows' ? 'topside-nav' : 'act1-pwd';
-    const targetId = targetChallengeId || fallback;
-    const target = CHALLENGES.find(c => c.id === targetId);
-    setCwd(newPlatform === 'windows' ? 'C:\\Users\\Analyst' : '/home/analyst');
-    setActiveActId(target?.act ?? (newPlatform === 'windows' ? 6 : 1));
-    setSelectedChallengeId(targetId);
-    setTerminalHistory([{
-      type: 'output',
-      text: newPlatform === 'windows'
-        ? '(switched to the Windows CMD side — fresh session)'
-        : '(switched to the Linux side — fresh session)',
-      isDim: true
-    }]);
-  };
-
-  // Handle logout: reset EVERYTHING a next player on this machine could inherit
-  // (scrollback with flag chips, hint counts, platform, installed tools)
-  const handleLogout = () => {
-    setAuthToken(null);
-    setSession(null);
-    setSolvesMap({});
-    setEarnedBadges([]);
-    setNewBadge(null);
-    setFlagMap({});
-    setUnlockedHints({});
-    setTerminalHistory([]);
-    setCurrentInput('');
-    setPlatform('linux');
-    setCwd('/home/analyst');
-    setInstalledPackages(new Set());
-    setLinuxFs(createWarrenFilesystem());
-    setWindowsFs(createTopsideFilesystem());
-    setActiveActId(1);
-    setSelectedChallengeId('act1-pwd');
-    coachCountsRef.current = {};
-    setViewState('gate');
-  };
-
-  // View routing
+  // Active view routing
   if (viewState === 'boot') {
-    return (
-      <Boot
-        onBootComplete={() => {
-          if (session) {
-            setViewState('warren');
-          } else {
-            setViewState('gate');
-          }
-        }}
-        userHandle={session?.handle}
-      />
-    );
+    return <Boot onComplete={() => setViewState(session ? 'app' : 'gate')} />;
   }
 
-  // Never show the registration form while a stored session may still be loading:
-  // a returning player would re-type their handle and hit "already claimed".
-  if (!session && loadingSession) {
+  if (viewState === 'gate') {
     return (
-      <div className="min-h-screen bg-term-void text-term-green flex items-center justify-center font-mono text-sm">
-        <div className="animate-pulse">RESTORING SESSION...</div>
+      <div className="min-h-screen bg-term-void flex flex-col">
+        <Gate
+          onAuthenticated={handleAuthenticated}
+          onResumeSession={(h) => {
+            setSession({ handle: h, isAdmin: false });
+            setViewState('app');
+          }}
+          existingHandle={session?.handle}
+        />
+        <div className="text-center pb-6">
+          <button
+            onClick={handleStartPractice}
+            className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
+          >
+            Enter Practice Sandbox Mode (No Login Required)
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Route on session alone: once a stored session resolves, a stale
-  // viewState of 'gate' (boot skipped before the fetch finished) must not
-  // strand a returning player on the registration form.
-  if (!session) {
-    return (
-      <Gate
-        onAuthenticated={handleAuthenticated}
-        onResumeSession={(h) => {
-          if (session) setViewState('warren');
-          else setViewState('gate');
-        }}
-        existingHandle={session?.handle}
-      />
-    );
-  }
-
   return (
-    <div className="h-screen w-screen bg-term-void text-neutral-200 flex flex-col overflow-hidden font-mono select-none">
-      {/* Desktop Keyboard Guard (for screens < 768px) */}
+    <div className="min-h-screen bg-term-void text-neutral-200 flex flex-col font-mono select-none">
       <KeyboardGuard />
 
-      {/* Badge Earned Celebration Overlay */}
-      {newBadge && (
-        <BadgeCelebration
-          badge={newBadge}
-          onClose={() => setNewBadge(null)}
-        />
-      )}
-
-      {/* Top Application Navigation Bar */}
-      <header className="flex-none bg-term-black border-b border-term-border px-4 py-2.5 flex items-center justify-between z-30">
-        {/* Left: Brand Mark & Title */}
-        <div className="flex items-center gap-3">
-          <BrandMark size={24} />
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-green-400 tracking-wider">THE GAUNTLET</span>
-            <span className="text-[11px] text-neutral-400 hidden sm:inline">· Forensics CLI 101</span>
+      {/* Navigation Header */}
+      <header className="h-12 bg-term-black border-b border-term-border px-4 flex items-center justify-between z-30">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('terminal')}>
+            <BrandMark size={22} />
+            <span className="font-bold text-sm tracking-wider text-green-400 hidden md:inline">
+              THE GAUNTLET
+            </span>
           </div>
+
+          {/* Pack Indicator & Selector */}
+          <button
+            onClick={() => setShowPackModal(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition"
+            title="Switch Content Pack"
+          >
+            <Package size={13} className="text-emerald-400" />
+            <span className="font-semibold">{currentPack.manifest.name}</span>
+          </button>
         </div>
 
-        {/* Center: Main View Navigation */}
-        <nav className="flex items-center gap-1 bg-term-panel p-1 rounded-lg border border-term-border">
+        {/* Tab Navigation */}
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button
             onClick={() => setActiveTab('terminal')}
-            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeTab === 'terminal'
                 ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                : 'text-neutral-400 hover:text-white'
+                : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <TerminalIcon size={13} />
-            <span className="hidden sm:inline">TERMINAL</span>
+            <TerminalIcon size={14} /> <span className="hidden sm:inline">TERMINAL</span>
           </button>
 
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
               activeTab === 'leaderboard'
                 ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                : 'text-neutral-400 hover:text-white'
+                : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <Trophy size={13} />
-            <span className="hidden sm:inline">LEADERBOARD</span>
+            <Trophy size={14} /> <span className="hidden sm:inline">RANKINGS</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('map')}
-            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'map'
-                ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                : 'text-neutral-400 hover:text-white'
-            }`}
+            onClick={() => setShowBoundaryModal(true)}
+            className="px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-cyan-500/30"
+            title="Simulation Boundary & Command Reference"
           >
-            <MapPin size={13} />
-            <span className="hidden sm:inline">MAP</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reference')}
-            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'reference'
-                ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <BookOpen size={13} />
-            <span className="hidden sm:inline">REFERENCE</span>
+            <BookOpen size={14} /> <span className="hidden sm:inline">REFERENCE</span>
           </button>
 
           {session?.isAdmin && (
             <button
               onClick={() => setActiveTab('admin')}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
                 activeTab === 'admin'
-                  ? 'bg-term-amber text-term-black shadow-[0_0_10px_rgba(245,158,11,0.3)]'
-                  : 'text-term-amber/70 hover:text-term-amber'
+                  ? 'bg-purple-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                  : 'text-purple-400 hover:text-purple-300 hover:bg-purple-950/40'
               }`}
             >
-              <Shield size={13} />
-              <span className="hidden sm:inline">INSTRUCTOR</span>
+              <Shield size={14} /> <span className="hidden sm:inline">INSTRUCTOR</span>
             </button>
           )}
-        </nav>
+        </div>
 
-        {/* Right: Settings, Score & User Info */}
-        <div className="flex items-center gap-3">
-          {/* CRT Scanline Toggle */}
+        {/* Right Status Controls */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <button
-            onClick={() => setScanlines(!scanlines)}
-            className={`p-1.5 rounded border transition-all cursor-pointer ${
-              scanlines
-                ? 'bg-term-green-faint text-term-green border-term-green/40'
-                : 'bg-term-gray text-neutral-400 border-term-border'
-            }`}
-            title={`CRT Scanlines: ${scanlines ? 'ON' : 'OFF'}`}
+            onClick={() => setSoundEnabled(prev => !prev)}
+            className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-term-gray transition-all cursor-pointer"
+            title={`Audio: ${soundEnabled ? 'ON' : 'OFF'}`}
           >
-            <Monitor size={14} />
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
 
-          {/* Sound Toggle */}
-          <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
-            className={`p-1.5 rounded border transition-all cursor-pointer ${
-              soundEnabled
-                ? 'bg-term-green-faint text-term-green border-term-green/40'
-                : 'bg-term-gray text-neutral-400 border-term-border'
-            }`}
-            title={`Retro Terminal Audio: ${soundEnabled ? 'ON' : 'OFF'}`}
-          >
-            {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          </button>
-
-          {/* User Handle & Score Badge */}
           <div className="flex items-center gap-2 pl-2 border-l border-term-border">
             <div className="text-right hidden sm:block">
               <div className="text-xs font-bold text-white">@{session?.handle}</div>
@@ -722,61 +515,53 @@ export default function App() {
 
       {/* Main Content Body */}
       <main className="flex-1 flex overflow-hidden relative">
-        {/* Keep the terminal MOUNTED when other tabs show: unmounting resets
-            command history (up-arrow recall) and scroll position. */}
-        {(
-          <div className={`flex-1 overflow-hidden ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
-            {/* Left Rail: Challenge Navigation & Briefing */}
-            <ChallengeSidebar
-              acts={ACT_DEFINITIONS}
-              challenges={CHALLENGES}
-              activeActId={activeActId}
-              setActiveActId={setActiveActId}
-              selectedChallengeId={selectedChallengeId}
-              onSelectChallenge={(id) => {
-                setSelectedChallengeId(id);
-                const challenge = CHALLENGES.find(c => c.id === id);
-                if (challenge?.platform && challenge.platform !== platform) {
-                  handleSwitchPlatform(challenge.platform, id);
-                } else if (!challenge?.platform && platform === 'windows') {
-                  handleSwitchPlatform('linux', id);
-                }
-              }}
-              solvesMap={solvesMap}
-              totalScore={totalScore}
-              onSubmitFlag={handleFlagSubmit}
-              platform={platform}
-              onSwitchPlatform={handleSwitchPlatform}
-              unlockedHints={unlockedHints}
-              setUnlockedHints={setUnlockedHintsPersist}
-            />
+        <div className={`flex-1 overflow-hidden ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
+          {/* Left Rail: Challenge Navigation & Briefing */}
+          <ChallengeSidebar
+            acts={currentPack.manifest.acts}
+            challenges={currentPack.challenges}
+            activeActId={activeActId}
+            setActiveActId={setActiveActId}
+            selectedChallengeId={selectedChallengeId}
+            onSelectChallenge={(id) => {
+              setSelectedChallengeId(id);
+              const challenge = currentPack.challenges.find(c => c.id === id);
+              if (challenge?.platform && challenge.platform !== platform) {
+                handleSwitchPlatform(challenge.platform, id);
+              }
+            }}
+            solvesMap={solvesMap}
+            totalScore={totalScore}
+            onSubmitFlag={handleFlagSubmit}
+            platform={platform}
+            onSwitchPlatform={handleSwitchPlatform}
+            unlockedHints={unlockedHints}
+            setUnlockedHints={setUnlockedHints}
+          />
 
-            {/* Right: Simulated Terminal */}
-            <div className="flex-1 flex flex-col p-3 overflow-hidden bg-term-shell-deep">
-              <Terminal
-                platform={platform}
-                cwd={cwd}
-                terminalHistory={terminalHistory}
-                currentInput={currentInput}
-                setCurrentInput={setCurrentInput}
-                onExecuteCommand={handleExecuteCommand}
-                onClearHistory={handleClearHistory}
-                onOpenMap={() => setActiveTab('map')}
-                fs={activeFs}
-                scanlines={scanlines}
-                coachEnabled={coachEnabled}
-                onToggleCoach={() => setCoachEnabled(prev => !prev)}
-              />
-            </div>
+          {/* Right: Simulated Terminal */}
+          <div className="flex-1 flex flex-col p-3 overflow-hidden bg-term-shell-deep">
+            <Terminal
+              platform={platform}
+              cwd={cwd}
+              user={platform === 'windows' ? (currentPack.manifest.windows?.user || 'Student') : (currentPack.manifest.linux?.user || 'student')}
+              host={platform === 'windows' ? 'DESKTOP' : (currentPack.manifest.linux?.host || 'sandbox')}
+              terminalHistory={terminalHistory}
+              currentInput={currentInput}
+              setCurrentInput={setCurrentInput}
+              onExecuteCommand={handleExecuteCommand}
+              onClearHistory={handleClearHistory}
+              onOpenMap={() => setActiveTab('map')}
+              fs={activeFs}
+              scanlines={scanlines}
+              coachEnabled={coachEnabled}
+              onToggleCoach={() => setCoachEnabled(prev => !prev)}
+            />
           </div>
-        )}
+        </div>
 
         {activeTab === 'leaderboard' && (
           <Leaderboard currentHandle={session?.handle} />
-        )}
-
-        {activeTab === 'reference' && (
-          <CommandReference />
         )}
 
         {activeTab === 'map' && (
@@ -793,6 +578,21 @@ export default function App() {
           <AdminOverview />
         )}
       </main>
+
+      {/* Simulation Boundary Reference Modal */}
+      <SimulationBoundary
+        isOpen={showBoundaryModal}
+        onClose={() => setShowBoundaryModal(false)}
+        defaultPlatform={platform}
+      />
+
+      {/* Content Pack Selector Modal */}
+      <PackSelector
+        isOpen={showPackModal}
+        onClose={() => setShowPackModal(false)}
+        currentPackId={activePackId}
+        onSelectPack={handleSelectPack}
+      />
     </div>
   );
 }

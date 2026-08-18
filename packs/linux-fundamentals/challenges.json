@@ -1,0 +1,1197 @@
+[
+  {
+    "id": "l1-pwd",
+    "act": 1,
+    "title": "Present Working Directory",
+    "points": 10,
+    "brief": "Run `pwd` to display your current directory position in the filesystem tree.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^pwd\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `pwd` and press Enter."
+      }
+    ],
+    "successMessage": "`pwd` prints the absolute pathname of your current location.",
+    "teaches": [
+      "pwd",
+      "working-directory"
+    ],
+    "acceptedVariants": [
+      "pwd",
+      "/bin/pwd"
+    ]
+  },
+  {
+    "id": "l1-ls",
+    "act": 1,
+    "title": "Directory Listing",
+    "points": 10,
+    "brief": "Use `ls` to list the files and folders inside your current directory.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^ls(\\s+\\.)?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `ls`."
+      }
+    ],
+    "successMessage": "`ls` displays entries in the current directory.",
+    "teaches": [
+      "ls"
+    ],
+    "acceptedVariants": [
+      "ls",
+      "ls .",
+      "ls ./"
+    ]
+  },
+  {
+    "id": "l1-ls-la",
+    "act": 1,
+    "title": "Reveal Hidden Dotfiles",
+    "points": 15,
+    "brief": "In Linux, filenames beginning with a dot (`.`) are hidden by default. Use `ls -la` to inspect your home directory and view hidden configuration files.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^ls\\s+-[a-zA-Z]*[al][a-zA-Z]*(\\s+.*)?$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `ls -la` or `ls -al`."
+      }
+    ],
+    "successMessage": "The `-a` flag reveals hidden files like `.bashrc` and `.profile`.",
+    "teaches": [
+      "ls -la",
+      "hidden-files",
+      "dotfiles"
+    ],
+    "acceptedVariants": [
+      "ls -la",
+      "ls -al",
+      "ls -a -l"
+    ]
+  },
+  {
+    "id": "l1-cd",
+    "act": 1,
+    "title": "Changing Directories",
+    "points": 15,
+    "brief": "Use `cd Documents` to move into the Documents directory.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "cwdIs",
+      "path": "/home/student/Documents"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `cd Documents`."
+      }
+    ],
+    "successMessage": "You changed your working directory into `/home/student/Documents`.",
+    "teaches": [
+      "cd",
+      "navigation"
+    ],
+    "acceptedVariants": [
+      "cd Documents",
+      "cd ./Documents",
+      "cd /home/student/Documents"
+    ]
+  },
+  {
+    "id": "l1-cd-parent",
+    "act": 1,
+    "title": "Climbing Up (..)",
+    "points": 15,
+    "brief": "The special symbol `..` represents the parent directory. From `Documents`, use `cd ..` to return to your home directory.",
+    "setup": {
+      "cwd": "/home/student/Documents"
+    },
+    "success": {
+      "predicate": "cwdIs",
+      "path": "/home/student"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `cd ..`."
+      }
+    ],
+    "successMessage": "`cd ..` moves one level up in the directory hierarchy.",
+    "teaches": [
+      "cd ..",
+      "parent-directory"
+    ],
+    "acceptedVariants": [
+      "cd ..",
+      "cd ../",
+      "cd ~",
+      "cd /home/student"
+    ]
+  },
+  {
+    "id": "l1-cat",
+    "act": 1,
+    "title": "Display File Content",
+    "points": 15,
+    "brief": "Use `cat Documents/notes.txt` to print the notes file to standard output.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^cat\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/notes\\.txt[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `cat Documents/notes.txt`."
+      }
+    ],
+    "successMessage": "`cat` reads files sequentially and prints them to stdout.",
+    "teaches": [
+      "cat",
+      "file-viewing"
+    ],
+    "acceptedVariants": [
+      "cat Documents/notes.txt",
+      "cat ./Documents/notes.txt",
+      "cat /home/student/Documents/notes.txt"
+    ]
+  },
+  {
+    "id": "l1-head",
+    "act": 1,
+    "title": "First Few Lines (head -n)",
+    "points": 15,
+    "brief": "Use `head -n 3 Documents/data.csv` to inspect the first 3 lines of the CSV file.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^head\\s+(?:-n\\s*3|-3)\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/data\\.csv[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `head -n 3 Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`head -n N` restricts output to the first N lines of a file.",
+    "teaches": [
+      "head",
+      "head -n"
+    ],
+    "acceptedVariants": [
+      "head -n 3 Documents/data.csv",
+      "head -3 Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l1-tail",
+    "act": 1,
+    "title": "Last Few Lines (tail -n)",
+    "points": 15,
+    "brief": "Use `tail -n 2 Documents/data.csv` to inspect the final 2 lines of the data file.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^tail\\s+(?:-n\\s*2|-2)\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/data\\.csv[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `tail -n 2 Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`tail -n N` displays the final N lines of a file.",
+    "teaches": [
+      "tail",
+      "tail -n"
+    ],
+    "acceptedVariants": [
+      "tail -n 2 Documents/data.csv",
+      "tail -2 Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l1-glob",
+    "act": 1,
+    "title": "Wildcard Globbing (*)",
+    "points": 20,
+    "brief": "The shell expands wildcard patterns before the command runs. List all `.js` files in `projects/web` using `ls projects/web/*.js`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^ls\\s+[\"']?(?:\\./|~/|/home/student/)?projects/web/\\*\\.js[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `ls projects/web/*.js`."
+      }
+    ],
+    "successMessage": "The shell expanded `projects/web/*.js` into matching filenames before passing them to `ls`.",
+    "teaches": [
+      "globbing",
+      "wildcards"
+    ],
+    "acceptedVariants": [
+      "ls projects/web/*.js",
+      "ls ./projects/web/*.js"
+    ]
+  },
+  {
+    "id": "l1-glob-doc",
+    "act": 1,
+    "title": "Multiple Wildcards",
+    "points": 20,
+    "brief": "Use `ls Documents/*.txt` to list all text files in the Documents directory.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^ls\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/\\*\\.txt[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `ls Documents/*.txt`."
+      }
+    ],
+    "successMessage": "Wildcard expansion makes working with groups of files effortless.",
+    "teaches": [
+      "globbing",
+      "wildcards"
+    ],
+    "acceptedVariants": [
+      "ls Documents/*.txt",
+      "ls ./Documents/*.txt"
+    ]
+  },
+  {
+    "id": "l2-grep",
+    "act": 2,
+    "title": "Search Patterns with grep",
+    "points": 20,
+    "brief": "Search for lines containing `active` in `Documents/data.csv` using `grep active Documents/data.csv`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^grep\\s+[\"']?active[\"']?\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/data\\.csv[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep active Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`grep` filters input line-by-line against a pattern.",
+    "teaches": [
+      "grep",
+      "pattern-matching"
+    ],
+    "acceptedVariants": [
+      "grep active Documents/data.csv",
+      "grep \"active\" Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l2-grep-i",
+    "act": 2,
+    "title": "Case-Insensitive Grep (-i)",
+    "points": 20,
+    "brief": "Search for `error` regardless of case in `logs/app_errors.log` using `grep -i \"error\" logs/app_errors.log`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^grep\\s+-i\\s+[\"']?error[\"']?\\s+[\"']?(?:\\./|~/|/home/student/)?logs/app_errors\\.log[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep -i \"error\" logs/app_errors.log`."
+      }
+    ],
+    "successMessage": "`-i` tells grep to ignore case differences.",
+    "teaches": [
+      "grep -i"
+    ],
+    "acceptedVariants": [
+      "grep -i error logs/app_errors.log",
+      "grep -i \"error\" logs/app_errors.log"
+    ]
+  },
+  {
+    "id": "l2-grep-v",
+    "act": 2,
+    "title": "Inverting Matches (-v)",
+    "points": 25,
+    "brief": "Use `grep -v \"INFO\" logs/app_errors.log` to filter out informational messages and isolate errors.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^grep\\s+-v\\s+[\"']?INFO[\"']?\\s+[\"']?(?:\\./|~/|/home/student/)?logs/app_errors\\.log[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep -v \"INFO\" logs/app_errors.log`."
+      }
+    ],
+    "successMessage": "`-v` inverts grep, showing only lines that do NOT match.",
+    "teaches": [
+      "grep -v",
+      "inverted-matching"
+    ],
+    "acceptedVariants": [
+      "grep -v INFO logs/app_errors.log",
+      "grep -v \"INFO\" logs/app_errors.log"
+    ]
+  },
+  {
+    "id": "l2-wc-l",
+    "act": 2,
+    "title": "Line Counting (wc -l)",
+    "points": 20,
+    "brief": "Use `wc -l Documents/server_access.log` to count how many records are in the access log.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^wc\\s+-l\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/server_access\\.log[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `wc -l Documents/server_access.log`."
+      }
+    ],
+    "successMessage": "`wc -l` counts the number of newline characters in a file.",
+    "teaches": [
+      "wc",
+      "wc -l"
+    ],
+    "acceptedVariants": [
+      "wc -l Documents/server_access.log",
+      "wc -l ./Documents/server_access.log"
+    ]
+  },
+  {
+    "id": "l2-sort",
+    "act": 2,
+    "title": "Sorting Data (sort)",
+    "points": 25,
+    "brief": "Sort `Documents/data.csv` numerically by the 4th field (salary): `sort -t, -k4 -n Documents/data.csv`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^sort\\s+.*-k\\s*4.*Documents/data\\.csv.*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `sort -t, -k4 -n Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`sort` can organize tabular text by specific fields using `-t` and `-k`.",
+    "teaches": [
+      "sort",
+      "sort -k"
+    ],
+    "acceptedVariants": [
+      "sort -t, -k4 -n Documents/data.csv",
+      "sort -t, -n -k4 Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l2-cut",
+    "act": 2,
+    "title": "Field Extraction (cut)",
+    "points": 25,
+    "brief": "Extract columns 2 and 4 (name and salary) from `Documents/data.csv`: `cut -d, -f2,4 Documents/data.csv`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^cut\\s+-d,?\\s+-f2,4\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/data\\.csv[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `cut -d, -f2,4 Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`cut` slices columns out of delimited files with ease.",
+    "teaches": [
+      "cut",
+      "field-extraction"
+    ],
+    "acceptedVariants": [
+      "cut -d, -f2,4 Documents/data.csv",
+      "cut -d\",\" -f2,4 Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l2-pipe-wc",
+    "act": 2,
+    "title": "The Pipeline (grep | wc -l)",
+    "points": 30,
+    "brief": "Pipe filtered 401 unauthorized requests from the access log into `wc -l`: `grep \"401\" Documents/server_access.log | wc -l`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^grep\\s+[\"']?401[\"']?\\s+.*server_access\\.log\\s*\\|\\s*wc\\s+-l\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep \"401\" Documents/server_access.log | wc -l`."
+      }
+    ],
+    "successMessage": "The `|` pipe connected stdout of `grep` directly to stdin of `wc -l`.",
+    "teaches": [
+      "pipes",
+      "pipelines"
+    ],
+    "acceptedVariants": [
+      "grep 401 Documents/server_access.log | wc -l",
+      "grep \"401\" Documents/server_access.log | wc -l"
+    ]
+  },
+  {
+    "id": "l2-redirect-out",
+    "act": 2,
+    "title": "Output Redirection (>)",
+    "points": 30,
+    "brief": "Redirect all ERROR lines from `logs/app_errors.log` into `/tmp/critical_errors.txt`: `grep \"ERROR\" logs/app_errors.log > /tmp/critical_errors.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "/tmp/critical_errors.txt"
+        },
+        {
+          "predicate": "fileMatches",
+          "path": "/tmp/critical_errors.txt",
+          "pattern": "ERROR"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep \"ERROR\" logs/app_errors.log > /tmp/critical_errors.txt`."
+      }
+    ],
+    "successMessage": "`>` redirects stdout into a file, creating or overwriting it.",
+    "teaches": [
+      "redirection",
+      ">"
+    ],
+    "acceptedVariants": [
+      "grep \"ERROR\" logs/app_errors.log > /tmp/critical_errors.txt",
+      "grep ERROR logs/app_errors.log > /tmp/critical_errors.txt"
+    ]
+  },
+  {
+    "id": "l2-redirect-append",
+    "act": 2,
+    "title": "Append Redirection (>>)",
+    "points": 30,
+    "brief": "Use `>>` to append an audit entry to `/tmp/audit_trail.log`: `echo \"Audit log verified\" >> /tmp/audit_trail.log`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "/tmp/audit_trail.log"
+        },
+        {
+          "predicate": "fileMatches",
+          "path": "/tmp/audit_trail.log",
+          "pattern": "Audit log verified"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `echo \"Audit log verified\" >> /tmp/audit_trail.log`."
+      }
+    ],
+    "successMessage": "`>>` appends to a file without overwriting previous contents.",
+    "teaches": [
+      "redirection",
+      ">>"
+    ],
+    "acceptedVariants": [
+      "echo \"Audit log verified\" >> /tmp/audit_trail.log",
+      "echo Audit log verified >> /tmp/audit_trail.log"
+    ]
+  },
+  {
+    "id": "l2-tee",
+    "act": 2,
+    "title": "Split Output (tee)",
+    "points": 35,
+    "brief": "Filter lines matching `Security` from `Documents/data.csv` and write them to both stdout and `/tmp/security_team.txt` using `tee`: `grep \"Security\" Documents/data.csv | tee /tmp/security_team.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "/tmp/security_team.txt"
+        },
+        {
+          "predicate": "fileMatches",
+          "path": "/tmp/security_team.txt",
+          "pattern": "Security"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep \"Security\" Documents/data.csv | tee /tmp/security_team.txt`."
+      }
+    ],
+    "successMessage": "`tee` duplicates its input stream, writing to both files and stdout.",
+    "teaches": [
+      "tee",
+      "pipelines"
+    ],
+    "acceptedVariants": [
+      "grep \"Security\" Documents/data.csv | tee /tmp/security_team.txt",
+      "grep Security Documents/data.csv | tee /tmp/security_team.txt"
+    ]
+  },
+  {
+    "id": "l3-touch",
+    "act": 3,
+    "title": "Create Empty Files (touch)",
+    "points": 20,
+    "brief": "Use `touch /tmp/new_file.txt` to create a new empty file in `/tmp`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileExists",
+      "path": "/tmp/new_file.txt"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `touch /tmp/new_file.txt`."
+      }
+    ],
+    "successMessage": "`touch` creates files if they do not exist or updates their timestamps.",
+    "teaches": [
+      "touch",
+      "file-creation"
+    ],
+    "acceptedVariants": [
+      "touch /tmp/new_file.txt"
+    ]
+  },
+  {
+    "id": "l3-mkdir",
+    "act": 3,
+    "title": "Make Directories (mkdir -p)",
+    "points": 20,
+    "brief": "Create a new directory structure `projects/api` using `mkdir -p projects/api`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "dirExists",
+      "path": "/home/student/projects/api"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `mkdir -p projects/api`."
+      }
+    ],
+    "successMessage": "`mkdir -p` creates nested parent directories automatically.",
+    "teaches": [
+      "mkdir",
+      "mkdir -p"
+    ],
+    "acceptedVariants": [
+      "mkdir -p projects/api",
+      "mkdir projects/api"
+    ]
+  },
+  {
+    "id": "l3-cp",
+    "act": 3,
+    "title": "Copy Files (cp)",
+    "points": 20,
+    "brief": "Copy `Documents/notes.txt` to `/tmp/notes_backup.txt` using `cp Documents/notes.txt /tmp/notes_backup.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileExists",
+      "path": "/tmp/notes_backup.txt"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `cp Documents/notes.txt /tmp/notes_backup.txt`."
+      }
+    ],
+    "successMessage": "`cp` creates a duplicate of a file at the target path.",
+    "teaches": [
+      "cp"
+    ],
+    "acceptedVariants": [
+      "cp Documents/notes.txt /tmp/notes_backup.txt",
+      "cp ./Documents/notes.txt /tmp/notes_backup.txt"
+    ]
+  },
+  {
+    "id": "l3-cp-r",
+    "act": 3,
+    "title": "Recursive Copy (cp -r)",
+    "points": 25,
+    "brief": "Copy the entire `projects/web` directory recursively to `/tmp/web_backup`: `cp -r projects/web /tmp/web_backup`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "dirExists",
+      "path": "/tmp/web_backup"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `cp -r projects/web /tmp/web_backup`."
+      }
+    ],
+    "successMessage": "`-r` allows copying complete directory trees.",
+    "teaches": [
+      "cp -r",
+      "recursive-copy"
+    ],
+    "acceptedVariants": [
+      "cp -r projects/web /tmp/web_backup",
+      "cp -R projects/web /tmp/web_backup"
+    ]
+  },
+  {
+    "id": "l3-mv",
+    "act": 3,
+    "title": "Move & Rename (mv)",
+    "points": 20,
+    "brief": "Move `projects/scripts/deploy.py` to `projects/scripts/deploy_prod.py` using `mv projects/scripts/deploy.py projects/scripts/deploy_prod.py`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileExists",
+      "path": "/home/student/projects/scripts/deploy_prod.py"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `mv projects/scripts/deploy.py projects/scripts/deploy_prod.py`."
+      }
+    ],
+    "successMessage": "`mv` renames files or moves them to new directory locations.",
+    "teaches": [
+      "mv",
+      "rename"
+    ],
+    "acceptedVariants": [
+      "mv projects/scripts/deploy.py projects/scripts/deploy_prod.py",
+      "mv ./projects/scripts/deploy.py ./projects/scripts/deploy_prod.py"
+    ]
+  },
+  {
+    "id": "l3-rm",
+    "act": 3,
+    "title": "Remove Files (rm)",
+    "points": 20,
+    "brief": "Delete the temporary file `/tmp/scratch.txt` using `rm /tmp/scratch.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^rm\\s+(-f\\s+)?/tmp/scratch\\.txt\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `rm /tmp/scratch.txt`."
+      }
+    ],
+    "successMessage": "`rm` unlinks files from the filesystem.",
+    "teaches": [
+      "rm",
+      "file-deletion"
+    ],
+    "acceptedVariants": [
+      "rm /tmp/scratch.txt",
+      "rm -f /tmp/scratch.txt"
+    ]
+  },
+  {
+    "id": "l3-chmod-numeric",
+    "act": 3,
+    "title": "Permissions (chmod octal)",
+    "points": 30,
+    "brief": "Secure `Documents/notes.txt` so only you have read and write permissions (mode 600): `chmod 600 Documents/notes.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileHasMode",
+      "path": "/home/student/Documents/notes.txt",
+      "mode": 384
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `chmod 600 Documents/notes.txt`."
+      }
+    ],
+    "successMessage": "Mode 600 (`-rw-------`) restricts access strictly to the owner.",
+    "teaches": [
+      "chmod",
+      "file-permissions"
+    ],
+    "acceptedVariants": [
+      "chmod 600 Documents/notes.txt",
+      "chmod 600 ./Documents/notes.txt"
+    ]
+  },
+  {
+    "id": "l3-chmod-symbolic",
+    "act": 3,
+    "title": "Make Executable (chmod +x)",
+    "points": 25,
+    "brief": "Add execute permissions to the deployment script: `chmod +x projects/scripts/deploy.py`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^chmod\\s+(\\+x|u\\+x)\\s+projects/scripts/deploy\\.py\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `chmod +x projects/scripts/deploy.py`."
+      }
+    ],
+    "successMessage": "`+x` marks scripts and binaries as executable.",
+    "teaches": [
+      "chmod",
+      "executable-permissions"
+    ],
+    "acceptedVariants": [
+      "chmod +x projects/scripts/deploy.py",
+      "chmod u+x projects/scripts/deploy.py"
+    ]
+  },
+  {
+    "id": "l3-stat",
+    "act": 3,
+    "title": "Inspect Inodes & Timestamps (stat)",
+    "points": 20,
+    "brief": "Run `stat Documents/notes.txt` to inspect its size, permissions, and timestamps.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^stat\\s+[\"']?(?:\\./|~/|/home/student/)?Documents/notes\\.txt[\"']?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `stat Documents/notes.txt`."
+      }
+    ],
+    "successMessage": "`stat` displays detailed inode metadata.",
+    "teaches": [
+      "stat",
+      "metadata"
+    ],
+    "acceptedVariants": [
+      "stat Documents/notes.txt",
+      "stat ./Documents/notes.txt"
+    ]
+  },
+  {
+    "id": "l3-sudo-shadow",
+    "act": 3,
+    "title": "Superuser Elevation (sudo)",
+    "points": 35,
+    "brief": "`/etc/shadow` is readable only by root. Attempting to `cat /etc/shadow` will be denied. Use `sudo cat /etc/shadow` to elevate privileges and view password hashes.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^sudo\\s+cat\\s+/etc/shadow\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `sudo cat /etc/shadow`."
+      }
+    ],
+    "successMessage": "`sudo` executes commands with effective UID 0 (root).",
+    "teaches": [
+      "sudo",
+      "root",
+      "permissions"
+    ],
+    "acceptedVariants": [
+      "sudo cat /etc/shadow"
+    ],
+    "commandCheckExemptSnippets": [
+      "cat /etc/shadow"
+    ],
+    "commandCheckExemptReason": "Intentionally fails: the challenge teaches Permission denied and the sudo escalation that fixes it."
+  },
+  {
+    "id": "l4-find-name",
+    "act": 4,
+    "title": "Finding Files by Name (find)",
+    "points": 30,
+    "brief": "Use `find . -name \"*.sh\"` to search for all shell scripts in the current directory tree.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^find\\s+(\\.|/home/student)\\s+-name\\s+[\"']\\*\\.sh[\"']\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `find . -name \"*.sh\"`."
+      }
+    ],
+    "successMessage": "`find` traverses directory trees searching by pattern.",
+    "teaches": [
+      "find",
+      "find -name"
+    ],
+    "acceptedVariants": [
+      "find . -name \"*.sh\"",
+      "find . -name '*.sh'"
+    ]
+  },
+  {
+    "id": "l4-find-type",
+    "act": 4,
+    "title": "Filtering by Type (find -type f)",
+    "points": 30,
+    "brief": "Use `find projects -type f` to list all regular files under `projects`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^find\\s+projects\\s+-type\\s+f\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `find projects -type f`."
+      }
+    ],
+    "successMessage": "`-type f` restricts matches strictly to regular files, excluding directories.",
+    "teaches": [
+      "find",
+      "find -type"
+    ],
+    "acceptedVariants": [
+      "find projects -type f",
+      "find ./projects -type f"
+    ]
+  },
+  {
+    "id": "l4-sed-replace",
+    "act": 4,
+    "title": "Stream Editing (sed s///)",
+    "points": 35,
+    "brief": "Use `sed \"s/Engineering/Tech/g\" Documents/data.csv` to substitute 'Engineering' with 'Tech' in the output stream.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^sed\\s+[\"']s/Engineering/Tech/g?[\"']\\s+Documents/data\\.csv\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `sed \"s/Engineering/Tech/g\" Documents/data.csv`."
+      }
+    ],
+    "successMessage": "`sed s/find/replace/g` transforms text streams with regex substitutions.",
+    "teaches": [
+      "sed",
+      "stream-editing"
+    ],
+    "acceptedVariants": [
+      "sed \"s/Engineering/Tech/g\" Documents/data.csv",
+      "sed 's/Engineering/Tech/g' Documents/data.csv"
+    ]
+  },
+  {
+    "id": "l4-awk-column",
+    "act": 4,
+    "title": "Pattern Scanning (awk)",
+    "points": 35,
+    "brief": "Use `awk -F: '{print $1, $6}' /etc/passwd` to print the username and home directory for all system users.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^awk\\s+-F:?\\s+[\"']\\{print\\s+\\$1,?\\s+\\$6\\}[\"']\\s+/etc/passwd\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `awk -F: '{print $1, $6}' /etc/passwd`."
+      }
+    ],
+    "successMessage": "`awk` processes structured columns with powerful built-in field variables.",
+    "teaches": [
+      "awk",
+      "text-processing"
+    ],
+    "acceptedVariants": [
+      "awk -F: '{print $1, $6}' /etc/passwd",
+      "awk -F: \"{print $1, $6}\" /etc/passwd"
+    ]
+  },
+  {
+    "id": "l4-var-quotes",
+    "act": 4,
+    "title": "Variable Expansion & Quotes",
+    "points": 25,
+    "brief": "Double quotes allow variable expansion; single quotes suppress it. Run `echo \"$HOME\"` to expand your home directory.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^echo\\s+\"\\$HOME\"\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `echo \"$HOME\"`."
+      }
+    ],
+    "successMessage": "\"$HOME\" expands to /home/student. If you typed '$HOME', the shell would print literal $HOME.",
+    "teaches": [
+      "variables",
+      "quoting"
+    ],
+    "acceptedVariants": [
+      "echo \"$HOME\""
+    ]
+  },
+  {
+    "id": "l4-exit-status",
+    "act": 4,
+    "title": "Exit Codes ($?)",
+    "points": 30,
+    "brief": "Every program returns an exit code (0 for success, non-zero for error). Check the exit code of a search: `grep \"root\" /etc/passwd; echo $?`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^grep\\s+[\"']?root[\"']?\\s+/etc/passwd;\\s*echo\\s+\\$\\?\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `grep \"root\" /etc/passwd; echo $?`."
+      }
+    ],
+    "successMessage": "$? holds the exit status of the previous command (0 = match found).",
+    "teaches": [
+      "exit-status",
+      "$?"
+    ],
+    "acceptedVariants": [
+      "grep \"root\" /etc/passwd; echo $?",
+      "grep root /etc/passwd; echo $?"
+    ]
+  },
+  {
+    "id": "l4-list-and",
+    "act": 4,
+    "title": "Conditional AND (&&)",
+    "points": 30,
+    "brief": "The `&&` operator executes the second command only if the first command succeeds. Run `mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileExists",
+      "path": "/tmp/test_dir/file.txt"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt`."
+      }
+    ],
+    "successMessage": "`cmd1 && cmd2` chains commands safely.",
+    "teaches": [
+      "&&",
+      "command-lists"
+    ],
+    "acceptedVariants": [
+      "mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt"
+    ]
+  },
+  {
+    "id": "l4-list-or",
+    "act": 4,
+    "title": "Conditional OR (||)",
+    "points": 30,
+    "brief": "The `||` operator executes the second command if the first fails. Run `cat /non_existent_file || echo \"File was missing\"`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^cat\\s+/non_existent_file\\s*\\|\\|\\s*echo\\s+[\"']File was missing[\"']\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `cat /non_existent_file || echo \"File was missing\"`."
+      }
+    ],
+    "successMessage": "`cmd1 || cmd2` provides reliable error recovery in shell scripts.",
+    "teaches": [
+      "||",
+      "conditional-execution"
+    ],
+    "acceptedVariants": [
+      "cat /non_existent_file || echo \"File was missing\"",
+      "cat /non_existent_file || echo 'File was missing'"
+    ]
+  },
+  {
+    "id": "l4-diff",
+    "act": 4,
+    "title": "Compare Files (diff)",
+    "points": 30,
+    "brief": "Use `diff -u projects/web/index.html projects/web/style.css` to compare the two web source files.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^diff\\s+-u\\s+projects/web/index\\.html\\s+projects/web/style\\.css\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Run `diff -u projects/web/index.html projects/web/style.css`."
+      }
+    ],
+    "successMessage": "`diff -u` outputs unified diffs showing line additions and removals.",
+    "teaches": [
+      "diff",
+      "file-comparison"
+    ],
+    "acceptedVariants": [
+      "diff -u projects/web/index.html projects/web/style.css",
+      "diff -u ./projects/web/index.html ./projects/web/style.css"
+    ]
+  },
+  {
+    "id": "l4-history",
+    "act": 4,
+    "title": "Shell Mastery (history)",
+    "points": 40,
+    "brief": "Inspect your shell session's command history by running `history`.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "commandMatches",
+      "pattern": "^history\\s*$"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Type `history`."
+      }
+    ],
+    "successMessage": "Congratulations! You have completed Linux Fundamentals and mastered core Unix shell engineering.",
+    "teaches": [
+      "history",
+      "shell-mastery"
+    ],
+    "acceptedVariants": [
+      "history"
+    ]
+  }
+]

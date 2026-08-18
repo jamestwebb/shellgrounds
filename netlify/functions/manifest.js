@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Netlify Function: GET /api/manifest
+// Netlify Function: GET /api/manifest (Serves Pack Manifests & Flag Hashes)
 
-import { verifySessionToken, generateUserFlag } from '../../src/engine/crypto-utils.js';
-import { CHALLENGES } from '../../src/data/challenges.js';
+import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
+import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 
 export const handler = async (event) => {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -28,14 +28,16 @@ export const handler = async (event) => {
   }
 
   const handle = verified.handle;
-  const flags = {};
+  const packId = verified.packId || event.queryStringParameters?.packId || DEFAULT_PACK_ID;
+  const pack = getPack(packId);
 
-  for (const c of CHALLENGES) {
+  const flags = {};
+  for (const c of pack.challenges) {
     if (c.success?.kind === 'flag') {
       if (c.success.staticFlag) {
         flags[c.id] = c.success.staticFlag;
       } else {
-        flags[c.id] = generateUserFlag(sessionSecret, handle, c.id);
+        flags[c.id] = generateUserFlag(sessionSecret, handle, c.id, pack.id);
       }
     }
   }
@@ -49,6 +51,7 @@ export const handler = async (event) => {
     body: JSON.stringify({
       success: true,
       handle,
+      packId: pack.id,
       flags
     })
   };

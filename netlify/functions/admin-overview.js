@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Netlify Function: GET /api/admin-overview
+// Netlify Function: GET /api/admin-overview (Includes Gradebook CSV Export)
 
-import { verifySessionToken } from '../../src/engine/crypto-utils.js';
-import { CHALLENGES } from '../../src/data/challenges.js';
+import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
+import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 import { listPlayers, getSolves } from './utils/store.js';
 
 const json = (status, obj, extraHeaders = {}) =>
@@ -36,9 +36,14 @@ export default async (req) => {
     return json(403, { error: 'Forbidden: Admin clearance required' });
   }
 
+  const url = new URL(req.url);
+  const packId = url.searchParams.get('packId') || verified.packId || DEFAULT_PACK_ID;
+  const format = url.searchParams.get('format') || 'json';
+  const pack = getPack(packId);
+
   try {
     const challengeStats = {};
-    CHALLENGES.forEach(c => {
+    pack.challenges.forEach(c => {
       challengeStats[c.id] = {
         id: c.id,
         title: c.title,
@@ -51,26 +56,63 @@ export default async (req) => {
 
     const players = await listPlayers();
     const allSolves = [];
+    const playerSummaries = [];
 
     for (const p of players) {
       const solvesObj = await getSolves(p.handle);
-      for (const [challengeId, s] of Object.entries(solvesObj)) {
-        if (challengeStats[challengeId]) {
-          challengeStats[challengeId].solveCount++;
-          if ((s.hintPenalty || 0) > 0) challengeStats[challengeId].totalHintsUsed++;
+      let playerPoints = 0;
+      let solveCount = 0;
+      let lastActive = null;
+
+      for (const [cId, s] of Object.entries(solvesObj)) {
+        if (challengeStats[cId]) {
+          challengeStats[cId].solveCount++;
+          if ((s.hintPenalty || 0) > 0) challengeStats[cId].totalHintsUsed++;
         }
-        allSolves.push({ handle: p.handle, challengeId, solvedAt: s.solvedAt });
+        const net = Math.max(0, (s.points || 0) - (s.hintPenalty || 0));
+        playerPoints += net;
+        solveCount++;
+        if (!lastActive || new Date(s.solvedAt) > new Date(lastActive)) {
+          lastActive = s.solvedAt;
+        }
+        allSolves.push({ handle: p.handle, challengeId: cId, solvedAt: s.solvedAt });
       }
+
+      playerSummaries.push({
+        handle: p.handle,
+        totalScore: playerPoints,
+        solvesCount: solveCount,
+        lastActive: lastActive || p.createdAt || 'N/A'
+      });
     }
 
     allSolves.sort((a, b) => new Date(b.solvedAt) - new Date(a.solvedAt));
+    playerSummaries.sort((a, b) => b.totalScore - a.totalScore);
+
+    // CSV Export for Canvas / Blackboard gradebooks
+    if (format === 'csv') {
+      let csv = 'Handle,Total Score,Solves Count,Last Active\r\n';
+      for (const ps of playerSummaries) {
+        csv += `"${ps.handle}",${ps.totalScore},${ps.solvesCount},"${ps.lastActive}"\r\n`;
+      }
+      return new Response(csv, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="gauntlet-gradebook-${pack.id}.csv"`,
+          'Cache-Control': 'no-store'
+        }
+      });
+    }
 
     return json(200, {
-        success: true,
-        totalPlayers: players.length,
-        challengeStats: Object.values(challengeStats),
-        recentSolves: allSolves.slice(0, 20)
-      }, { 'Cache-Control': 'no-store' });
+      success: true,
+      packId: pack.id,
+      totalPlayers: players.length,
+      playerSummaries,
+      challengeStats: Object.values(challengeStats),
+      recentSolves: allSolves.slice(0, 25)
+    }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Admin overview error:', err);
     return json(500, { error: 'Failed to generate admin overview' });

@@ -1,52 +1,67 @@
 // Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Netlify Function: POST /api/submit-flag
+// Netlify Function: POST /api/submit-flag (Server-Side Pack-Aware Verification)
 
-import { verifySessionToken, generateUserFlag } from '../../src/engine/crypto-utils.js';
-import { CHALLENGES, ACT_DEFINITIONS, isActUnlockedFor } from '../../src/data/challenges.js';
-import { runPipeline } from '../../src/engine/pipeline.js';
-import { createWarrenFilesystem } from '../../src/engine/fs.warren.js';
-import { createTopsideFilesystem } from '../../src/engine/fs.topside.js';
-import { injectFlagsIntoVFS } from '../../src/utils/vfs-injector.js';
+import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
+import { runPipeline } from '../../packages/engine/shell/exec.js';
+import { evaluatePredicate } from '../../packages/engine/validate/predicates.js';
+import { ERROR_MARKERS } from '../../packages/engine/constants.js';
+import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 import { getPlayer, getSolves, addSolve } from './utils/store.js';
 
-// Same marker list the client uses: a command that "ran" but errored does not count.
-const ERROR_MARKERS = /command not found|not available in this simulator|that is the (Linux|Windows) name|No such file|missing operand|Not a directory|Is a directory|cannot access|is not recognized|cannot find/i;
-
-// Act progression is enforced here, not just in the sidebar UI: without this, a
-// student could pull later-act flags from their own manifest and submit them early.
-function isActUnlocked(challenge, solvedIds) {
-  const act = ACT_DEFINITIONS.find(a => a.id === challenge.act);
-  return isActUnlockedFor(act, solvedIds, CHALLENGES);
+function isActUnlocked(actId, acts, challenges, solvedIdSet) {
+  const act = acts.find(a => a.id === actId);
+  if (!act || !act.unlockThreshold) return true;
+  const prior = challenges.filter(c => c.act === actId - 1);
+  if (prior.length === 0) return true;
+  const required = Math.max(1, prior.length - 1);
+  const solved = prior.filter(c => solvedIdSet.has(c.id)).length;
+  return solved >= required;
 }
 
-function buildServerFlags(sessionSecret, handle) {
+function buildServerFlags(sessionSecret, handle, challenges, packId) {
   const flags = {};
-  for (const c of CHALLENGES) {
+  for (const c of challenges) {
     if (c.success?.kind === 'flag' && !c.success.staticFlag) {
-      flags[c.id] = generateUserFlag(sessionSecret, handle, c.id);
+      flags[c.id] = generateUserFlag(sessionSecret, handle, c.id, packId);
     }
   }
   return flags;
 }
 
-// Re-executes the submitted command line against a fresh VFS on the server.
-// This is what makes 'command' and 'state' challenges cost actual work: the client's
-// claim is never trusted, the command itself is the proof.
-function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd) {
+function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd, pack) {
   const isWindows = challenge.platform === 'windows';
-  const baseFs = isWindows ? createTopsideFilesystem() : createWarrenFilesystem();
-  const { fs } = injectFlagsIntoVFS(baseFs, handle, buildServerFlags(sessionSecret, handle));
-  // Replay from where the student actually stood: a relative path that worked
-  // in their shell must also work in the replay. The claimed cwd is harmless —
-  // the command still has to execute cleanly against the fixed filesystem.
+  const rawFs = pack.createFs(isWindows ? 'windows' : 'linux');
+  const serverFlags = buildServerFlags(sessionSecret, handle, pack.challenges, pack.id);
+
+  // Inject flags into VFS
+  const fs = { ...rawFs };
+  for (const [key, node] of Object.entries(fs)) {
+    if (node.type === 'file' && typeof node.content === 'string') {
+      let text = node.content;
+      for (const [cId, fVal] of Object.entries(serverFlags)) {
+        text = text.replaceAll(`[[FLAG:${cId}]]`, fVal);
+      }
+      text = text.replaceAll('[[FLAG:USER_HANDLE]]', handle);
+      fs[key] = { ...node, content: text };
+    }
+  }
+
+  const defaultCwd = isWindows
+    ? (pack.manifest.windows?.home || 'C:\\Users\\Student')
+    : (pack.manifest.linux?.home || '/home/student');
+
   const cwd = (typeof clientCwd === 'string' && clientCwd.length > 0 && clientCwd.length < 300)
     ? clientCwd
-    : (challenge.setup?.cwd || (isWindows ? 'C:\\Users\\Analyst' : '/home/analyst'));
+    : (challenge.setup?.cwd || defaultCwd);
+
   const res = runPipeline(commandText.trim(), cwd, fs, isWindows ? 'windows' : 'linux', {
-    installedPackages: new Set()
+    packCommands: pack.commands,
+    packHelp: pack.help,
+    user: isWindows ? 'Student' : 'student'
   });
-  const ok = !res.hasError && !ERROR_MARKERS.test(res.output || '');
-  return { ok, fs: res.fs };
+
+  const ok = !res.hasError && (!ERROR_MARKERS.test(res.output || '') || commandText.includes('||'));
+  return { ok, fs: res.fs, res };
 }
 
 const json = (status, obj, extraHeaders = {}) =>
@@ -75,110 +90,118 @@ export default async (req) => {
   }
 
   const handle = verified.handle;
+  const packId = verified.packId || DEFAULT_PACK_ID;
+  const pack = getPack(packId);
 
   try {
-    const { challengeId, flag, hintsUsed = 0, commandText = '', hintsUsedByChallenge, cwd } = (await req.json().catch(() => ({})));
+    const { challengeId, flag, hintsUsed = 0, commandText = '', cwd } = (await req.json().catch(() => ({})));
 
     if (!challengeId && !(flag && flag.trim())) {
       return json(400, { error: 'A challenge ID or a flag is required' });
     }
 
-    let challenge = CHALLENGES.find(c => c.id === challengeId);
-
-    // 1. Validation Logic — every kind requires proof; nothing validates by default.
+    let challenge = pack.challenges.find(c => c.id === challengeId);
     let isValid = false;
 
     if (flag && flag.trim()) {
-      // A flag string identifies its own challenge: match it against every flag-kind
-      // challenge, so students are not punished for having the "wrong" one selected.
       const cleanSubmitted = flag.trim().toUpperCase();
-      for (const c of CHALLENGES) {
+      for (const c of pack.challenges) {
         if (c.success?.kind !== 'flag') continue;
         const expected = c.success.staticFlag
           ? c.success.staticFlag.toUpperCase()
-          : generateUserFlag(sessionSecret, handle, c.id).toUpperCase();
+          : generateUserFlag(sessionSecret, handle, c.id, pack.id).toUpperCase();
         if (cleanSubmitted === expected) {
-          challenge = c;
           isValid = true;
+          challenge = c;
           break;
         }
       }
-      if (!isValid) {
-        return json(400, {
-            success: false,
-            error: 'That flag is not valid for your handle. Check for typos — click the flag in the terminal output to copy it exactly. (Flags are also personal: another student\'s flag will never validate for you.)'
-          });
-      }
-    } else if (!challenge) {
-      return json(404, { error: 'Challenge not found' });
-    } else if (challenge.success.kind === 'flag') {
-      return json(400, { error: 'Flag submission cannot be empty' });
-    } else if (challenge.success.kind === 'command') {
-      if (challenge.success.matchRegex && commandText && commandText.trim()) {
-        const regex = new RegExp(challenge.success.matchRegex, 'i');
-        if (regex.test(commandText.trim())) {
-          isValid = replayCommand(challenge, commandText, sessionSecret, handle, cwd).ok;
+    } else if (challenge) {
+      if (challenge.success?.kind === 'command' || challenge.success?.predicate === 'commandMatches') {
+        if (!commandText || !commandText.trim()) {
+          return json(400, { error: 'Command execution proof required for this challenge' });
         }
-      }
-    } else if (challenge.success.kind === 'state') {
-      if (commandText && commandText.trim() && typeof challenge.success.check === 'function') {
-        const replay = replayCommand(challenge, commandText, sessionSecret, handle, cwd);
-        isValid = replay.ok && !!challenge.success.check(replay.fs);
+        const { ok, res } = replayCommand(challenge, commandText, sessionSecret, handle, cwd, pack);
+        const predicatePasses = evaluatePredicate(challenge.success, {
+          fs: res.fs,
+          cwd: res.newCwd || cwd,
+          commandText,
+          stdout: res.stdout,
+          stderr: res.stderr,
+          output: res.output,
+          status: res.status,
+          isWindows: challenge.platform === 'windows',
+          trusted: true
+        });
+        isValid = ok && predicatePasses;
+      } else if (challenge.success?.predicate || challenge.success?.kind === 'state') {
+        if (!commandText || !commandText.trim()) {
+          return json(400, { error: 'Action execution required to reach success state' });
+        }
+        const { ok, res } = replayCommand(challenge, commandText, sessionSecret, handle, cwd, pack);
+        const predicatePasses = evaluatePredicate(challenge.success, {
+          fs: res.fs,
+          cwd: res.newCwd || cwd,
+          commandText,
+          stdout: res.stdout,
+          stderr: res.stderr,
+          output: res.output,
+          status: res.status,
+          isWindows: challenge.platform === 'windows',
+          trusted: true
+        });
+        isValid = ok && predicatePasses;
       }
     }
 
-    if (!isValid) {
+    if (!isValid || !challenge) {
       return json(400, {
-          success: false,
-          error: 'Verification failed. Re-run the exact command shown in the challenge brief, then submit again.'
-        });
+        error: 'INCORRECT FLAG OR INVALID COMMAND PROOF — verify your output and try again.'
+      });
     }
 
-    // 2. Compute hint penalty (clamped: hint counts are client-reported).
-    // Prefer the per-challenge map so a flag matched to a different challenge
-    // than the one selected is charged its OWN hint count.
-    let hintPenalty = 0;
-    const mapClaim = hintsUsedByChallenge && Number.isInteger(hintsUsedByChallenge[challenge.id])
-      ? hintsUsedByChallenge[challenge.id]
-      : null;
-    const fallbackClaim = Number.isInteger(hintsUsed) ? hintsUsed : 0;
-    const claimedHints = Math.max(0, mapClaim !== null ? mapClaim : fallbackClaim);
-    if (claimedHints > 0 && challenge.hints) {
-      for (let i = 0; i < Math.min(claimedHints, challenge.hints.length); i++) {
-        hintPenalty += (challenge.hints[i].cost || 0);
-      }
-    }
-    hintPenalty = Math.min(hintPenalty, challenge.points - 1);
-
-    const netPoints = challenge.points - hintPenalty;
-
-    const player = await getPlayer(handle);
-    if (!player) {
-      return json(404, { error: 'Player record not found — log out and register again.' });
-    }
-
+    // Check player progression & unlock
     const existingSolves = await getSolves(handle);
-    if (!isActUnlocked(challenge, new Set(Object.keys(existingSolves)))) {
+    const solvedSet = new Set(Object.keys(existingSolves));
+
+    if (!isActUnlocked(challenge.act, pack.manifest.acts, pack.challenges, solvedSet)) {
       return json(403, {
-          success: false,
-          error: 'That challenge is still locked. Solve 80% of the previous act first.'
-        });
+        error: 'ACT LOCKED — solve previous act challenges first.'
+      });
     }
 
-    const { alreadySolved } = await addSolve(handle, challenge.id, challenge.points, hintPenalty);
+    if (existingSolves[challenge.id]) {
+      return json(200, {
+        success: true,
+        alreadySolved: true,
+        message: 'Challenge was already completed.',
+        points: existingSolves[challenge.id].points || 0
+      });
+    }
+
+    // Compute hint penalty
+    const hints = challenge.hints || [];
+    let penalty = 0;
+    for (let i = 0; i < Math.min(hintsUsed, hints.length); i++) {
+      penalty += (hints[i].cost || 0);
+    }
+    const earnedPoints = Math.max(0, (challenge.points || 0) - penalty);
+
+    await addSolve(handle, challenge.id, {
+      points: challenge.points || 0,
+      hintPenalty: penalty,
+      earnedPoints,
+      solvedAt: new Date().toISOString()
+    });
 
     return json(200, {
-        success: true,
-        alreadySolved,
-        pointsAwarded: alreadySolved ? 0 : netPoints,
-        basePoints: challenge.points,
-        hintPenalty,
-        challengeId: challenge.id,
-        challengeTitle: challenge.title,
-        successMessage: challenge.successMessage
-      }, { 'Cache-Control': 'no-store' });
+      success: true,
+      challengeId: challenge.id,
+      points: earnedPoints,
+      successMessage: challenge.successMessage || 'Challenge Solved!'
+    });
   } catch (err) {
     console.error('Flag submission error:', err);
-    return json(500, { error: 'Internal error processing flag submission' });
+    return json(500, { error: 'Internal error processing submission' });
   }
 };

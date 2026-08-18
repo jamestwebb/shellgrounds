@@ -1,0 +1,35 @@
+{
+  "map": {
+    "name": "map - display virtual filesystem topography",
+    "synopsis": "map",
+    "description": "Renders an ASCII diagram of the filesystem from live VFS nodes.",
+    "options": [],
+    "examples": ["map"]
+  },
+  "tracker": {
+    "name": "tracker - Sleuth Kit forensic activity tracker",
+    "synopsis": "tracker [options]",
+    "description": "Forensic utility for tracking sensor activities and evidence checkpoints.\n\nOverride keycode: [[FLAG:act3-man]]\n\nUse this keycode when recovering manual checkpoint configurations.",
+    "options": [
+      "-a, --all   list all sensor traces",
+      "-v          verbose diagnostic logging"
+    ],
+    "examples": ["tracker", "tracker -a"]
+  },
+  "scan": {
+    "name": "scan - forensic partition geometry analyzer",
+    "synopsis": "scan <disk_image>",
+    "description": "Inspect partition geometry and identify sector start offsets.",
+    "options": [],
+    "examples": ["scan evidence/suspect_drive.raw"]
+  },
+  "extract": {
+    "name": "extract - carve evidence partitions from disk images",
+    "synopsis": "extract -o <offset> <disk_image>",
+    "description": "Extract and decrypt partition data using specified sector offset.",
+    "options": [
+      "-o OFFSET   starting sector offset of partition"
+    ],
+    "examples": ["extract -o 206848 evidence/suspect_drive.raw"]
+  }
+}
