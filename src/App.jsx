@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // The Gauntlet — Interactive Proving Ground
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';

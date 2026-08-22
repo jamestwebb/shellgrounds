@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Pack Validator: proves a curriculum pack is completely solvable and bug-free.
 //
 // Design rule: a check that cannot fail is worse than no check, because it

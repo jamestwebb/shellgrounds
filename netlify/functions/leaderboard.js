@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Netlify Function: GET /api/leaderboard
 
 import { listPlayers, getSolves, normalizeSolve } from './utils/store.js';
@@ -47,7 +47,11 @@ export default async (req) => {
 
       for (const [challengeId, raw] of Object.entries(solvesObj)) {
         const s = normalizeSolve(raw);
-        if (isWeekly && new Date(s.solvedAt).getTime() < oneWeekAgo) continue;
+        // A record with no usable timestamp cannot be proven to fall inside
+        // the week. NaN fails every comparison, so `< oneWeekAgo` was false
+        // and the record slipped onto the weekly board. Test for the window.
+        const solvedMs = new Date(s.solvedAt).getTime();
+        if (isWeekly && !(solvedMs >= oneWeekAgo)) continue;
         score += s.netPoints;
         solveCount += 1;
         solvedIds.push(challengeId);

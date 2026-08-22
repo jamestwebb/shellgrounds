@@ -88,4 +88,22 @@ Deploy directly to Netlify or any compatible JAMstack host with serverless funct
 
 ## 📜 License
 
-Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+**PolyForm Noncommercial License 1.0.0** — full text in [LICENSE.md](LICENSE.md).
+
+Plain English. This summary is not a substitute for the licence itself:
+
+- **Teachers and schools may use this, free of charge.** The licence names educational
+  institutions as a permitted use *"regardless of the source of funding"*. Public schools,
+  private schools, colleges, and universities are all covered, as are non-profits and
+  government bodies.
+- **You may change it and share your changes.** Fork it, write your own content packs,
+  deploy it for your class, hand it to a colleague.
+- **Keep the attribution.** Anyone who gets a copy from you must also get the licence and
+  the `Required Notice:` line that names the copyright holder.
+- **No commercial use.** You may not sell this, or sell a service built on it, without a
+  separate licence from the copyright holder.
+
+This is a *source-available* licence, not an OSI-approved open-source one. The
+non-commercial restriction is deliberate. If you need commercial terms, ask.
+
+Copyright (c) 2026 Rational Mystic LLC.

@@ -4,6 +4,11 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Vite binds the ONE address `localhost` resolves to. On this host that is
+    // ::1, so nothing listens on 127.0.0.1:3000 and an IPv4 client is refused
+    // instantly. That refusal looks exactly like a crashed server and is not
+    // one. Anything that probes this port must try both loopback families —
+    // scripts/start-dev.sh does — rather than pin one and believe the result.
     port: 3000,
     // strictPort: a silent drift to 3001 leaves netlify.toml's targetPort
     // pointing at nothing, which is a confusing way to fail.

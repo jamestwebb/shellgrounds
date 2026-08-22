@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // API client for The Gauntlet backend services
 
 // Same-origin '/api' in production. In local dev VITE_API_BASE can point

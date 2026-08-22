@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Pack-supplied virtual forensic tools and dynamic map generator for Forensics CLI 101
 
 import { resolvePath, findVfsKey, basename } from '../../packages/engine/vfs/path.js';

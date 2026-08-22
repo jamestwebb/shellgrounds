@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // BIOS-style boot loader for The Gauntlet
 
 import React, { useState, useEffect, useCallback } from 'react';

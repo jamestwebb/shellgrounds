@@ -1,9 +1,9 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Netlify Function: GET /api/admin-overview (Includes Gradebook CSV Export)
 
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
-import { listPlayers, getSolves } from './utils/store.js';
+import { listPlayers, getSolves, normalizeSolve } from './utils/store.js';
 import { isAdminHandle } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
@@ -60,13 +60,17 @@ export default async (req) => {
       let solveCount = 0;
       let lastActive = null;
 
-      for (const [cId, s] of Object.entries(solvesObj)) {
+      for (const [cId, raw] of Object.entries(solvesObj)) {
+        // Never read .points off a raw record. Legacy records nest the whole
+        // payload one level down, so the arithmetic returns NaN and one bad
+        // record poisons the student's entire total and the CSV column.
+        // normalizeSolve is the only safe reader; see store.js.
+        const s = normalizeSolve(raw);
         if (challengeStats[cId]) {
           challengeStats[cId].solveCount++;
-          if ((s.hintPenalty || 0) > 0) challengeStats[cId].totalHintsUsed++;
+          if (s.hintPenalty > 0) challengeStats[cId].totalHintsUsed++;
         }
-        const net = Math.max(0, (s.points || 0) - (s.hintPenalty || 0));
-        playerPoints += net;
+        playerPoints += s.netPoints;
         solveCount++;
         if (!lastActive || new Date(s.solvedAt) > new Date(lastActive)) {
           lastActive = s.solvedAt;
@@ -78,7 +82,9 @@ export default async (req) => {
         handle: p.handle,
         totalScore: playerPoints,
         solvesCount: solveCount,
-        lastActive: lastActive || p.createdAt || 'N/A'
+        // store.js writes created_at. The old camelCase key never existed,
+        // so this fallback could never fire.
+        lastActive: lastActive || p.created_at || 'N/A'
       });
     }
 

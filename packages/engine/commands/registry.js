@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Unified Command Registry for Linux Bash and Windows CMD
 
 import { ALL_LINUX_COMMANDS } from './linux/index.js';

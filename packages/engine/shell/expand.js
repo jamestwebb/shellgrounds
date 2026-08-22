@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Shell Expansion: Brace, Tilde, Variable, and Globbing Expansion
 
 import { resolvePath, normalizePath, findVfsKey, dirname, basename } from '../vfs/path.js';

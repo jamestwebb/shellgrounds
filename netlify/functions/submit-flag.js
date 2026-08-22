@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Netlify Function: POST /api/submit-flag (Server-Side Pack-Aware Verification)
 
 import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
@@ -6,7 +6,7 @@ import { runPipeline } from '../../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../../packages/engine/constants.js';
 import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
-import { getPlayer, getSolves, addSolve } from './utils/store.js';
+import { getPlayer, getSolves, addSolve, normalizeSolve } from './utils/store.js';
 import { isAdminHandle } from './utils/admin.js';
 
 function isActUnlocked(actId, acts, challenges, solvedIdSet) {
@@ -189,7 +189,9 @@ export default async (req) => {
         success: true,
         alreadySolved: true,
         message: 'Challenge was already completed.',
-        points: existingSolves[challenge.id].points || 0
+        // Legacy records nest the payload, so a raw .points read can hand the
+        // browser an object where it expects a number.
+        points: normalizeSolve(existingSolves[challenge.id]).netPoints
       });
     }
 

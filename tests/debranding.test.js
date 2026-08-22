@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // De-branding Lint Test: Asserts packages/engine/ contains zero course or case strings
 
 import { describe, it, expect } from 'vitest';

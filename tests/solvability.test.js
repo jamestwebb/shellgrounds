@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Machine Solvability Test Suite: Proves 100% solvability of all curriculum packs
 
 import { describe, it, expect } from 'vitest';

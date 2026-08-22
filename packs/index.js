@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Content Pack Registry and Loader for The Gauntlet
 
 import forensicsPackJson from './forensics-cli-101/pack.json' with { type: 'json' };
