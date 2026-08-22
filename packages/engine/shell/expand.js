@@ -62,33 +62,78 @@ export function expandVariables(text, env = {}, lastStatus = 0) {
 }
 
 /**
- * Converts a shell glob pattern (e.g. *.txt, test_?, [a-z]*) to a RegExp
+ * Escapes every regex metacharacter so the text matches itself.
  */
-function globToRegex(pattern) {
-  let regexStr = '^';
-  let inClass = false;
+function escapeRegexLiteral(text) {
+  return text.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
+}
 
-  for (let i = 0; i < pattern.length; i++) {
-    const c = pattern[i];
-    if (c === '*' && !inClass) {
+/**
+ * Finds the ']' that closes a character class opened at index `open`.
+ * Follows the shell rule that ']' is an ordinary character when it is the
+ * first character of the class, after an optional leading '!' or '^'.
+ * Returns -1 when the class never closes. A shell then reads the '[' as an
+ * ordinary character, so `echo [` prints '[' and `ls [abc` looks for a file
+ * named '[abc'.
+ */
+function findClassEnd(pattern, open) {
+  let i = open + 1;
+  if (pattern[i] === '!' || pattern[i] === '^') i++;
+  if (pattern[i] === ']') i++;
+  for (; i < pattern.length; i++) {
+    if (pattern[i] === ']') return i;
+  }
+  return -1;
+}
+
+/**
+ * Converts a shell glob pattern (e.g. *.txt, test_?, [a-z]*) to a RegExp.
+ * Never throws: a malformed pattern degrades to a literal match.
+ */
+export function globToRegex(pattern) {
+  const source = typeof pattern === 'string' ? pattern : String(pattern ?? '');
+  let regexStr = '^';
+
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i];
+
+    if (c === '*') {
       regexStr += '[^/]*';
-    } else if (c === '?' && !inClass) {
-      regexStr += '[^/]';
-    } else if (c === '[' && !inClass) {
-      inClass = true;
-      regexStr += '[';
-    } else if (c === ']' && inClass) {
-      inClass = false;
-      regexStr += ']';
-    } else if ('\\.+^$(){}|'.includes(c)) {
-      regexStr += '\\' + c;
-    } else {
-      regexStr += c;
+      continue;
     }
+
+    if (c === '?') {
+      regexStr += '[^/]';
+      continue;
+    }
+
+    if (c === '[') {
+      const end = findClassEnd(source, i);
+      if (end === -1) {
+        regexStr += '\\[';
+        continue;
+      }
+      let body = source.slice(i + 1, end);
+      if (body.startsWith('!')) {
+        body = `^${body.slice(1)}`;
+      }
+      regexStr += `[${body}]`;
+      i = end;
+      continue;
+    }
+
+    regexStr += escapeRegexLiteral(c);
   }
 
   regexStr += '$';
-  return new RegExp(regexStr);
+
+  try {
+    return new RegExp(regexStr);
+  } catch {
+    // A class the shell accepts can still be an invalid regex, e.g. [z-a].
+    // Match the whole pattern literally instead of throwing.
+    return new RegExp(`^${escapeRegexLiteral(source)}$`);
+  }
 }
 
 /**

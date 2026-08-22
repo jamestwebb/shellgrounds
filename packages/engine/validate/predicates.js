@@ -105,6 +105,32 @@ export function evaluatePredicate(predicateConfig, context = {}) {
       return regex.test(textToTest);
     }
 
+    // Output predicates. A challenge that only checks the typed command grades
+    // keystrokes, not understanding: it marks a student wrong for a smarter
+    // equivalent command, and marks them right when the simulation printed
+    // something false. Assert on what the terminal actually produced.
+    case 'outputContains': {
+      const textToTest = stdout || output || '';
+      const needle = String(predicateConfig.text ?? '');
+      if (!needle) return false;
+      return predicateConfig.caseSensitive
+        ? textToTest.includes(needle)
+        : textToTest.toLowerCase().includes(needle.toLowerCase());
+    }
+
+    case 'outputEquals': {
+      const textToTest = (stdout || output || '');
+      const expected = String(predicateConfig.text ?? '');
+      const norm = (t) => t.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+      return norm(textToTest) === norm(expected);
+    }
+
+    case 'outputLineCountIs': {
+      const textToTest = (stdout || output || '');
+      const lines = textToTest.replace(/\r\n/g, '\n').split('\n').filter(l => l.trim().length > 0);
+      return lines.length === Number(predicateConfig.n);
+    }
+
     case 'exitStatusIs': {
       return status === (predicateConfig.status !== undefined ? predicateConfig.status : 0);
     }

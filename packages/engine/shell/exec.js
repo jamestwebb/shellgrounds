@@ -8,7 +8,103 @@ import { parseCommandArgs, registry } from '../commands/registry.js';
 import { unknownCommandMessage } from '../unknown-command.js';
 import { ERROR_MARKERS } from '../constants.js';
 import { resolvePath } from '../vfs/path.js';
-import { readFile } from '../vfs/ops.js';
+import { readFile, writeFile } from '../vfs/ops.js';
+
+// The simulated machine identity. systeminfo and whoami already print this
+// name, so COMPUTERNAME agrees with them. It is a property of the simulator,
+// not of a content pack; a pack can still override it through context.env.
+const SIM_COMPUTERNAME = 'DESKTOP-WIN10';
+
+/**
+ * Builds the starting environment for a session.
+ *
+ * Windows gets a cmd.exe-shaped block. Every pack-specific value is DERIVED
+ * from the home directory and user the caller supplies (pack.json
+ * windows.home / windows.user reach us as `cwd` and `context.user`), so each
+ * pack seeds its own USERPROFILE and USERNAME and no pack's values are
+ * written into this file.
+ *
+ * `overrides` (context.env) wins over every default, which is how a session
+ * carries variables the student set with `set` into the next command.
+ */
+export function seedEnvironment(isWindows, home, user, cwd, overrides = {}) {
+  if (!isWindows) {
+    return {
+      HOME: home,
+      USER: user,
+      SHELL: '/bin/bash',
+      PATH: '/usr/local/bin:/usr/bin:/bin',
+      PWD: cwd,
+      '?': '0',
+      ...overrides
+    };
+  }
+
+  const drive = /^[A-Za-z]:/.test(home) ? home.slice(0, 2) : 'C:';
+  const homePath = home.slice(drive.length) || '\\';
+  const localAppData = `${home}\\AppData\\Local`;
+
+  return {
+    ALLUSERSPROFILE: `${drive}\\ProgramData`,
+    APPDATA: `${home}\\AppData\\Roaming`,
+    // CD is a live variable: runPipeline rewrites it whenever the cwd moves.
+    CD: cwd,
+    COMPUTERNAME: SIM_COMPUTERNAME,
+    COMSPEC: `${drive}\\Windows\\system32\\cmd.exe`,
+    HOMEDRIVE: drive,
+    HOMEPATH: homePath,
+    LOCALAPPDATA: localAppData,
+    NUMBER_OF_PROCESSORS: '1',
+    OS: 'Windows_NT',
+    PATH: `${drive}\\Windows\\system32;${drive}\\Windows;${drive}\\Windows\\System32\\Wbem`,
+    PATHEXT: '.COM;.EXE;.BAT;.CMD;.VBS;.JS',
+    PROCESSOR_ARCHITECTURE: 'AMD64',
+    PROMPT: '$P$G',
+    SYSTEMDRIVE: drive,
+    SYSTEMROOT: `${drive}\\Windows`,
+    TEMP: `${localAppData}\\Temp`,
+    TMP: `${localAppData}\\Temp`,
+    USERDOMAIN: SIM_COMPUTERNAME,
+    USERNAME: user,
+    USERPROFILE: home,
+    WINDIR: `${drive}\\Windows`,
+    '?': '0',
+    ...overrides
+  };
+}
+
+/**
+ * Bash opens every output redirection target BEFORE it forks the command, so
+ * `rm important.txt > /nodir/out.txt` never deletes the file: the open fails
+ * and the command is never run. This probes each target with the same
+ * writeFile() the redirection itself will use and throws the resulting fs
+ * away, so the check and the later write can never disagree.
+ *
+ * Returns a shell-formatted error string, or null when every target opens.
+ */
+function probeRedirectTargets(stage, cwd, fs, isWindows, user) {
+  const targets = [];
+  if (stage.redirectOut && stage.redirectOut.file) targets.push(stage.redirectOut.file);
+  if (stage.redirectErr && typeof stage.redirectErr === 'object' && stage.redirectErr.file) {
+    targets.push(stage.redirectErr.file);
+  }
+
+  for (const file of targets) {
+    if (file === '/dev/null' || file.toLowerCase() === 'nul') continue;
+
+    const resolved = resolvePath(cwd, file, isWindows);
+    // append:true with empty content never truncates an existing file, so the
+    // probe is side-effect free once its returned fs is discarded.
+    const probe = writeFile(fs, resolved, '', isWindows, { append: true, user });
+    if (!probe.ok) {
+      // writeFile reports "<reason>: <path>"; bash reports "bash: <path>: <reason>"
+      const reason = String(probe.error).replace(/:\s*[^:]*$/, '');
+      return isWindows ? probe.error : `bash: ${file}: ${reason}`;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Runs a command string through full tokenization, expansion, pipeline & list execution.
@@ -24,6 +120,9 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
       status: 0,
       newCwd: cwd,
       fs,
+      // Nothing ran, so the session env is unchanged. Echoing it back keeps
+      // the caller's "persist res.env" rule true on every return path.
+      env: context.env,
       hasError: false,
       executedCommand: input
     };
@@ -44,15 +143,10 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
     ? (env.USERPROFILE || (cwd.includes('\\Users\\') ? cwd.split('\\').slice(0, 3).join('\\') : 'C:\\Users\\Student'))
     : (cwd.startsWith('/home/') ? '/' + cwd.split('/').slice(1, 3).join('/') : `/home/${user}`);
 
-  const currentEnv = {
-    HOME: inferredHome,
-    USER: user,
-    SHELL: isWindows ? 'cmd.exe' : '/bin/bash',
-    PATH: isWindows ? 'C:\\Windows\\system32;C:\\Windows' : '/usr/local/bin:/usr/bin:/bin',
-    PWD: cwd,
-    '?': '0',
-    ...env
-  };
+  // Mutable for the whole run: `set`/`export` results are folded back in so a
+  // variable survives to the next stage, the next list entry, and — because
+  // the final value is returned to the caller — the next command line.
+  let currentEnv = seedEnvironment(isWindows, inferredHome, user, cwd, env);
 
   const tokenized = tokenizeCommandLine(input, isWindows);
   if (tokenized.error) {
@@ -64,6 +158,7 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
       status: 2,
       newCwd: cwd,
       fs,
+      env: currentEnv,
       hasError: true,
       executedCommand: input
     };
@@ -135,6 +230,22 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
         continue;
       }
 
+      // 1c. Output redirection: bash opens the target BEFORE running the
+      // command. If it cannot be opened the command must not run at all,
+      // otherwise `rm important.txt > /nodir/out.txt` destroys the file and
+      // only then reports the redirection error.
+      const redirectOpenError = probeRedirectTargets(stage, currentCwd, workingFs, isWindows, user);
+      if (redirectOpenError) {
+        finalStderr += isWindows ? `${redirectOpenError}\r\n` : `${redirectOpenError}\n`;
+        lastStatus = 1;
+        stageStatus = 1;
+        stageStdout = '';
+        stageStderr = '';
+        currentStdin = '';
+        if (isLastStage) finalStdout = '';
+        continue;
+      }
+
       const commandName = expandedArgv[0];
       const commandArgs = expandedArgv.slice(1);
 
@@ -194,6 +305,13 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
       // Update state from command execution
       if (cmdRes.newCwd) currentCwd = cmdRes.newCwd;
       if (cmdRes.fs) workingFs = cmdRes.fs;
+      // A command that edits the environment (`set NAME=value`) returns the
+      // whole new env. Threading it here is what makes a variable persist for
+      // the rest of the session; without it `set` was a no-op.
+      if (cmdRes.env) currentEnv = { ...cmdRes.env };
+      // CD (cmd) and PWD (bash) always report the current directory.
+      if (isWindows) currentEnv.CD = currentCwd;
+      else currentEnv.PWD = currentCwd;
       if (cmdRes.clear) clear = true;
       if (cmdRes.installedPackage) installedPackage = cmdRes.installedPackage;
       if (cmdRes.submitFlag) submitFlag = cmdRes.submitFlag;
@@ -265,6 +383,10 @@ export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
     status: lastStatus,
     newCwd: currentCwd,
     fs: workingFs,
+    // The caller must persist this and pass it back as context.env on the next
+    // command, exactly as it already does for fs and newCwd. Without that the
+    // session forgets every variable the student set.
+    env: currentEnv,
     clear,
     installedPackage,
     submitFlag,
