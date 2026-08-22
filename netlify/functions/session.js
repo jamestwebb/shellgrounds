@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Netlify Function: GET /api/session
 
 import { verifySessionToken, createSessionToken } from '../../packages/engine/crypto-utils.js';

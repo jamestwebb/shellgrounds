@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Virtual Filesystem Operations: read, write, mkdir, unlink, chmod, chown, stat
 
 import { normalizePath, resolvePath, findVfsKey, dirname, basename } from './path.js';

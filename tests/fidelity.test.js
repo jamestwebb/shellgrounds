@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Shell Fidelity & Differential Test Suite (Uplift §2 F1-F16)
 
 import { describe, it, expect } from 'vitest';

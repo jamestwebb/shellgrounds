@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Command Reference tab: searchable man pages for every real command in the game.
 // Deliberately teaches the habit it assists: every entry shows how to get the
 // same information inside a real shell (man <cmd> / --help).
