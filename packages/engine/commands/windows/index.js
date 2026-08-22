@@ -444,47 +444,61 @@ export const setWinCmd = {
     examples: ['set', 'set USERNAME', 'set FOO=BAR']
   },
   run({ operands, env = {} }) {
+    // `?` holds the last exit status for the expander; cmd never lists it.
+    const listable = Object.keys(env)
+      .filter(k => k !== '?')
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+    // 1. `set` alone: every variable, sorted, one NAME=value per line.
+    // The environment now arrives seeded from runPipeline, so this no longer
+    // invents a second, hardcoded copy that disagreed with what %VAR% expanded to.
     if (operands.length === 0) {
       let stdout = '';
-      const fullEnv = {
-        ALLUSERSPROFILE: 'C:\\ProgramData',
-        APPDATA: 'C:\\Users\\Student\\AppData\\Roaming',
-        COMPUTERNAME: 'DESKTOP-WIN10',
-        HOMEDRIVE: 'C:',
-        HOMEPATH: '\\Users\\Student',
-        OS: 'Windows_NT',
-        PATH: 'C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem',
-        SYSTEMDRIVE: 'C:',
-        SYSTEMROOT: 'C:\\Windows',
-        TEMP: 'C:\\Users\\Student\\AppData\\Local\\Temp',
-        USERDOMAIN: 'DESKTOP-WIN10',
-        USERNAME: 'Student',
-        USERPROFILE: 'C:\\Users\\Student',
-        ...env
-      };
-      for (const [k, v] of Object.entries(fullEnv)) {
-        if (k !== '?') stdout += `${k}=${v}\r\n`;
-      }
+      for (const k of listable) stdout += `${k}=${env[k]}\r\n`;
       return { stdout, stderr: '', status: 0 };
     }
 
     const expr = operands.join(' ');
     const eqIdx = expr.indexOf('=');
+
+    // 2. `set NAME=value`: define or replace. runPipeline threads the returned
+    // env forward, so the variable lasts for the rest of the session.
     if (eqIdx !== -1) {
-      const k = expr.slice(0, eqIdx);
-      const v = expr.slice(eqIdx + 1);
-      const updatedEnv = { ...env, [k]: v };
+      const name = expr.slice(0, eqIdx).trim();
+      const value = expr.slice(eqIdx + 1);
+      if (!name) {
+        return { stdout: '', stderr: 'The syntax of the command is incorrect.\r\n', status: 1 };
+      }
+
+      // cmd variable names are case-insensitive: `set path=x` replaces PATH
+      // rather than creating a second variable spelled differently.
+      const existingKey = Object.keys(env).find(k => k.toLowerCase() === name.toLowerCase());
+      const key = existingKey || name;
+      const updatedEnv = { ...env };
+      if (value === '') {
+        delete updatedEnv[key]; // `set NAME=` removes the variable in cmd
+      } else {
+        updatedEnv[key] = value;
+      }
       return { stdout: '', stderr: '', status: 0, env: updatedEnv };
     }
 
+    // 3. `set NAME`: every variable whose name starts with NAME, as cmd does.
     const searchKey = operands[0].toLowerCase();
     let stdout = '';
-    for (const [k, v] of Object.entries(env)) {
+    for (const k of listable) {
       if (k.toLowerCase().startsWith(searchKey)) {
-        stdout += `${k}=${v}\r\n`;
+        stdout += `${k}=${env[k]}\r\n`;
       }
     }
-    return { stdout, stderr: '', status: stdout ? 0 : 1 };
+    if (!stdout) {
+      return {
+        stdout: '',
+        stderr: `Environment variable ${operands[0]} not defined\r\n`,
+        status: 1
+      };
+    }
+    return { stdout, stderr: '', status: 0 };
   }
 };
 

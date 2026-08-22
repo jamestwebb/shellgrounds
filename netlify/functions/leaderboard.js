@@ -1,20 +1,21 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Netlify Function: GET /api/leaderboard
+// Netlify Function: GET /api/leaderboard?packId=&window=all|week
+//
+// Each pack is its own board. Omit packId for the combined board.
 
-import { listPlayers, getSolves, normalizeSolve } from './utils/store.js';
+import { listPlayers, getSolves, normalizeSolve, splitSolveKey } from './utils/store.js';
 import { PACKS } from '../../packs/index.js';
 
-// Badges were read from a single superseded challenge module, so only the
-// forensics pack could ever award one and students in the other two packs
-// earned nothing. Each pack defines its own badges in its pack.json; award
-// from whichever pack a solved challenge id belongs to. Solve records are not
-// pack-scoped yet, and challenge ids are unique across packs, so intersecting
-// per pack is both correct and cheap.
+// Badges come from whichever pack owns the solved challenge. Reading them from
+// a single hardcoded module meant only one pack could ever award a badge, and
+// students in the other two earned nothing.
 const BADGE_RULES = Object.values(PACKS).flatMap(pack =>
   (pack.manifest.badges || [])
     .filter(b => b.act)
     .map(b => ({
       id: b.id,
+      packId: pack.id,
+      name: b.name,
       required: pack.challenges.filter(c => c.act === b.act).map(c => c.id)
     }))
     .filter(rule => rule.required.length > 0)
@@ -31,7 +32,12 @@ export default async (req) => {
     return json(405, { error: 'Method Not Allowed' });
   }
 
-  const queryWindow = new URL(req.url).searchParams.get('window') || 'all';
+  const params = new URL(req.url).searchParams;
+  const queryWindow = params.get('window') || 'all';
+  const requestedPack = params.get('packId');
+  if (requestedPack && !PACKS[requestedPack]) {
+    return json(404, { error: `Unknown pack '${requestedPack}'` });
+  }
   const isWeekly = queryWindow === 'week';
   const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
 
@@ -45,13 +51,22 @@ export default async (req) => {
       let solveCount = 0;
       const solvedIds = [];
 
-      for (const [challengeId, raw] of Object.entries(solvesObj)) {
+      for (const [key, raw] of Object.entries(solvesObj)) {
+        const { packId, challengeId, legacy } = splitSolveKey(key);
+        // A legacy record predates pack scoping. Ids are unique across packs,
+        // so it still belongs to exactly one pack; find it rather than drop it.
+        const owner = legacy
+          ? Object.values(PACKS).find(pk => pk.challenges.some(c => c.id === challengeId))?.id
+          : packId;
+        if (requestedPack && owner !== requestedPack) continue;
+
         const s = normalizeSolve(raw);
-        // A record with no usable timestamp cannot be proven to fall inside
-        // the week. NaN fails every comparison, so `< oneWeekAgo` was false
-        // and the record slipped onto the weekly board. Test for the window.
+        // A record with no usable timestamp cannot be proven to fall inside the
+        // week. NaN fails every comparison, so `< oneWeekAgo` was false and the
+        // record slipped onto the weekly board. Test for the window.
         const solvedMs = new Date(s.solvedAt).getTime();
         if (isWeekly && !(solvedMs >= oneWeekAgo)) continue;
+
         score += s.netPoints;
         solveCount += 1;
         solvedIds.push(challengeId);
@@ -72,9 +87,13 @@ export default async (req) => {
       return new Date(a.lastSeen) - new Date(b.lastSeen);
     });
 
+    const applicable = requestedPack
+      ? BADGE_RULES.filter(r => r.packId === requestedPack)
+      : BADGE_RULES;
+
     const leaderboard = rows.slice(0, 50).map((player, idx) => {
       const solvedSet = new Set(player.solves);
-      const earnedBadges = BADGE_RULES
+      const earnedBadges = applicable
         .filter(rule =>
           rule.required.filter(id => solvedSet.has(id)).length >= Math.ceil(rule.required.length * 0.8))
         .map(rule => rule.id);
@@ -90,11 +109,12 @@ export default async (req) => {
     });
 
     return json(200, {
-        success: true,
-        window: queryWindow,
-        totalPlayers: players.length,
-        leaderboard
-      }, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
+      success: true,
+      packId: requestedPack || null,
+      window: queryWindow,
+      totalPlayers: players.length,
+      leaderboard
+    }, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
   } catch (err) {
     console.error('Leaderboard error:', err);
     return json(500, { error: 'Failed to fetch leaderboard' });

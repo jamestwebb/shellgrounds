@@ -5,6 +5,7 @@ import { checkSFW } from '../../packages/engine/sfw-filter.js';
 import { createSessionToken } from '../../packages/engine/crypto-utils.js';
 import { DEFAULT_PACK_ID, PACKS } from '../../packs/index.js';
 import { createPlayer } from './utils/store.js';
+import { isAdminHandle } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -18,7 +19,8 @@ export default async (req) => {
   }
 
   try {
-    const { handle, classPassword, packId = DEFAULT_PACK_ID } = (await req.json().catch(() => ({})));
+    const { handle, classPassword, setupCode, packId = DEFAULT_PACK_ID } =
+      (await req.json().catch(() => ({})));
 
     if (!handle) {
       return json(400, { error: 'Handle is required' });
@@ -33,7 +35,7 @@ export default async (req) => {
     }
     if (!classPassword || classPassword.trim() !== expectedPassword.trim()) {
       return json(403, {
-        error: 'ACCESS DENIED — the door only opens from the inside. Get the cohort password in class.'
+        error: 'That class password is not right. Ask your instructor for it.'
       });
     }
 
@@ -44,12 +46,37 @@ export default async (req) => {
     }
 
     const cleanHandle = sfw.handle;
+
+    // An instructor handle needs the setup code as well as the class password.
+    //
+    // Every student holds the class password, and registration is first-come,
+    // so without this any student could claim the handle named in
+    // ADMIN_HANDLES before the teacher did and walk off with the whole
+    // gradebook. Demonstrated, not theorised. The name filter does not help:
+    // it blocks the literal word "admin", not the handle actually configured.
+    if (isAdminHandle(cleanHandle)) {
+      const expectedSetup = process.env.INSTRUCTOR_SETUP_CODE;
+      if (!expectedSetup) {
+        console.error('An instructor handle was claimed but INSTRUCTOR_SETUP_CODE is not set');
+        return json(403, {
+          error: 'This handle is reserved for an instructor. The site owner must set '
+            + 'INSTRUCTOR_SETUP_CODE in the site settings before it can be claimed.'
+        });
+      }
+      if (!setupCode || String(setupCode).trim() !== expectedSetup.trim()) {
+        return json(403, {
+          error: 'This handle is reserved for an instructor, and the setup code did not match.'
+        });
+      }
+    }
+
     const activePackId = PACKS[packId] ? packId : DEFAULT_PACK_ID;
 
     const { created } = await createPlayer(cleanHandle);
     if (!created) {
       return json(409, {
-        error: `Handle '@${cleanHandle}' is already claimed. If it is yours, open The Gauntlet in the browser you registered with — sessions resume automatically.`
+        error: `The handle '@${cleanHandle}' is taken. If it is yours, open the site in the `
+          + 'browser you registered with — your session resumes on its own.'
       });
     }
 
@@ -59,8 +86,9 @@ export default async (req) => {
       success: true,
       handle: cleanHandle,
       packId: activePackId,
+      isAdmin: isAdminHandle(cleanHandle),
       token,
-      message: 'Welcome to The Gauntlet. Access granted.'
+      message: 'You are in. Good luck.'
     }, { 'Cache-Control': 'no-store' });
   } catch (err) {
     console.error('Registration error:', err);

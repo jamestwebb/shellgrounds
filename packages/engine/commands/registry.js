@@ -100,8 +100,33 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
       continue;
     }
 
-    if (!isWindows && arg.startsWith('-') && arg.length > 1 && !/^\d+$/.test(arg.slice(1))) {
+    if (!isWindows && arg.startsWith('-') && arg.length > 1) {
       const body = arg.slice(1);
+
+      // 0. All-digit body, e.g. -3, -1, -9. Decide in this order:
+      //    a. The command declares those digits as flags (ls -1) -> fall through
+      //       and let the normal short-option parse below handle them.
+      //    b. The command counts lines with -n (head, tail) -> this is GNU's
+      //       obsolete -NUM form, so `head -3 f` means `head -n 3 f`.
+      //    c. Neither (kill -9 1234) -> keep the word as an operand.
+      if (/^\d+$/.test(body)) {
+        const digitsAreFlags = body.split('').every(ch => flagSpecs[ch]);
+        if (!digitsAreFlags) {
+          const lineSpec = flagSpecs.n;
+          const countsLines = lineSpec
+            && lineSpec.status === 'implemented'
+            && lineSpec.long === 'lines'
+            && (lineSpec.type === 'string' || lineSpec.type === 'number');
+
+          if (countsLines) {
+            flags.n = lineSpec.type === 'number' ? Number(body) : body;
+          } else {
+            operands.push(arg);
+          }
+          i++;
+          continue;
+        }
+      }
 
       // 1. Check if the entire body matches a single-dash multi-character option (e.g. -name, -type in find)
       const multiSpecKey = Object.keys(flagSpecs).find(k => k === body || flagSpecs[k]?.long === body);
