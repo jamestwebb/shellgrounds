@@ -224,7 +224,7 @@ export const Terminal = ({
             <button
               onClick={(e) => { e.stopPropagation(); onOpenMap(); }}
               className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer"
-              title="View Topographical Map"
+              title="Open the system map"
             >
               <MapPin size={11} /> MAP
             </button>
@@ -237,7 +237,7 @@ export const Terminal = ({
                 ? 'text-cyan-400 bg-cyan-950/30 border-cyan-500/40'
                 : 'text-neutral-500 bg-term-gray border-term-border hover:text-neutral-300'
             }`}
-            title="Toggle Coach Explanations"
+            title="Turn the plain-English explanations on or off"
           >
             <Sparkles size={11} /> COACH {coachEnabled ? 'ON' : 'OFF'}
           </button>

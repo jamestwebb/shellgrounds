@@ -7,6 +7,25 @@
   # vite.config.js pins the dev server to port 3000
   targetPort = 3000
 
+# These are the questions Netlify asks the teacher during a Deploy-to-Netlify
+# run. Each value string is the help text shown beside the box, so it is written
+# to be read by somebody who has never deployed anything.
+#
+# SESSION_SECRET is deliberately absent: it is a random signing key, not a
+# decision, and asking a teacher to invent one produces weak secrets. Generate
+# it after the first deploy with `openssl rand -hex 32` and paste it into
+# Site configuration -> Environment variables.
+#
+# GAUNTLET_STORE is also deliberately absent, and must NOT be renamed to match
+# the product. It is the name of the Netlify Blobs store that holds every
+# handle, solve, and score. Change the name and the site starts reading an
+# empty store: every existing student score is orphaned, still on disk, and
+# invisible. The old name is the price of not losing a term's worth of work.
+[template.environment]
+  CLASS_PASSWORD = "The password you tell your class. Students type it once, to create their handle. Pick something you are happy to say out loud and write on a board, and change it here if it leaks."
+  ADMIN_HANDLES = "Your own handle, so the site knows you are the teacher and shows you the instructor view. Comma-separated if there is more than one of you, for example: ms_okafor,ta_alex"
+  INSTRUCTOR_SETUP_CODE = "A second, private password that only you know. It is what stops a student claiming the teacher handle above before you do, so make it different from the class password and do not announce it."
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

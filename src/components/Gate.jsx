@@ -8,9 +8,27 @@ import { checkSFW } from '../engine/sfw-filter';
 import { registerHandle } from '../utils/api';
 import { sounds } from '../utils/audio';
 
-export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
+// The server writes its own errors. These two are the ones students actually
+// hit, and they are worth saying in the product's own voice — plainly, and
+// with the next step attached.
+const friendlyGateError = (message) => {
+  const text = String(message || '');
+  if (/class password/i.test(text)) {
+    return 'That password did not match. Check with your teacher — it may have changed since it was announced.';
+  }
+  if (/is taken/i.test(text)) {
+    return 'Someone in this class already has that handle. Add a number or an underscore and try again. '
+      + 'If the handle is yours, open the site in the browser you registered with and it resumes on its own.';
+  }
+  return text || 'That did not go through. Check your handle and password, then try again.';
+};
+
+export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packName = 'Shellgrounds' }) => {
   const [handle, setHandle] = useState(existingHandle || '');
   const [password, setPassword] = useState('');
+  // Only an instructor needs this. It is what stops a student claiming the
+  // handle named in ADMIN_HANDLES before the teacher registers.
+  const [setupCode, setSetupCode] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,32 +43,32 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
     const cleanPassword = password.trim();
 
     if (!cleanHandle) {
-      setError('Please choose a handle for the leaderboard');
+      setError('Choose a handle first. It is the name the leaderboard shows.');
       sounds.playError();
       return;
     }
 
     if (!sfwResult?.safe) {
-      setError(sfwResult?.reason || 'Invalid handle format');
+      setError(sfwResult?.reason || 'That handle will not work. Use 3–20 letters, numbers, hyphens, or underscores.');
       sounds.playError();
       return;
     }
 
     if (!cleanPassword) {
-      setError('Class password is required');
+      setError('The class password is missing. Your teacher announces it in class.');
       sounds.playError();
       return;
     }
 
     setLoading(true);
     try {
-      const res = await registerHandle(cleanHandle, cleanPassword);
+      const res = await registerHandle(cleanHandle, cleanPassword, { setupCode: setupCode.trim() || undefined });
       sounds.playSuccess();
       // Await the full session setup: the button must stay disabled until the
       // player is actually inside, and any failure must surface here.
       await onAuthenticated(res.handle, res.token);
     } catch (err) {
-      setError(err.message || 'Authentication failed');
+      setError(friendlyGateError(err.message));
       sounds.playError();
     } finally {
       setLoading(false);
@@ -68,10 +86,10 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
           <div className="inline-flex p-3 rounded-full bg-term-green-faint border border-term-green/30 mb-4 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
             <BrandMark size={36} />
           </div>
-          <h1 className="text-2xl font-bold text-green-400 tracking-wider">THE GAUNTLET</h1>
-          <p className="text-xs text-neutral-400 mt-1.5 italic">"Prove it in the terminal."</p>
+          <h1 className="text-2xl font-bold text-green-400 tracking-wider">SHELLGROUNDS</h1>
+          <p className="text-xs text-neutral-400 mt-1.5">Learn the command line by capturing flags.</p>
           <div className="text-[11px] text-neutral-400 mt-1 uppercase tracking-widest">
-            Forensics CLI 101 · Command-Line Proving Ground
+            {packName}
           </div>
         </div>
 
@@ -79,7 +97,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
         {existingHandle && (
           <div className="mb-6 p-4 rounded-lg bg-term-gray border border-term-border flex items-center justify-between">
             <div>
-              <div className="text-xs text-neutral-400">Previous Station Located</div>
+              <div className="text-xs text-neutral-400">Welcome back</div>
               <div className="text-sm font-bold text-term-green">@{existingHandle}</div>
             </div>
             <button
@@ -95,7 +113,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
         <form onSubmit={handleRegister} className="space-y-5">
           <div>
             <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
-              <Terminal size={13} className="text-term-green" /> Analyst Handle (Leaderboard Name)
+              <Terminal size={13} className="text-term-green" /> Handle (your leaderboard name)
             </label>
             <div className="relative">
               <input
@@ -121,12 +139,14 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
             {handle.trim() && !sfwResult?.safe && (
               <p className="text-[11px] text-term-amber mt-1">{sfwResult?.reason}</p>
             )}
-            <p className="text-[11px] text-neutral-400 mt-1">3–20 chars, letters, numbers, hyphens or underscores.</p>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              3–20 characters. Letters, numbers, hyphens, underscores. Pick something you are happy to see on a projector.
+            </p>
           </div>
 
           <div>
             <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
-              <Key size={13} className="text-term-green" /> Class Password (Announced in Lecture)
+              <Key size={13} className="text-term-green" /> Class password
             </label>
             <input
               type="password"
@@ -135,8 +155,36 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
               placeholder="••••••••••••"
               className="w-full bg-term-gray border border-term-border rounded px-3.5 py-2.5 text-sm text-green-300 placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green transition-all"
             />
-            <p className="text-[11px] text-neutral-400 mt-1">Needed only to create your handle. Ask your instructor if you missed it.</p>
+            <p className="text-[11px] text-neutral-400 mt-1">
+              Your teacher announces this in class. It is only needed once, to create your handle.
+            </p>
           </div>
+
+          {/* Instructors only. Collapsed by default so students never wonder
+              about it — but the server requires it before anyone can claim a
+              handle listed in ADMIN_HANDLES. */}
+          <details className="group">
+            <summary className="text-[11px] text-neutral-500 hover:text-neutral-300 cursor-pointer select-none transition-colors">
+              I am the instructor
+            </summary>
+            <div className="mt-2">
+              <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium">
+                Instructor setup code
+              </label>
+              <input
+                type="password"
+                value={setupCode}
+                onChange={(e) => { setSetupCode(e.target.value); setError(null); }}
+                placeholder="••••••••"
+                autoComplete="off"
+                className="w-full bg-term-gray border border-term-border rounded px-3.5 py-2.5 text-sm text-green-300 placeholder-neutral-500 focus:outline-none focus:border-term-green focus:ring-1 focus:ring-term-green transition-all"
+              />
+              <p className="text-[11px] text-neutral-400 mt-1">
+                Only the teacher needs this. It is the INSTRUCTOR_SETUP_CODE you set when you deployed
+                the site, and it is what claims your instructor handle. Students leave this box empty.
+              </p>
+            </div>
+          </details>
 
           {/* Error Message */}
           {error && (
@@ -155,11 +203,11 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
             {loading ? (
               <>
                 <RefreshCw size={16} className="animate-spin" />
-                VERIFYING CLEARANCE...
+                CHECKING...
               </>
             ) : (
               <>
-                ENTER THE GAUNTLET
+                ENTER
                 <ArrowRight size={16} />
               </>
             )}
@@ -168,7 +216,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle }) => {
 
         {/* Footer info */}
         <div className="mt-8 pt-4 border-t border-neutral-900 text-center text-[11px] text-neutral-400">
-          Forensics CLI 101
+          Shellgrounds
         </div>
       </div>
     </div>

@@ -1,11 +1,19 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// System Map component for The Gauntlet: visual & ASCII filesystem overview
+// System Map: a visual and ASCII overview of the filesystem the student is
+// standing in.
+//
+// The component is SystemMap now. The file is still WarrenMap.jsx and the
+// WarrenMap export is still here, aliased, because App.jsx imports that name.
+// Renaming the file and the import is a separate, coordinated change.
+//
+// The map's contents are still the forensics pack's filesystem, hardcoded.
+// That belongs in pack data — see the technical plan.
 
 import React from 'react';
 import { MapPin, Navigation, Compass, HardDrive, Shield } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 
-export const WarrenMap = ({ currentCwd = '/home/analyst', onNavigate }) => {
+export const SystemMap = ({ currentCwd = '/home/analyst', onNavigate, packName = 'Shellgrounds' }) => {
   const isCurrent = (path) => currentCwd === path || currentCwd.startsWith(path + '/');
 
   return (
@@ -19,15 +27,15 @@ export const WarrenMap = ({ currentCwd = '/home/analyst', onNavigate }) => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-green-400">
-                SYSTEM MAP // THE GAUNTLET
+                SYSTEM MAP
               </h1>
               <p className="text-xs text-neutral-400">
-                Filesystem Survey · Forensics CLI 101
+                Where everything lives · {packName}
               </p>
             </div>
           </div>
           <div className="text-right text-xs">
-            <div className="text-neutral-400">Current Position</div>
+            <div className="text-neutral-400">You are here</div>
             <div className="text-term-green font-bold flex items-center gap-1">
               <MapPin size={12} /> {currentCwd}
             </div>
@@ -55,7 +63,7 @@ export const WarrenMap = ({ currentCwd = '/home/analyst', onNavigate }) => {
             </p>
             <div className="text-[11px] bg-term-gray p-2.5 rounded border border-term-border space-y-1 text-neutral-400">
               <div>📁 <code>/mnt/c/Users/analyst/Desktop/CASE_FILES</code></div>
-              <div className="text-purple-300">↳ <code>intake.txt</code> (Case 001 Dossier)</div>
+              <div className="text-purple-300">↳ <code>intake.txt</code> (the case dossier)</div>
             </div>
           </div>
 
@@ -133,11 +141,11 @@ export const WarrenMap = ({ currentCwd = '/home/analyst', onNavigate }) => {
         {/* Full ASCII Tree */}
         <div className="bg-term-black border border-term-border rounded-xl p-5 shadow-xl">
           <div className="text-xs font-bold uppercase tracking-wider text-green-400 mb-3 flex items-center gap-2">
-            <BrandMark size={16} /> Filesystem Cross-Section
+            <BrandMark size={16} /> The whole tree at once
           </div>
           <pre className="text-xs md:text-sm text-term-green/90 overflow-x-auto p-4 bg-term-void rounded-lg border border-term-border/60 leading-tight">
 {`================================================================================
-              FILESYSTEM MAP — THE GAUNTLET · FORENSICS CLI 101
+                          FILESYSTEM MAP
 ================================================================================
 
   [WINDOWS SIDE: C:\\Users\\analyst]
@@ -169,3 +177,7 @@ Command Reference: pwd (where am I) · ls -la (reveal) · cd .. (up) · cd ~ (ho
     </div>
   );
 };
+
+// App.jsx imports { WarrenMap }. Keep the name working until the file, the
+// import, and this alias are renamed together.
+export const WarrenMap = SystemMap;

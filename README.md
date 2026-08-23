@@ -1,92 +1,124 @@
-# The Gauntlet — Multi-Curriculum CLI Proving Ground
+# Shellgrounds
 
-> **The definitive zero-infrastructure, multi-curriculum CLI training and CTF platform for Linux and Windows.**
+> **Learn the command line by capturing flags.**
 
-The Gauntlet is a high-fidelity, pedagogical terminal simulator and challenge engine. It enables instructors to deploy interactive command-line courses in an afternoon without Docker, VMs, or complex infrastructure. Every student receives unique cryptographically generated flags, challenges are verified by an automated machine-solvability engine, and the shell simulation maintains strict honesty.
-
----
-
-## 🚀 Key Differentiators
-
-| Capability | The Gauntlet | Traditional CTF / Simulators |
-| :--- | :--- | :--- |
-| **Zero Infrastructure** | Static web app + serverless functions + blob storage | Requires heavy Docker containers or VMs |
-| **Anti-Cheat Flags** | Deterministic HMAC-SHA256 flags per student | Static flags easily shared among students |
-| **Machine-Proved Solvability** | Automated validator proves every challenge path | Manual verification prone to broken challenges |
-| **Simulation Honesty** | Declared boundaries; never claims real tools don't exist | Silently ignores flags or gives wrong error messages |
-| **Multi-Curriculum** | Pluggable, declarative content packs | Single hardcoded curriculum |
+**Shellgrounds is a free command-line game you can run for your class.** Students open a
+web page, pick a handle, and learn real bash and Windows commands by solving small
+challenges and capturing flags — with a class leaderboard, badges, and hints for the ones
+who get stuck. There is nothing to install and no server to maintain: it is a static site
+you deploy to Netlify's free tier by clicking a button, setting three settings, and telling
+your class one password. If you can make a Google Form, you can run this. Every student
+gets flags generated just for them, so answers cannot be copied — the only way onto the
+leaderboard is through the terminal. Setup takes about twenty minutes; the guide below
+walks through every step.
 
 ---
 
-## 📦 Flagship Content Packs (`packs/`)
+## Deploy it for your class
 
-1. **`forensics-cli-101`** *(Warren & Topside)*:
-   - 30 progressive challenges across 6 Acts.
-   - Comprehensive investigation covering bash pipelines, forensic hashing, search filters, and Windows CMD parity.
-2. **`linux-fundamentals`**:
-   - 40 challenges covering core navigation, file management (`mkdir`, `cp`, `mv`, `rm`), text manipulation (`grep`, `sort`, `cut`, `uniq`, `tr`, `sed`, `awk`, `tee`), permissions (`chmod`, `chown`, `sudo`), and shell redirection.
-3. **`windows-cmd-essentials`**:
-   - 27 challenges covering directory navigation, file operations (`copy`, `move`, `del`, `ren`, `md`, `rd`), text search (`find`, `findstr`), environment variables (`set %VAR%`), and system inspection (`systeminfo`, `ipconfig`, `certutil`).
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jamestwebb/shellgrounds)
+
+> **Before this button works, the GitHub repository must be renamed to
+> `jamestwebb/shellgrounds`.** It is still published under its old name, and the button
+> above points at the new one. Rename the repo first, or edit the URL to match wherever
+> the code actually lives.
+
+Clicking the button makes your own copy of the code, builds it, and puts it on the web at
+a free `*.netlify.app` address. On the way through, Netlify asks you for three things:
+
+| Setting | What to put in it |
+| :--- | :--- |
+| `CLASS_PASSWORD` | The password you tell your class. Students type it once, to create their handle. |
+| `ADMIN_HANDLES` | Your own handle, so the site shows you the instructor view. Comma-separated for more than one teacher: `ms_okafor,ta_alex`. |
+| `INSTRUCTOR_SETUP_CODE` | A second, private password only you know. It stops a student claiming the teacher handle before you do. Make it different from the class password, and do not announce it. |
+
+### After the first deploy — two more steps
+
+1. **Add a signing key.** In the Netlify dashboard, open **Site configuration ->
+   Environment variables** and add `SESSION_SECRET`. It must be a long random string.
+   On a Mac or Linux machine, `openssl rand -hex 32` prints one. Any long jumble of
+   letters and numbers works. Then redeploy (**Deploys -> Trigger deploy**).
+2. **Claim your handle.** Open the site, enter your handle from `ADMIN_HANDLES`, the class
+   password, and — under **I am the instructor** — your setup code. You now see the
+   instructor view.
+
+Then give your class the site address and the class password. That is the whole setup.
+
+### One name you should not change
+
+`GAUNTLET_STORE` is the name of the storage area holding every handle, solve, and score.
+It keeps its old name on purpose. Renaming it points the site at a fresh, empty store, and
+every score already recorded becomes invisible. Leave it alone unless you are starting a
+brand-new class with no history — in which case set it to any new name you like, once, at
+the start of term.
 
 ---
 
-## 🛠️ CLI Pack Validator
+## What your students get
 
-The Gauntlet includes a dedicated CLI tool to validate curriculum packs, verify VFS integrity, prove canonical solutions, and check act progression math:
+Three packs ship with the site. Switch packs from the header; each one is a full course.
+
+1. **Shellgrounds: Forensics** (`forensics-cli-101`) — 30 challenges across 6 acts. A
+   case investigation that teaches navigation, file inspection, hashing, search, pipes,
+   redirection, and Windows CMD parity.
+2. **Shellgrounds: Linux Fundamentals** (`linux-fundamentals`) — 40 challenges: navigation,
+   file management (`mkdir`, `cp`, `mv`, `rm`), text handling (`grep`, `sort`, `cut`,
+   `uniq`, `tr`, `sed`, `awk`, `tee`), permissions (`chmod`, `chown`, `sudo`), and
+   redirection. No story, for teachers who want none.
+3. **Shellgrounds: Windows CMD** (`windows-cmd-essentials`) — 27 challenges: navigation,
+   file operations (`copy`, `move`, `del`, `ren`, `md`, `rd`), text search (`find`,
+   `findstr`), environment variables (`set %VAR%`), and system inspection (`systeminfo`,
+   `ipconfig`, `certutil`).
+
+Design decisions worth knowing before you teach with it:
+
+- **Every student gets different flags**, derived from their handle. Copying a classmate's
+  answer does not work.
+- **The first hint on each challenge is free.** Later hints cost a few points. Nothing is
+  ever locked behind a hint.
+- **A student can skip one challenge per act.** No single challenge can trap anybody.
+- **There are no timers and no streaks.** Speed pressure punishes exactly the students the
+  hints exist to protect.
+- **The simulation is honest.** Run a command Shellgrounds does not simulate and it tells
+  you what that command really does, instead of pretending it does not exist.
+
+---
+
+## Running it on your own machine
+
+You do not need any of this to teach with Shellgrounds. It is here for people writing
+their own packs.
 
 ```bash
-# Validate all packs
-node bin/gauntlet.js validate
+npm install       # install dependencies
+npm run dev       # start the dev server
+npm test          # unit, de-branding, and fidelity tests
+npm run validate  # prove every challenge in every pack is solvable
+npm run build     # production build
+```
 
-# Validate a specific pack with JSON output for CI
+The pack validator also runs standalone, and takes a single pack:
+
+```bash
+node bin/gauntlet.js validate
 node bin/gauntlet.js validate packs/linux-fundamentals --json
 ```
 
 ---
 
-## 💻 Local Development & Testing
+## How it is built
 
-### 1. Install Dependencies
-```bash
-npm install
-```
-
-### 2. Run Test Suite (Vitest)
-```bash
-# Runs Unit, De-branding Lint, and Differential Fidelity tests
-npm test
-```
-
-### 3. Run Pack Validation
-```bash
-npm run validate
-```
-
-### 4. Start Development Server
-```bash
-npm run dev
-```
-
-### 5. Build for Production
-```bash
-npm run build
-```
+| Capability | How Shellgrounds does it |
+| :--- | :--- |
+| **No infrastructure** | Static site, serverless functions, and blob storage. No Docker, no VMs, no database to run. |
+| **Answers cannot be shared** | Flags are HMAC-SHA256 values derived per student, per challenge. |
+| **No broken challenges** | A validator proves a working solution path for every challenge before release. |
+| **Honest simulation** | Unsimulated commands declare themselves rather than failing silently or lying. |
+| **Pluggable curriculum** | Content packs are declarative data. Writing a new one needs no engine changes. |
 
 ---
 
-## ☁️ Deployment & Instructor Configuration
-
-Deploy directly to Netlify or any compatible JAMstack host with serverless functions.
-
-### Environment Variables:
-- `SESSION_SECRET`: Long random secret for HMAC token and flag signing (e.g. `openssl rand -hex 32`).
-- `COHORT_PASSWORD` (or `CLASS_PASSWORD`): Password announced to students in lecture.
-- `ADMIN_HANDLES`: Comma-separated list of handles granted instructor privileges (e.g. `prof_smith,ta_alex`).
-- `GAUNTLET_STORE` (optional): Netlify Blobs store namespace (default: `gauntlet-fall2026`).
-
----
-
-## 📜 License
+## License
 
 **PolyForm Noncommercial License 1.0.0** — full text in [LICENSE.md](LICENSE.md).
 

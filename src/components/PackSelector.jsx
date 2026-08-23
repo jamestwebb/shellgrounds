@@ -19,10 +19,10 @@ export default function PackSelector({ isOpen, onClose, currentPackId, onSelectP
             <span className="text-2xl">📦</span>
             <div>
               <h2 id="pack-select-title" className="text-lg font-bold text-slate-100">
-                Curriculum Content Packs
+                Challenge packs
               </h2>
               <p className="text-xs text-slate-400">
-                Select a learning module to load its filesystem, challenge progression, and exercises.
+                Each pack is a full course: its own filesystem, its own acts, its own challenges. Pick one to load it.
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default function PackSelector({ isOpen, onClose, currentPackId, onSelectP
                   </div>
 
                   <p className="text-xs text-slate-400">
-                    {pack.acts.length} Acts • {pack.badges.length} Badges • Platforms: {pack.platforms.join(', ')}
+                    {pack.acts.length} acts • {pack.badges.length} badges • {pack.platforms.join(', ')}
                   </p>
                 </div>
 
@@ -77,7 +77,7 @@ export default function PackSelector({ isOpen, onClose, currentPackId, onSelectP
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
                   }`}
                 >
-                  {isSelected ? 'Loaded' : 'Switch Pack'}
+                  {isSelected ? 'Loaded' : 'Load this pack'}
                 </button>
               </div>
             );

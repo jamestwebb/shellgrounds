@@ -2,7 +2,7 @@
 // Netlify Function: GET /api/admin-overview — the instructor's view.
 //
 //   ?packId=<id>                which module (default: the token's)
-//   &view=overview|answers|student
+//   &view=overview|answers|student|triage
 //   &handle=<student>           for view=student
 //   &format=json|csv            csv exports the gradebook for that module
 //
@@ -109,6 +109,51 @@ export default async (req) => {
 
     const players = await listPlayers();
 
+    // ---- who needs help, in ONE request --------------------------------
+    //
+    // The dashboard needs, for every student, which challenges they are stuck
+    // on. Without this it had to fetch view=student once per student — an N+1
+    // on every pack switch, for the panel the teacher looks at first.
+    if (view === 'triage') {
+      const rows = [];
+      for (const p of players) {
+        const solvesObj = await getSolves(p.handle);
+        const hintsObj = await getHintsUsed(p.handle);
+        const solved = new Set();
+        for (const key of Object.keys(solvesObj)) {
+          const o = ownerOf(key);
+          if (o.packId === pack.id) solved.add(o.challengeId);
+        }
+        const struggling = [];
+        for (const c of pack.challenges) {
+          if (solved.has(c.id)) continue;
+          const total = (c.hints || []).length;
+          if (total > 0 && hintCountFor(hintsObj, pack.id, c.id) >= total) {
+            struggling.push({ id: c.id, act: c.act, title: c.title });
+          }
+        }
+        const frontier = pack.challenges.find(c => !solved.has(c.id)) || null;
+        rows.push({
+          handle: p.handle,
+          solvedCount: solved.size,
+          started: solved.size > 0,
+          struggling,
+          frontier: frontier && { id: frontier.id, act: frontier.act, title: frontier.title }
+        });
+      }
+      rows.sort((a, b) =>
+        (b.struggling.length - a.struggling.length) || (a.solvedCount - b.solvedCount));
+      return json(200, {
+        success: true,
+        packId: pack.id,
+        packName: pack.manifest.name,
+        totalChallenges: pack.challenges.length,
+        registered: players.length,
+        participants: rows.filter(r => r.started).length,
+        students: rows
+      }, { 'Cache-Control': 'no-store' });
+    }
+
     // ---- one student, in detail ---------------------------------------
     if (view === 'student') {
       const who = (url.searchParams.get('handle') || '').toLowerCase();
@@ -165,6 +210,10 @@ export default async (req) => {
 
     const allSolves = [];
     const playerSummaries = [];
+    // listPlayers() is server-wide, so "students registered" is every handle on
+    // the site. A solve rate against that reads falsely low for a module most
+    // of the class has not opened yet. Count who actually started this one.
+    let participants = 0;
 
     for (const p of players) {
       const solvesObj = await getSolves(p.handle);
@@ -204,6 +253,8 @@ export default async (req) => {
         }
       }
 
+      if (solvedHere.size > 0) participants += 1;
+
       playerSummaries.push({
         handle: p.handle,
         totalScore: playerPoints,
@@ -237,6 +288,7 @@ export default async (req) => {
       packId: pack.id,
       packName: pack.manifest.name,
       totalPlayers: players.length,
+      participants,
       playerSummaries,
       challengeStats: stats,
       // What to reteach on Monday: most students stuck, fewest solves.
