@@ -143,7 +143,7 @@ footer { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 6px; font-si
 <strong>Quick reference</strong><br>
 Set your own site URL and class password before handing this out. Admin handle: <code>warden</code>.<br>
 Handles: 3–20 characters, letters/numbers/underscore/hyphen, <strong>claimed once only</strong>.<br>
-${CHALLENGES.length} challenges · ${totalPoints} points total · flags look like <code>FLAG{ABCD2345EFGH}</code> and are <strong>different for every student</strong>.
+${CHALLENGES.length} challenges · ${totalPoints} points total · finds look like <code>FIND{ABCD2345EFGH}</code> and are <strong>different for every student</strong>.
 </div>
 
 <div class="box">

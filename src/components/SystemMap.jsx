@@ -76,7 +76,7 @@ export const SystemMap = ({
     <div className="h-full overflow-y-auto p-4 md:p-6">
       <div className="max-w-3xl mx-auto space-y-4">
         <header className="space-y-1">
-          <h2 className="text-sm font-bold text-term-green uppercase tracking-wider">
+          <h2 className="text-sm font-bold text-term-green tracking-wider">
             System map
           </h2>
           <p className="text-xs text-neutral-400">
@@ -121,7 +121,7 @@ export const SystemMap = ({
                   </span>
                 )}
                 {current && (
-                  <span className="ml-auto text-[10px] font-bold uppercase tracking-wider shrink-0">
+                  <span className="ml-auto text-[10px] font-bold tracking-wider shrink-0">
                     you are here
                   </span>
                 )}

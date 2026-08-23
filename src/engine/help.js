@@ -240,12 +240,12 @@ export const MAN_PAGES = {
     ]
   },
   submit: {
-    name: 'submit - submit a captured flag for scoring',
-    synopsis: 'submit [FLAG]',
-    description: 'Submit a captured flag token (e.g. FLAG{...}) for cryptographic validation and leaderboard credit.',
+    name: 'submit - hand in something you found, for points',
+    synopsis: 'submit [FIND]',
+    description: 'Hand in a find (e.g. FIND{...}). It is checked against your own, and credited to the leaderboard.',
     options: [],
     examples: [
-      'submit FLAG{ABC123XYZ456}      Validate and record flag solve'
+      'submit FIND{ABC123XYZ456}      Check it and record the solve'
     ]
   },
   tracker: {
@@ -318,7 +318,7 @@ export const LINUX_HELP = {
   echo:      'echo - display a line of text\nUsage: echo "text" [> file]',
   man:       'man - format and display on-line manual pages\nUsage: man <command>',
   map:       'map - display ASCII map of this filesystem\nUsage: map',
-  submit:    'submit - submit flag for scoring\nUsage: submit <flag_string>',
+  submit:    'submit - hand in a find for points\nUsage: submit <find>',
   tracker:   'tracker - sensor sweep utility (installed via apt-get)\nUsage: tracker -a',
   scan:      'scan - inspect partition table offsets\nUsage: scan <image_file>',
   extract:   'extract - carve volume at sector offset\nUsage: extract -o <offset> <image_file>',

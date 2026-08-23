@@ -28,7 +28,7 @@ export const KeyboardGuard = () => {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-green-400">YOU NEED A REAL KEYBOARD</h2>
+          <h2 className="text-lg font-bold text-green-400">You need a real keyboard</h2>
           <p className="text-xs text-neutral-400 mt-1">Shellgrounds is a working command line</p>
         </div>
 

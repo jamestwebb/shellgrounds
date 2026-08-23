@@ -1,5 +1,7 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Cryptographic token & flag generator for Shellgrounds
+// Cryptographic token and find generator for Shellgrounds
+
+import { findToken } from './constants.js';
 
 // Base32 RFC 4648 alphabet
 const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -308,7 +310,8 @@ export function hmacSha256(secret, message) {
   return sha256Sync(outerStr);
 }
 
-// Generate deterministic per-user flag: FLAG{12_CHARS_BASE32}
+// This student's find for one challenge: FIND{12_CHARS_BASE32}. Deterministic
+// from the site secret, so two students never get the same one.
 export function generateUserFlag(sessionSecret, handle, challengeId, packId = '') {
   if (!sessionSecret) {
     throw new Error('generateUserFlag requires a session secret');
@@ -321,7 +324,7 @@ export function generateUserFlag(sessionSecret, handle, challengeId, packId = ''
   }
   const base32Str = toBase32(bytes);
   const code = base32Str.substring(0, 12).toUpperCase();
-  return `FLAG{${code}}`;
+  return findToken(code);
 }
 
 // Generate signed session token: base64(handle:expiry:hmac) or base64(handle:packId:expiry:hmac)

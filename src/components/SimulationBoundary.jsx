@@ -97,7 +97,7 @@ export default function SimulationBoundary({ isOpen, onClose, defaultPlatform = 
                 <div key={cmd.name} className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-2">
                   <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
                     <span className="font-mono font-bold text-emerald-400 text-sm">{cmd.name}</span>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                       {cmd.platforms.join(', ')}
                     </span>
                   </div>
@@ -147,7 +147,7 @@ export default function SimulationBoundary({ isOpen, onClose, defaultPlatform = 
 
           {/* Real world external tools banner */}
           <div className="mt-6 p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+            <h3 className="text-xs font-bold text-slate-300 tracking-wider flex items-center gap-2">
               <span>🌐</span> Real-World System Commands (Out of Simulator Scope)
             </h3>
             <p className="text-xs text-slate-400">

@@ -81,7 +81,7 @@
     "act": 1,
     "title": "Hidden in Plain Sight",
     "points": 15,
-    "brief": "The examiner who had this bench before you left something behind, and a plain `ls` does not show it. On Linux, a filename that starts with a dot is invisible to a normal listing. Find the hidden file in your home directory, read it, and submit the flag inside.",
+    "brief": "The examiner who had this bench before you left something behind, and a plain `ls` does not show it. On Linux, a filename that starts with a dot is invisible to a normal listing. Find the hidden file in your home directory, read it, and submit the find inside.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -96,7 +96,7 @@
       },
       {
         "cost": 5,
-        "text": "The file is called `.stash`. Read it with `cat .stash` and submit the recovered flag."
+        "text": "The file is called `.stash`. Read it with `cat .stash` and submit the recovered find."
       }
     ],
     "successMessage": "Dotfiles like `.bashrc` and `.stash` are hidden by default, which is exactly why intruders like them. `ls -a` is the habit worth keeping.",
@@ -111,7 +111,7 @@
     "act": 1,
     "title": "One Level Down",
     "points": 15,
-    "brief": "Your onboarding folder recorded a checkpoint for you. Get inside `training/level_1`, read `checkpoint_alpha.txt`, and submit the flag it holds.",
+    "brief": "Your onboarding folder recorded a checkpoint for you. Get inside `training/level_1`, read `checkpoint_alpha.txt`, and submit the find it holds.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -126,7 +126,7 @@
       },
       {
         "cost": 5,
-        "text": "Once inside level_1, run `cat checkpoint_alpha.txt` to see the flag."
+        "text": "Once inside level_1, run `cat checkpoint_alpha.txt` to see the find."
       }
     ],
     "successMessage": "`cd` changes your working directory. You walked down through `training` into `level_1` in one move.",
@@ -140,7 +140,7 @@
     "act": 1,
     "title": "Sideways Move",
     "points": 15,
-    "brief": "Now reach `training/level_2` — a SIBLING of level_1, not a child. If you are standing inside level_1, you have to go up before you can go over. Read `checkpoint_beta.txt` and submit the flag.",
+    "brief": "Now reach `training/level_2` — a SIBLING of level_1, not a child. If you are standing inside level_1, you have to go up before you can go over. Read `checkpoint_beta.txt` and submit the find.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -155,7 +155,7 @@
       },
       {
         "cost": 5,
-        "text": "Once you are inside, run `cat checkpoint_beta.txt` and submit the flag."
+        "text": "Once you are inside, run `cat checkpoint_beta.txt` and submit the find."
       }
     ],
     "successMessage": "`..` means the parent directory. `cd ..` moves you one level up, toward the root.",
@@ -307,7 +307,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`head` prints the top of a file. One flag says how many lines you want."
+        "text": "`head` prints the top of a file. One find says how many lines you want."
       },
       {
         "cost": 5,
@@ -330,7 +330,7 @@
     "act": 2,
     "title": "The Last Record",
     "points": 20,
-    "brief": "A timeline is only as good as its ends. You have read the beginning; the final record is the one the intake sheet refers to, written when the laptop reached this lab. Read the end of `Documents/access.log` and submit the flag on the last line.",
+    "brief": "A timeline is only as good as its ends. You have read the beginning; the final record is the one the intake sheet refers to, written when the laptop reached this lab. Read the end of `Documents/access.log` and submit the find on the last line.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -345,7 +345,7 @@
       },
       {
         "cost": 5,
-        "text": "Run `tail Documents/access.log`, then submit the flag on the final line."
+        "text": "Run `tail Documents/access.log`, then submit the find on the final line."
       }
     ],
     "successMessage": "`tail` shows the final lines of a file. On a live machine `tail -f` keeps printing as new lines arrive, which is how incidents are watched in real time.",
@@ -422,7 +422,7 @@
     "act": 2,
     "title": "Integrity Checksum (MD5)",
     "points": 25,
-    "brief": "Evidence has to be hashed so the lab can prove nobody altered it — before examination and after. Compute the MD5 hash of `evidence/evidence.img`, then read the image header and submit the acquisition flag recorded there.",
+    "brief": "Evidence has to be hashed so the lab can prove nobody altered it — before examination and after. Compute the MD5 hash of `evidence/evidence.img`, then read the image header and submit the acquisition find recorded there.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -451,7 +451,7 @@
     "act": 3,
     "title": "Secrets in Plain Sight",
     "points": 25,
-    "brief": "`Documents/secrets.txt` came off the seized laptop and only one line of it matters to this case. Find the line that carries `vault_passcode` and submit the flag on it.",
+    "brief": "`Documents/secrets.txt` came off the seized laptop and only one line of it matters to this case. Find the line that carries `vault_passcode` and submit the find on it.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -479,7 +479,7 @@
     "act": 3,
     "title": "Case-Insensitive Searching",
     "points": 30,
-    "brief": "`Documents/logs.txt` records failures inconsistently: some lines say 'error', some 'ERROR'. A search that only matches one of them misses evidence. Find every error line with a single search, then submit the flag one of them carries.",
+    "brief": "`Documents/logs.txt` records failures inconsistently: some lines say 'error', some 'ERROR'. A search that only matches one of them misses evidence. Find every error line with a single search, then submit the find one of them carries.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -490,14 +490,14 @@
     "hints": [
       {
         "cost": 0,
-        "text": "One short `grep` flag makes the match ignore letter case."
+        "text": "One short `grep` find makes the match ignore letter case."
       },
       {
         "cost": 10,
         "text": "Run `grep -i \"error\" Documents/logs.txt`."
       }
     ],
-    "successMessage": "`grep -i` ignores case. Real logs are written by many programs with no agreement about capitals, so this flag is not a convenience — it is the difference between finding evidence and missing it.",
+    "successMessage": "`grep -i` ignores case. Real logs are written by many programs with no agreement about capitals, so this find is not a convenience — it is the difference between finding evidence and missing it.",
     "teaches": [
       "grep -i"
     ]
@@ -536,7 +536,7 @@
     "act": 3,
     "title": "The WSL Bridge",
     "points": 40,
-    "brief": "This bench runs Linux, but the seized laptop's Windows filesystem is mounted alongside it at `/mnt/c`. Read the evidence intake sheet at `/mnt/c/Users/Examiner/Desktop/CASE_FILES/intake.txt` and submit the verification flag on it.",
+    "brief": "This bench runs Linux, but the seized laptop's Windows filesystem is mounted alongside it at `/mnt/c`. Read the evidence intake sheet at `/mnt/c/Users/Examiner/Desktop/CASE_FILES/intake.txt` and submit the verification find on it.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -632,7 +632,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Refresh the package lists first, then install. Both steps need administrator rights. The replay-everything flag for `evtrace` is `-a`."
+        "text": "Refresh the package lists first, then install. Both steps need administrator rights. The replay-everything find for `evtrace` is `-a`."
       },
       {
         "cost": 10,
@@ -651,7 +651,7 @@
     "act": 4,
     "title": "Filter the Noise (Inverted Grep)",
     "points": 40,
-    "brief": "`Documents/network_stream.log` is almost all ordinary allowed traffic, and the one line that matters is buried in it. Show only the packets that were NOT allowed, then submit the flag on the CRITICAL_DATA_LEAK entry.",
+    "brief": "`Documents/network_stream.log` is almost all ordinary allowed traffic, and the one line that matters is buried in it. Show only the packets that were NOT allowed, then submit the find on the CRITICAL_DATA_LEAK entry.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -662,7 +662,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`grep` normally keeps the lines that match. One flag inverts that and keeps everything else."
+        "text": "`grep` normally keeps the lines that match. One find inverts that and keeps everything else."
       },
       {
         "cost": 10,
@@ -772,7 +772,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`>` sends output into a file instead of the screen. Do not forget the flag that makes the search ignore case, or you will miss lines."
+        "text": "`>` sends output into a file instead of the screen. Do not forget the find that makes the search ignore case, or you will miss lines."
       },
       {
         "cost": 10,
@@ -838,7 +838,7 @@
     "act": 5,
     "title": "Carve the Container (Finish Line)",
     "points": 120,
-    "brief": "This is the whole case in one exercise. `evidence/seized_drive.raw` hides an encrypted container, and the prototype files walked out inside it. The bench tool `extract` can carve that container, but only if you hand it the exact sector offset where the container begins — and it refuses a wrong one. You recovered that number from the partition table; go back for it if you did not write it down. Carve the container and submit the case flag it gives up.",
+    "brief": "This is the whole case in one exercise. `evidence/seized_drive.raw` hides an encrypted container, and the prototype files walked out inside it. The bench tool `extract` can carve that container, but only if you hand it the exact sector offset where the container begins — and it refuses a wrong one. You recovered that number from the partition table; go back for it if you did not write it down. Carve the container and submit the case find it gives up.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -849,11 +849,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`extract` takes the offset with the `-o` flag, then the image path. The offset came out of the `scan` output, and the tool will reject anything else."
+        "text": "`extract` takes the offset with the `-o` find, then the image path. The offset came out of the `scan` output, and the tool will reject anything else."
       },
       {
         "cost": 20,
-        "text": "Run `extract -o 206848 evidence/seized_drive.raw`, then submit the case flag it prints."
+        "text": "Run `extract -o 206848 evidence/seized_drive.raw`, then submit the case find it prints."
       }
     ],
     "successMessage": "You read partition geometry, carried a number from one tool's output into another tool's argument, and carved out the container. That chain is what forensic work actually looks like. Case 1042 is closed.",
@@ -912,7 +912,7 @@
     "platform": "windows",
     "title": "Hidden File Attributes (attrib)",
     "points": 20,
-    "brief": "Windows hides a file with an attribute bit, not with a leading dot, so the Linux trick you learned in Act I will not find it here. Inspect the attributes of `evidence\\mystery_file`, then read it and recover the flag.",
+    "brief": "Windows hides a file with an attribute bit, not with a leading dot, so the Linux trick you learned in Act I will not find it here. Inspect the attributes of `evidence\\mystery_file`, then read it and recover the find.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },
@@ -943,7 +943,7 @@
     "platform": "windows",
     "title": "Windows String Search (findstr /i)",
     "points": 25,
-    "brief": "The laptop's event log extract is at `Documents\\logs.txt`. Find the evidence marker in it, ignoring letter case, and submit the flag. There is no `grep` on Windows.",
+    "brief": "The laptop's event log extract is at `Documents\\logs.txt`. Find the evidence marker in it, ignoring letter case, and submit the find. There is no `grep` on Windows.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },

@@ -63,7 +63,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-green-400 tracking-wide">
-                  LEADERBOARD
+                  Leaderboard
                 </h1>
                 <p className="text-xs text-neutral-400 mt-0.5">
                   {packName ? `${packName} · live standings` : 'Live standings'}
@@ -83,7 +83,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                ALL-TIME
+                All time
               </button>
               <button
                 onClick={() => setWindowFilter('week')}
@@ -93,7 +93,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
                     : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                THIS WEEK
+                This week
               </button>
             </div>
 
@@ -116,7 +116,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
                 #{userEntry.rank}
               </div>
               <div>
-                <div className="text-xs text-term-green font-bold uppercase tracking-wider">Your standing</div>
+                <div className="text-xs text-term-green font-bold tracking-wider">Your standing</div>
                 <div className="text-base font-bold text-white">@{userEntry.handle}</div>
               </div>
             </div>
@@ -154,7 +154,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
 
         {/* Leaderboard Table */}
         <div className="bg-term-black border border-term-border rounded-xl overflow-hidden shadow-xl">
-          <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-term-panel border-b border-term-border text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+          <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-term-panel border-b border-term-border text-[11px] font-bold text-neutral-400 tracking-wider">
             <div className="col-span-2 md:col-span-1 text-center">Rank</div>
             <div className="col-span-5 md:col-span-4">Handle</div>
             <div className="hidden md:block md:col-span-4">Badges</div>
@@ -213,7 +213,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
                       </span>
                       {isUser && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-term-green text-term-black font-bold shrink-0">
-                          YOU
+                          You
                         </span>
                       )}
                     </div>
@@ -269,7 +269,7 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
             <Shield size={14} className="text-term-green" /> How scoring works
           </div>
           <div>
-            Every student gets different flags, so copying a classmate's flag will not work.
+            Every student finds something different, so copying a classmate's answer will not work.
             First hints are free; later hints subtract a few XP from that challenge's points.
           </div>
         </div>

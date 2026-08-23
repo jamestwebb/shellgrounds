@@ -86,7 +86,7 @@ function matchesQuery(challenge, query) {
 const SectionCard = ({ title, note, icon: Icon, accent = 'text-neutral-300', children }) => (
   <div className="bg-term-black border border-term-border rounded-xl overflow-hidden shadow-xl">
     <div className="px-4 py-3 bg-term-panel border-b border-term-border flex flex-wrap items-center justify-between gap-2">
-      <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${accent}`}>
+      <h3 className={`text-xs font-bold tracking-wider flex items-center gap-1.5 ${accent}`}>
         {Icon && <Icon size={14} />} {title}
       </h3>
       {note && <span className="text-[11px] text-neutral-500">{note}</span>}
@@ -379,7 +379,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             onClick={refreshAll}
             className="px-3 py-1.5 rounded-lg bg-term-gray border border-term-border hover:bg-neutral-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer text-neutral-200"
           >
-            <RefreshCw size={12} /> TRY AGAIN
+            <RefreshCw size={12} /> Try again
           </button>
         </div>
       </div>
@@ -400,7 +400,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-purple-400 tracking-wide">
-                INSTRUCTOR CONSOLE
+                Instructor console
               </h1>
               <p className="text-xs text-neutral-400 mt-0.5">
                 {packName} — who needs help right now, and the answers to give them
@@ -426,7 +426,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-lg"
               title="Download the gradebook for this module as CSV"
             >
-              <Download size={13} /> {csv.busy ? 'EXPORTING...' : 'GRADEBOOK CSV'}
+              <Download size={13} /> {csv.busy ? 'EXPORTING...' : 'Gradebook CSV'}
             </button>
 
             <button
@@ -434,7 +434,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               className="px-3 py-1.5 rounded-lg bg-term-gray border border-term-border hover:bg-neutral-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               title="Refetch everything for this module"
             >
-              <RefreshCw size={12} className={loadingOverview || triage.loading ? 'animate-spin' : ''} /> REFRESH
+              <RefreshCw size={12} className={loadingOverview || triage.loading ? 'animate-spin' : ''} /> Refresh
             </button>
           </div>
         </div>
@@ -450,7 +450,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Users size={13} /> THE CLASS
+              <Users size={13} /> The class
             </button>
             <button
               onClick={() => setView('answers')}
@@ -460,7 +460,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <KeyRound size={13} /> ANSWER KEY
+              <KeyRound size={13} /> Answer key
             </button>
             <button
               onClick={() => setView('packs')}
@@ -470,7 +470,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Layers size={13} /> PACKS
+              <Layers size={13} /> Packs
             </button>
           </div>
 
@@ -531,7 +531,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                   onClick={() => loadAnswers(packId)}
                   className="px-2.5 py-1 rounded bg-term-gray border border-term-border hover:bg-neutral-800 text-neutral-200 font-bold cursor-pointer"
                 >
-                  RETRY
+                  Retry
                 </button>
               </div>
             )}
@@ -573,7 +573,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                             <span className="text-[10px] text-neutral-500 truncate hidden md:inline">{c.id}</span>
                             <span className="ml-auto flex items-center gap-2 shrink-0">
                               {c.platform === 'windows' && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-term-shell-bar border border-term-shell-border text-cyan-300 font-bold">WIN</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-term-shell-bar border border-term-shell-border text-cyan-300 font-bold">Win</span>
                               )}
                               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-term-green-faint border border-term-green/30 text-term-green">
                                 +{c.points}
@@ -584,14 +584,14 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                           {isOpen && (
                             <div className="px-4 pb-4 pt-1 space-y-3 bg-term-gray/30">
                               <div>
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1">Solution</div>
+                                <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1">Solution</div>
                                 <div className="p-3 rounded-lg bg-term-black border border-term-green/40 text-xs text-green-300 font-mono select-text cursor-text break-words">
                                   {c.solution || <span className="text-neutral-500">No canonical solution recorded.</span>}
                                 </div>
                               </div>
 
                               <div>
-                                <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1">What the checker requires</div>
+                                <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1">What the checker requires</div>
                                 <div className="p-2.5 rounded-lg bg-term-black border border-term-border text-xs text-neutral-300 select-text cursor-text break-words">
                                   {c.check || 'none'}
                                 </div>
@@ -599,7 +599,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
 
                               {(c.acceptedVariants || []).length > 0 && (
                                 <div>
-                                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1">
+                                  <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1">
                                     Also accepted ({c.acceptedVariants.length})
                                   </div>
                                   <div className="flex flex-wrap gap-1.5">
@@ -617,7 +617,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
 
                               {(c.hints || []).length > 0 && (
                                 <div>
-                                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1 flex items-center gap-1.5">
+                                  <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1 flex items-center gap-1.5">
                                     <Lightbulb size={11} className="text-term-amber" /> Hint ladder
                                   </div>
                                   <div className="space-y-1.5">
@@ -629,7 +629,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                                         <span className="font-bold text-amber-400 shrink-0">{h.index + 1}.</span>
                                         <span className="flex-1">{formatText(h.text)}</span>
                                         <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-term-black text-amber-400 border border-amber-900/60 h-fit">
-                                          {h.cost > 0 ? `-${h.cost} XP` : 'FREE'}
+                                          {h.cost > 0 ? `-${h.cost} XP` : 'Free'}
                                         </span>
                                       </div>
                                     ))}
@@ -639,7 +639,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
 
                               {c.brief && (
                                 <div>
-                                  <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1">Brief the student sees</div>
+                                  <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1">Brief the student sees</div>
                                   <div className="p-2.5 rounded-lg bg-term-black border border-term-border text-[11px] text-neutral-400 leading-relaxed select-text cursor-text">
                                     {formatText(c.brief)}
                                   </div>
@@ -671,7 +671,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               onClick={backToClass}
               className="px-3 py-1.5 rounded-lg bg-term-gray border border-term-border hover:bg-neutral-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
-              <ArrowLeft size={13} /> BACK TO THE CLASS
+              <ArrowLeft size={13} /> Back to the class
             </button>
 
             {loadingStudent && (
@@ -689,7 +689,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                   onClick={() => openStudentDetail(openStudent, { force: true })}
                   className="px-2.5 py-1 rounded bg-term-gray border border-term-border hover:bg-neutral-800 text-neutral-200 font-bold cursor-pointer"
                 >
-                  RETRY
+                  Retry
                 </button>
               </div>
             )}
@@ -729,7 +729,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                             onClick={() => showAnswerFor(studentData.frontier)}
                             className="mt-1 px-2.5 py-1 rounded bg-term-gray border border-term-border hover:bg-neutral-800 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer text-neutral-200"
                           >
-                            <KeyRound size={11} /> OPEN THE ANSWER
+                            <KeyRound size={11} /> Open the answer
                           </button>
                         </div>
                       ) : (
@@ -752,7 +752,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                                 onClick={() => showAnswerFor(c)}
                                 className="shrink-0 px-2.5 py-1 rounded bg-term-gray border border-term-border hover:bg-neutral-800 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer text-neutral-200"
                               >
-                                <KeyRound size={11} /> ANSWER
+                                <KeyRound size={11} /> Answer
                               </button>
                             </div>
                           ))}
@@ -802,7 +802,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             {/* Triage: the reason this screen exists */}
             <div className="rounded-xl border border-amber-600/40 bg-amber-950/10 overflow-hidden shadow-xl">
               <div className="px-4 py-3 bg-amber-950/30 border-b border-amber-600/30 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                <h2 className="text-sm font-bold text-amber-300 tracking-wider flex items-center gap-2">
                   <LifeBuoy size={16} /> Help these students first
                 </h2>
                 <span className="text-[11px] text-amber-200/70">
@@ -856,7 +856,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                         onClick={() => openStudentDetail(s.handle)}
                         className="shrink-0 px-2.5 py-1 rounded bg-term-gray border border-term-border hover:bg-neutral-800 text-[11px] font-bold flex items-center gap-1 cursor-pointer text-neutral-200"
                       >
-                        DETAIL <ChevronRight size={11} />
+                        Detail <ChevronRight size={11} />
                       </button>
                     </div>
                   ))}
@@ -882,7 +882,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                     <CheckCircle2 size={14} /> No one has run out of hints. Nothing is urgent.
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider mb-1.5">
+                    <div className="text-[10px] font-bold text-neutral-500 tracking-wider mb-1.5">
                       Furthest behind — worth a look
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -936,21 +936,21 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             {/* Totals */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-5 rounded-xl bg-term-black border border-term-border">
-                <div className="text-xs text-neutral-400 uppercase font-bold flex items-center gap-1.5">
+                <div className="text-xs text-neutral-400 font-bold flex items-center gap-1.5">
                   <Users size={14} className="text-term-green" /> Students registered
                 </div>
                 <div className="text-3xl font-bold text-white mt-2">{totalPlayers}</div>
                 <div className="text-[11px] text-neutral-500 mt-1">Unique handles on this server</div>
               </div>
               <div className="p-5 rounded-xl bg-term-black border border-term-border">
-                <div className="text-xs text-neutral-400 uppercase font-bold flex items-center gap-1.5">
+                <div className="text-xs text-neutral-400 font-bold flex items-center gap-1.5">
                   <CheckCircle2 size={14} className="text-cyan-400" /> Challenges in this module
                 </div>
                 <div className="text-3xl font-bold text-cyan-400 mt-2">{challengeStats.length}</div>
                 <div className="text-[11px] text-neutral-500 mt-1">{packName}</div>
               </div>
               <div className="p-5 rounded-xl bg-term-black border border-term-border">
-                <div className="text-xs text-neutral-400 uppercase font-bold flex items-center gap-1.5">
+                <div className="text-xs text-neutral-400 font-bold flex items-center gap-1.5">
                   <Activity size={14} className="text-term-amber" /> Solves recorded
                 </div>
                 <div className="text-3xl font-bold text-term-amber mt-2">{totalSolves}</div>
@@ -970,7 +970,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               ) : (
                 <div className="overflow-x-auto max-h-80">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-term-gray border-b border-term-border text-neutral-400 uppercase text-[10px] sticky top-0">
+                    <thead className="bg-term-gray border-b border-term-border text-neutral-400 text-[10px] sticky top-0">
                       <tr>
                         <th className="p-3">Student</th>
                         <th className="p-3 text-center">Score</th>
@@ -992,7 +992,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
                               @{ps.handle}
                               {stuckHere && (
                                 <span className="ml-2 px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] border border-amber-700">
-                                  NEEDS HELP
+                                  Needs help
                                 </span>
                               )}
                             </td>
@@ -1023,7 +1023,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               ) : (
                 <div className="overflow-x-auto max-h-96">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-term-gray border-b border-term-border text-neutral-400 uppercase text-[10px] sticky top-0">
+                    <thead className="bg-term-gray border-b border-term-border text-neutral-400 text-[10px] sticky top-0">
                       <tr>
                         <th className="p-3">Act</th>
                         <th className="p-3">Challenge</th>
