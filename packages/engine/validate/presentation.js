@@ -23,6 +23,28 @@
 // picture may embed a raster one as a data URI, capped in size and restricted
 // to formats that are pixels rather than documents. No remote fetch, no script,
 // and what was reviewed is what ships.
+//
+// ── revealCaption, and why the picture is never a secret ────────────────────
+//
+// `reveal` is the picture a class uncovers together. `revealCaption` is the one
+// line printed under it when the last square turns over. Without it a class
+// finishes and reads "you finished", which is a progress bar talking, not the
+// end of a story. With it the picture becomes the answer to whatever the pack
+// asked in its briefing.
+//
+// Two rules follow from how the picture actually reaches a student, and both
+// are easy to get wrong:
+//
+//   The picture cannot be a secret, so do not hide a find in it. The pack ships
+//   inside the browser bundle, so every student holds the full image from the
+//   first second and can read it out of the page in about thirty seconds. Make
+//   the picture MEANINGFUL only after the work rather than VISIBLE only after
+//   it: a recovered blueprint means nothing until you know what was stolen.
+//
+//   The caption must not contain an answer. The picture is sized to the class,
+//   so a class finishes it well before its slowest student finishes the pack.
+//   Whoever is still on Act II will read this caption. Name what was found;
+//   never name the offset, the command, or the string that finds it.
 
 /** Formats that are pixel data. Deliberately excludes SVG — see above. */
 export const ALLOWED_COVER_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
@@ -33,6 +55,13 @@ export const MAX_COVER_BYTES = 128 * 1024;
 export const MAX_DESCRIPTION_LENGTH = 600;
 export const MAX_BRIEFING_BODY_LENGTH = 1500;
 export const MAX_LEARNING_POINTS = 12;
+
+/**
+ * The line printed under the finished picture. Two sentences, not a paragraph:
+ * it is read once, by a class looking at a picture, and it competes with the
+ * picture for attention.
+ */
+export const MAX_REVEAL_CAPTION_LENGTH = 240;
 
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
@@ -134,6 +163,29 @@ export function validatePresentation(manifest = {}) {
     if (manifest[field] === undefined) continue;
     const checked = checkCoverImage(manifest[field]);
     if (!checked.ok) errors.push(checked.error.replace('manifest.cover', `manifest.${field}`));
+  }
+
+  if (manifest.revealCaption !== undefined) {
+    if (!isNonEmptyString(manifest.revealCaption)) {
+      errors.push('manifest.revealCaption must be a non-empty string.');
+    } else if (manifest.revealCaption.length > MAX_REVEAL_CAPTION_LENGTH) {
+      errors.push(
+        `manifest.revealCaption is ${manifest.revealCaption.length} characters; the limit is `
+        + `${MAX_REVEAL_CAPTION_LENGTH}. It is the last line of a story, not a summary of it.`
+      );
+    }
+    if (manifest.reveal === undefined) {
+      warnings.push(
+        'manifest.revealCaption is set but manifest.reveal is not. The caption is printed under '
+        + 'the finished picture, so without a picture nobody will read it.'
+      );
+    }
+  } else if (manifest.reveal !== undefined) {
+    warnings.push(
+      'manifest.reveal has no manifest.revealCaption. The class will finish the picture and be '
+      + 'told only that they finished it. One line naming what they uncovered turns the picture '
+      + 'into the end of your scenario instead of decoration.'
+    );
   }
 
   if (manifest.briefing !== undefined) {

@@ -14,7 +14,8 @@
     "registry": "node scripts/build-registry.mjs",
     "prebuild": "node scripts/build-registry.mjs",
     "dev:seed": "node scripts/dev-seed.mjs",
-    "dev:reset": "node scripts/dev-seed.mjs --reset"
+    "dev:reset": "node scripts/dev-seed.mjs --reset",
+    "dev:complete": "node scripts/dev-seed.mjs --reset --complete"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.13",

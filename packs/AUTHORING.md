@@ -270,6 +270,53 @@ want both.
 
 ---
 
+## The picture your class uncovers
+
+Two optional manifest fields turn the class screen into the end of your story
+instead of a progress bar:
+
+```json
+  "reveal": "data:image/webp;base64,UklGRi5cAABXRUJQ…",
+  "revealCaption": "The container is open. This is what left Aurora Robotics at 02:18 on the fifteenth of March — the prototype drawings, all 412 files of them. The case is closed."
+```
+
+Every find by anybody in the class turns over one more square of `reveal`. When
+the last square goes, `revealCaption` is printed underneath it. The validator
+warns if you ship one without the other.
+
+**Draw the answer, not the setting.** The obvious picture is the place the pack
+opens in — the bench, the dome, the desk. Draw the place the pack *ends* in
+instead. The Aurora Case opens on an evidence bench and ends with a stolen
+design carved out of a disk image, so its picture is the recovered blueprint.
+The Night Shift opens at 21:40 and ends at sunrise, so its picture is dawn over
+the same hills. The picture is worth uncovering when it answers the question
+the briefing asked.
+
+Two rules come from how the picture actually reaches a student. Both are easy
+to get wrong, and the second one has teeth.
+
+**The picture cannot be a secret, so do not hide a find in it.** Your pack ships
+inside the browser bundle. Every student holds the full image from the moment
+they sign in and can read it out of the page in about thirty seconds. A find
+drawn into the art is worth points, which makes leaking it worth doing, and one
+leak ends the finale for the whole class. Make the picture *meaningful* only
+after the work rather than *visible* only after it: a recovered blueprint means
+nothing to somebody who has not read the case file.
+
+**The caption must not contain an answer.** The picture is sized to the class,
+so a class finishes it well before its slowest student finishes the pack.
+Whoever is still on Act II will read your caption. Name what was found; never
+name the sector offset, the event id, or the command that produces it. A test
+checks this mechanically for every shipped pack, by looking for any number of
+three or more digits that also appears in an answer.
+
+Both fields are optional. A pack with no `reveal` still gets a picture — its own
+accent colour — so the class screen never becomes a privilege of packs that
+shipped art. Raster only, never SVG, and 128 KB is the cap; the reasons are in
+`packages/engine/validate/presentation.js`.
+
+---
+
 ## Sharing the pack
 
 ```bash

@@ -115,6 +115,7 @@ sits next to the field.
 | `icon` | string | no, but write one | `📦` | One or two emoji. How your course is recognised in a list. §3.1. |
 | `cover` | string | no | — | An image, embedded. Raster data URI only — never SVG, never a web address. §3.2. |
 | `reveal` | string | no | — | The picture a class uncovers together, one square per find. Same image rules as `cover`. §3.2. |
+| `revealCaption` | string | no | — | The one line printed under `reveal` when the last square turns over. Names what the class uncovered. Must not contain an answer. §3.2. |
 | `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |
 | `linux` | object | if used | — | `{ home, user, host, shell }` — see below. |
 | `windows` | object | if used | — | `{ home, user, shell }` — see below. |
@@ -178,6 +179,25 @@ Both have to be embedded, as a base64 `data:` URI:
 | 128 KB at most | A pack file is something teachers email each other. |
 
 If you have no image, use `icon` instead. An emoji costs nothing and works everywhere.
+
+#### `revealCaption` — what the picture turned out to be
+
+`reveal` without `revealCaption` finishes a class on "you finished", which is a progress bar
+talking. The caption is the line printed under the completed picture, and it is what makes the
+picture the end of your scenario rather than decoration. 240 characters at most. The validator
+warns if you ship either half without the other.
+
+```json
+"revealCaption": "Dawn over Meridian. The night log is read, the handover note is written and the dome is shut."
+```
+
+Two constraints, both of which come from how the picture reaches a student rather than from
+taste:
+
+| Constraint | Why |
+|---|---|
+| **Do not hide a find in the picture** | The pack ships inside the browser bundle, so every student holds the full image from the first second and can read it out of the page in about thirty seconds. A find drawn into the art is worth points, which makes leaking it worth doing, and one leak ends the finale for everybody. Make the picture *meaningful* only after the work, not *visible* only after it. |
+| **Do not put an answer in the caption** | The picture is sized to the class roster, so a class completes it well before its slowest student completes the pack. A student still on Act II will read this caption. Name what was found; never name the offset, the event id, or the command. A test enforces this for shipped packs by rejecting any 3+ digit number that also appears in an answer. |
 
 **On staying under the cap.** WebP at quality 80 fits a 1200-pixel-wide flat illustration
 into about 20 KB, which is what the three shipped packs do. A photograph will not compress

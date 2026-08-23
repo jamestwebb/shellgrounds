@@ -7,8 +7,10 @@
 // This writes a small class that has been working for a few days, so every
 // screen has something real on it.
 //
-//   node scripts/dev-seed.mjs           seed on top of whatever is there
-//   node scripts/dev-seed.mjs --reset   empty the store first
+//   node scripts/dev-seed.mjs             seed on top of whatever is there
+//   node scripts/dev-seed.mjs --reset     empty the store first
+//   node scripts/dev-seed.mjs --complete  everyone finishes, so the class picture
+//                                         reaches 100% and its caption appears
 //
 // It writes the local JSON blob file directly rather than going through the
 // API, so it does not need a server running and cannot touch a deployed site.
@@ -41,6 +43,9 @@ const STUDENTS = [
 ];
 
 const reset = process.argv.includes('--reset');
+// The completed picture is the one screen a partial seed can never show, because
+// the caption is held back until the last square turns over.
+const complete = process.argv.includes('--complete');
 fs.mkdirSync(path.dirname(STORE), { recursive: true });
 
 let store = {};
@@ -66,7 +71,9 @@ const minutesAgo = (m) => new Date(now - m * 60_000).toISOString();
 let solveCount = 0;
 for (const [i, student] of STUDENTS.entries()) {
   const key = student.handle.toLowerCase();
-  const take = Math.max(1, Math.round(ordered.length * student.pace));
+  const take = complete
+    ? ordered.length
+    : Math.max(1, Math.round(ordered.length * student.pace));
 
   store[`players/${key}`] = {
     handle: student.handle,
@@ -94,10 +101,16 @@ for (const [i, student] of STUDENTS.entries()) {
   store[`hints/${key}`] = {};
 }
 
+// The reveal remembers the furthest it ever got, so that a late intake cannot
+// shrink the picture. That floor also survives a reseed, which would leave a
+// smaller class stuck at a fraction it can no longer explain.
+delete store[`reveal/${packId}`];
+
 fs.writeFileSync(STORE, JSON.stringify(store, null, 1) + '\n');
 
 const instructor = (process.env.ADMIN_HANDLES || '').split(',')[0].trim();
-console.log(`Seeded ${STUDENTS.length} students and ${solveCount} finds in '${packId}'.`);
+console.log(`Seeded ${STUDENTS.length} students and ${solveCount} finds in '${packId}'`
+  + `${complete ? ' — everyone finished, so the picture is whole and its caption shows' : ''}.`);
 console.log(`Store: ${path.relative(ROOT, STORE)}`);
 if (instructor) {
   console.log(`Instructor handle '${instructor}' is NOT seeded — claim it from the gate `
