@@ -26,6 +26,7 @@
   CLASS_PASSWORD = "The password you tell your class. Students type it once, to create their handle. Pick something you are happy to say out loud and write on a board, and change it here if it leaks."
   ADMIN_HANDLES = "Your own handle, so the site knows you are the teacher and shows you the instructor view. Comma-separated if there is more than one of you, for example: ms_okafor,ta_alex"
   INSTRUCTOR_SETUP_CODE = "A second, private password that only you know. It is what stops a student claiming the teacher handle above before you do, so make it different from the class password and do not announce it."
+  ENABLED_PACKS = "Optional. Which courses your class sees, comma separated. Leave blank for all three. Ids: linux-fundamentals, windows-cmd-essentials, forensics-cli-101."
 
 [[redirects]]
   from = "/api/*"

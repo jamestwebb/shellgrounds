@@ -11,7 +11,7 @@
 // command-proof challenges, which the server replays and cannot be faked.
 
 import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
-import { getPack, hasPack, DEFAULT_PACK_ID } from '../../packs/index.js';
+import { getPack, isPackEnabled, defaultPackId } from '../../packs/index.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -34,7 +34,9 @@ export default async (req) => {
 
   const handle = verified.handle;
   const requested = new URL(req.url).searchParams.get('packId');
-  const packId = hasPack(requested) ? requested : (verified.packId || DEFAULT_PACK_ID);
+  const packId = isPackEnabled(requested)
+    ? requested
+    : (isPackEnabled(verified.packId) ? verified.packId : defaultPackId());
   const pack = getPack(packId);
 
   // This was the one handler with no try/catch, so anything unexpected became
