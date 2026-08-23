@@ -61,6 +61,28 @@ const server = http.createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   const name = url.pathname.replace(/^\/(?:\.netlify\/functions|api)\//, '').split('/')[0];
+  // ── Dev-only: hand the local gate its own credentials ─────────────────────
+  // The gate asks for a class password and, for a teacher, the instructor
+  // setup code. Both live in .env, so working on the gate meant alt-tabbing to
+  // a file to read them back, every reload.
+  //
+  // This is exactly why it lives HERE rather than in netlify/functions/.
+  // Netlify deploys that directory and nothing else, so the code that can
+  // reveal a setup code is not merely switched off in production — it was
+  // never uploaded. A guard that can be misconfigured is a guard that will be.
+  if (name === 'dev-credentials') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({
+      dev: true,
+      classPassword: process.env.CLASS_PASSWORD || null,
+      setupCode: process.env.INSTRUCTOR_SETUP_CODE || null,
+      adminHandles: (process.env.ADMIN_HANDLES || '')
+        .split(',').map(h => h.trim()).filter(Boolean)
+    }));
+    console.log(`${req.method} /dev-credentials -> 200 (this server only)`);
+    return;
+  }
+
   const handler = handlers.get(name);
 
   if (!handler) {

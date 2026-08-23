@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Gate view: Handle registration, class password verification, and session resume
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Terminal, Shield, Key, AlertCircle, ArrowRight, Check, RefreshCw } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { checkSFW } from '../engine/sfw-filter';
@@ -23,6 +23,89 @@ const friendlyGateError = (message) => {
   return text || 'That did not go through. Check your handle and password, then try again.';
 };
 
+// ── Dev-only credential panel ───────────────────────────────────────────────
+// Working on the gate meant opening .env to read back the class password and
+// the instructor setup code on every reload. This shows them instead, and
+// fills the boxes on a click.
+//
+// It is gated twice, and neither gate is a run-time check that could be
+// misconfigured:
+//
+//   1. `import.meta.env.DEV` is a literal `false` in a production build, so
+//      Rollup deletes this whole block. Nothing below ships.
+//   2. The endpoint it calls lives in scripts/dev-functions.mjs, which Netlify
+//      never deploys. Even a build that somehow kept this code would call a
+//      route that does not exist.
+//
+// tests/dev-credentials.test.js asserts both, against the real built bundle.
+const DEV = import.meta.env?.DEV === true;
+
+function useDevCredentials() {
+  const [creds, setCreds] = useState(null);
+  useEffect(() => {
+    if (!DEV) return;
+    const base = import.meta.env?.VITE_API_BASE || '/api';
+    fetch(`${base}/dev-credentials`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setCreds(d?.dev ? d : null))
+      .catch(() => {});   // No local functions server: the panel simply stays hidden.
+  }, []);
+  return creds;
+}
+
+const DevCredentials = ({ creds, onFill }) => {
+  const [shown, setShown] = useState(false);
+  if (!DEV || !creds) return null;
+
+  const rows = [
+    ['Class password', creds.classPassword],
+    ['Instructor setup code', creds.setupCode],
+    ['Instructor handles', creds.adminHandles?.join(', ')]
+  ].filter(([, v]) => v);
+
+  return (
+    <div className="mb-5 rounded border border-amber-700/60 bg-amber-950/20 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] uppercase tracking-wider text-amber-300 font-medium">
+          Local development only
+        </span>
+        <button
+          type="button"
+          onClick={() => setShown(v => !v)}
+          className="text-[11px] text-amber-300/80 hover:text-amber-200 underline underline-offset-2"
+        >
+          {shown ? 'Hide' : 'Show values'}
+        </button>
+      </div>
+
+      {shown ? (
+        <>
+          <dl className="mt-2 space-y-1">
+            {rows.map(([label, value]) => (
+              <div key={label} className="flex gap-2 text-[11px]">
+                <dt className="text-neutral-400 shrink-0 w-40">{label}</dt>
+                <dd className="text-amber-200 font-mono break-all">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <button
+            type="button"
+            onClick={() => onFill(creds)}
+            className="mt-2 text-[11px] text-amber-300 hover:text-amber-200 underline underline-offset-2"
+          >
+            Fill the form as the instructor
+          </button>
+        </>
+      ) : (
+        <p className="mt-1 text-[11px] text-neutral-400">
+          Your .env credentials, read from the local functions server. This panel is
+          removed from a production build.
+        </p>
+      )}
+    </div>
+  );
+};
+
 export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packName = 'Shellgrounds' }) => {
   const [handle, setHandle] = useState(existingHandle || '');
   const [password, setPassword] = useState('');
@@ -31,6 +114,14 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
   const [setupCode, setSetupCode] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const devCreds = useDevCredentials();
+
+  const fillFromDev = (c) => {
+    if (!handle.trim() && c.adminHandles?.[0]) setHandle(c.adminHandles[0]);
+    if (c.classPassword) setPassword(c.classPassword);
+    if (c.setupCode) setSetupCode(c.setupCode);
+    setError(null);
+  };
 
   // Live SFW format preview
   const sfwResult = handle.trim() ? checkSFW(handle.trim()) : null;
@@ -108,6 +199,8 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
             </button>
           </div>
         )}
+
+        <DevCredentials creds={devCreds} onFill={fillFromDev} />
 
         {/* Registration Form */}
         <form onSubmit={handleRegister} className="space-y-5">
