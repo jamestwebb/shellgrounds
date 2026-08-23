@@ -93,3 +93,5 @@
 1787490193	netlify/functions/session.js
 1787490193	netlify/functions/leaderboard.js
 1787490219	netlify/functions/register-handle.js
+1787490534	scripts/dev-functions.mjs
+1787490588	src/components/Gate.jsx
