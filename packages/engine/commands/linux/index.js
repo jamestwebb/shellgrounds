@@ -625,6 +625,10 @@ export const grepCmd = {
   name: 'grep',
   platforms: ['linux'],
   flags: {
+    // -e is how POSIX names a pattern explicitly, and the only way to search
+    // for one that begins with a dash. A student who has met real grep reaches
+    // for it, and used to be told "invalid option".
+    e: { type: 'string', status: 'implemented', long: 'regexp' },
     i: { type: 'bool', status: 'implemented', long: 'ignore-case' },
     v: { type: 'bool', status: 'implemented', long: 'invert-match' },
     r: { type: 'bool', status: 'implemented', long: 'recursive' },
@@ -644,7 +648,7 @@ export const grepCmd = {
     C: { type: 'number', status: 'implemented', long: 'context' },
     P: { type: 'bool', status: 'notSimulated' }
   },
-  usage: 'grep [OPTION]... PATTERNS [FILE]...',
+  usage: 'grep [OPTION]... PATTERNS [FILE]...\n       grep [OPTION]... -e PATTERNS [FILE]...',
   man: {
     name: 'grep - print lines matching a pattern',
     synopsis: 'grep [OPTION]... PATTERNS [FILE]...',
@@ -667,12 +671,15 @@ export const grepCmd = {
     examples: ['grep error access.log', 'grep -i "vault" secrets.txt', 'grep -r "admin" /var/log']
   },
   run({ flags, operands, cwd, fs, stdin, user }) {
-    if (operands.length === 0) {
+    if (operands.length === 0 && !(typeof flags.e === 'string' && flags.e.length > 0)) {
       return { stdout: '', stderr: 'Usage: grep [OPTION]... PATTERNS [FILE]...\nTry \'grep --help\' for more information.\n', status: 2 };
     }
 
-    const patternStr = operands[0];
-    const fileArgs = operands.slice(1);
+    // With -e the pattern is the flag's value, so every operand is a file.
+    // Without it the first operand is the pattern, as usual.
+    const usingE = typeof flags.e === 'string' && flags.e.length > 0;
+    const patternStr = usingE ? flags.e : operands[0];
+    const fileArgs = usingE ? operands : operands.slice(1);
 
     const isRecursive = !!(flags.r || flags.R);
     let inputs = [];

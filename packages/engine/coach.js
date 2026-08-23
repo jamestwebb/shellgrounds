@@ -2,6 +2,48 @@
 // Coach: one-line plain-language explanations of what a command just did (or why it failed).
 // Aimed at CLI learners to close the loop between action and mental model.
 
+/**
+ * Commands shaped `cmd PATTERN FILE`, which is the order beginners invert.
+ *
+ * A reversed grep produces a PERFECTLY HONEST error -- `grep: Weather: No such
+ * file or directory` -- and the generic advice for that error is "check the
+ * path and the spelling". Both halves of that are wrong here: the path is fine
+ * and spelled correctly, it is simply in the wrong position. A student sent to
+ * re-read a correct path learns nothing and loses several minutes.
+ */
+const PATTERN_FIRST = new Set(['grep', 'egrep', 'fgrep', 'findstr']);
+
+/** Reads as a path: it has a separator, or an extension. */
+const looksLikePath = (s) => /[\\/]/.test(s) || /\.[A-Za-z0-9]{1,6}$/.test(s);
+
+/**
+ * Detects `grep FILE PATTERN` and names the fix, rather than describing the
+ * symptom. Returns null unless the evidence is strong: the first operand looks
+ * like a path, a LATER operand is the one the command could not open, and the
+ * error really is a missing file. A genuinely absent file is named where a file
+ * belongs, so it does not match.
+ */
+export function reversedArgumentAdvice(cmd, tokens, output = '') {
+  if (!PATTERN_FIRST.has(cmd)) return null;
+  if (!/No such file or directory|cannot find the file/i.test(output)) return null;
+
+  // Everything after a redirect or a pipe belongs to the shell, not to grep.
+  const end = tokens.findIndex(t => ['>', '>>', '<', '|', '2>'].includes(t));
+  const args = (end === -1 ? tokens : tokens.slice(0, end)).slice(1);
+  const options = args.filter(t => t.startsWith('-'));
+  const operands = args.filter(t => !t.startsWith('-'));
+  if (operands.length < 2) return null;
+
+  const [first, ...rest] = operands;
+  if (!looksLikePath(first)) return null;
+  if (looksLikePath(rest[0])) return null;
+  if (!rest.some(r => output.includes(r))) return null;
+
+  const fixed = [cmd, ...options, rest[0], first].join(' ');
+  return `\`${cmd}\` takes the pattern first and the file second, so those two are the wrong `
+    + `way round. Try \`${fixed}\`.`;
+}
+
 const ERROR_ADVICE = [
   {
     pattern: /command not found|is not recognized/i,
@@ -103,6 +145,12 @@ export function explainCommand(input, res, platform = 'linux', prevCwd = '/', pa
   let cmd = tokens[0].toLowerCase();
 
   if (res.hasError) {
+    // A specific, checkable diagnosis beats a generic one. This runs first
+    // because the generic list would otherwise answer a reversed grep with
+    // "check the path", about a path that is correct.
+    const reversed = reversedArgumentAdvice(cmd, tokens, res.output || '');
+    if (reversed) return reversed;
+
     const match = ERROR_ADVICE.find(e => e.pattern.test(res.output || ''));
     return match
       ? match.advice
