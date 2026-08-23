@@ -2,7 +2,7 @@
 // Linux Command Execution Tests
 
 import { describe, it, expect } from 'vitest';
-import { executeLinuxCommand } from '../src/engine/exec.linux.js';
+import { executeLinuxCommand } from './helpers/legacy-exec.linux.js';
 import { createLinuxFilesystem } from '../src/engine/fs.linux.js';
 
 describe('Linux Command Executor', () => {

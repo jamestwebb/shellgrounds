@@ -268,16 +268,51 @@ export async function createPlayer(handle) {
 }
 
 /**
+ * Every change to a player record, through one compare-and-swap.
+ *
+ * THREE things write to `players/<handle>` — the onboarding record, the
+ * last-seen stamp on every solve, and the instructor flag — and they are not
+ * rare relative to each other. A student finishes the welcome screen at the
+ * moment they submit their first find; a teacher claims the console while a
+ * solve of their own is in flight.
+ *
+ * Two of the three used to be a plain read-then-write, so whichever landed
+ * second silently erased the other's field. That is the same defect as the
+ * concurrent-solve loss fixed earlier: the write succeeds, nothing errors, and
+ * the student is simply shown the welcome screen again, or the teacher quietly
+ * loses the instructor view. Routing all three through one function is what
+ * stops a fourth writer being added without the guard.
+ *
+ * @param {(player: object) => object|null} mutate  returns the new record, or
+ *        null to leave it untouched.
+ * @returns the record now stored, or null when there is no such player.
+ */
+export async function updatePlayer(handle, mutate) {
+  const s = store();
+  const key = playerKey(handle);
+
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    const { data, etag } = await readWithEtag(s, key);
+    if (!data) return null;
+
+    const next = mutate(data);
+    if (!next) return data;
+
+    const opts = etag ? { onlyIfMatch: etag } : {};
+    const res = await s.setJSON(key, next, opts);
+    if (!res || res.modified !== false) return next;
+    await backoff(attempt);
+  }
+  throw new Error('Could not update the player record: too many simultaneous writes.');
+}
+
+/**
  * Records that this account proved it held INSTRUCTOR_SETUP_CODE. Being named
  * in ADMIN_HANDLES is not enough on its own — see utils/admin.js.
  */
 export async function setInstructorFlag(handle, value = true) {
-  const s = store();
-  const key = playerKey(handle);
-  const player = await s.get(key, { type: 'json' });
-  if (!player) return false;
-  await s.setJSON(key, { ...player, instructor: !!value });
-  return true;
+  const updated = await updatePlayer(handle, (p) => ({ ...p, instructor: !!value }));
+  return !!updated;
 }
 
 /**
@@ -291,28 +326,16 @@ export async function setInstructorFlag(handle, value = true) {
  * finishing onboarding together must not drop one of the records.
  */
 export async function markSeen(handle, key) {
-  const s = store();
-  const playerId = playerKey(handle);
-
-  for (let attempt = 0; attempt < RETRIES; attempt++) {
-    const { data, etag } = await readWithEtag(s, playerId);
-    if (!data) return null;
-    if (data.seen?.[key]) return data.seen;
-
-    const seen = { ...(data.seen || {}), [key]: new Date().toISOString() };
-    const opts = etag ? { onlyIfMatch: etag } : {};
-    const res = await s.setJSON(playerId, { ...data, seen }, opts);
-    if (!res || res.modified !== false) return seen;
-    await backoff(attempt);
-  }
-  throw new Error('Could not record onboarding progress: too many simultaneous writes.');
+  const updated = await updatePlayer(handle, (p) =>
+    p.seen?.[key] ? null : { ...p, seen: { ...(p.seen || {}), [key]: new Date().toISOString() } });
+  return updated ? (updated.seen || {}) : null;
 }
 
 export async function touchPlayer(handle) {
-  const s = store();
-  const player = await s.get(playerKey(handle), { type: 'json' });
-  if (!player) return;
-  await s.setJSON(playerKey(handle), { ...player, last_seen: new Date().toISOString() });
+  // Called on every solve, which is exactly when a student is also likely to
+  // be finishing the onboarding screens. Without the swap this stamp would
+  // erase the record of what they had already read.
+  await updatePlayer(handle, (p) => ({ ...p, last_seen: new Date().toISOString() }));
 }
 
 // `<packId>/<challengeId>` -> { points, hintPenalty, earnedPoints, solvedAt }
