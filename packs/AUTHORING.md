@@ -32,7 +32,7 @@ detail of every field and every check, see **`docs/PACK-FORMAT.md`**.
 ### 1. Make a pack
 
 ```bash
-node bin/gauntlet.js new log-triage
+node bin/shellgrounds.js new log-triage
 ```
 
 ```
@@ -51,7 +51,7 @@ comments explaining what each part does — in this format any key beginning wit
 ### 2. Check it
 
 ```bash
-node bin/gauntlet.js validate packs/log-triage
+node bin/shellgrounds.js validate packs/log-triage
 ```
 
 ```
@@ -80,7 +80,7 @@ challenge that cannot be solved does not get out of this directory.
 ### 3. Try a command the way a student would
 
 ```bash
-node bin/gauntlet.js try lt-1-look "ls" --pack packs/log-triage
+node bin/shellgrounds.js try lt-1-look "ls" --pack packs/log-triage
 ```
 
 ```
@@ -100,7 +100,7 @@ acceptedVariants: "ls", "ls -l", "ls -la"
 Now try a wrong one, and watch it say why:
 
 ```bash
-node bin/gauntlet.js try lt-2-count "grep ERROR notes/log.txt" --pack packs/log-triage
+node bin/shellgrounds.js try lt-2-count "grep ERROR notes/log.txt" --pack packs/log-triage
 ```
 
 ```
@@ -112,11 +112,11 @@ Why:
 ### 4. Share it
 
 ```bash
-node bin/gauntlet.js export packs/log-triage log-triage.pack.json
+node bin/shellgrounds.js export packs/log-triage log-triage.pack.json
 ```
 
 One file. Email it, attach it to a release, hand it to a colleague. They run
-`node bin/gauntlet.js import log-triage.pack.json` and have your course.
+`node bin/shellgrounds.js import log-triage.pack.json` and have your course.
 
 ---
 
@@ -124,7 +124,7 @@ One file. Email it, attach it to a release, hand it to a colleague. They run
 
 ```bash
 # edit challenges.json or fs.linux.json in your editor, then:
-node bin/gauntlet.js try <challenge-id> "<a command a student might type>" --pack packs/log-triage
+node bin/shellgrounds.js try <challenge-id> "<a command a student might type>" --pack packs/log-triage
 ```
 
 That is the whole inner loop. It runs one command against one challenge's
@@ -244,10 +244,10 @@ The name after `FLAG:` must be a challenge id, exactly. At run time it is
 replaced with a value derived from the student's own handle, so **every student
 sees a different flag** and one leaked to the group chat is useless.
 
-`gauntlet try` shows you where it lands:
+`shellgrounds try` shows you where it lands:
 
 ```bash
-node bin/gauntlet.js try lt-2-keycode "cat notes/.keycode" --pack packs/log-triage
+node bin/shellgrounds.js try lt-2-keycode "cat notes/.keycode" --pack packs/log-triage
 ```
 
 ```
@@ -273,9 +273,9 @@ want both.
 ## Sharing the pack
 
 ```bash
-node bin/gauntlet.js export packs/log-triage log-triage.pack.json
-node bin/gauntlet.js validate log-triage.pack.json     # works on the file directly
-node bin/gauntlet.js import log-triage.pack.json       # back to a directory
+node bin/shellgrounds.js export packs/log-triage log-triage.pack.json
+node bin/shellgrounds.js validate log-triage.pack.json     # works on the file directly
+node bin/shellgrounds.js import log-triage.pack.json       # back to a directory
 ```
 
 The single file contains **no code**, and that is the point of it. Its
@@ -437,13 +437,13 @@ Written down plainly, so the next person is not surprised.
 **Your pack does not appear in the app until someone edits `packs/index.js`.**
 This is the sharpest remaining edge. The app is built with a bundler that needs
 its imports written out ahead of time, so a pack cannot be discovered at run
-time. `gauntlet new` and `gauntlet import` both write the exact snippet to paste
+time. `shellgrounds new` and `shellgrounds import` both write the exact snippet to paste
 into the registry, into your pack's `README.md`, but somebody still has to paste
 it and redeploy. Everything else — validate, try, export, import — works without
 it.
 
 **You cannot see your pack in a browser without running the app.** The inner
-loop is `gauntlet try`, which is fast and precise but is a terminal, not the
+loop is `shellgrounds try`, which is fast and precise but is a terminal, not the
 student's screen. You cannot check that your act names fit the sidebar, or that
 a long brief reads well, without `npm run dev`.
 

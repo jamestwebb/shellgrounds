@@ -20,7 +20,12 @@ import { normalizePath } from '../vfs/path.js';
 
 /** Bump when a change would stop an older loader reading a newer file. */
 export const PACK_FORMAT_VERSION = 1;
-export const PACK_FILE_KIND = 'gauntlet-pack';
+export const PACK_FILE_KIND = 'shellgrounds-pack';
+
+/** Kinds a pack file may declare. 'gauntlet-pack' is this project's former name:
+ *  a file exported before the rename is still a valid file, and refusing it
+ *  would strand a teacher's saved course for no reason. */
+export const ACCEPTED_PACK_KINDS = [PACK_FILE_KIND, 'gauntlet-pack'];
 
 /** The mtime every shipped pack uses, and the scaffold's default. */
 export const DEFAULT_MTIME = '2026-08-17T09:30:00.000Z';
@@ -379,7 +384,7 @@ export function collapseFilesystem(fs, options = {}) {
     // file named "2026" would come back in a different order than it went in.
     // Record the order explicitly only when that would actually happen.
     const roundTripped = Object.keys(JSON.parse(JSON.stringify(children)));
-    if (roundTripped.join(' ') !== names.join(' ')) spec.order = names.slice();
+    if (roundTripped.join('\u0000') !== names.join('\u0000')) spec.order = names.slice();
     return spec;
   }
 
@@ -525,7 +530,7 @@ export function validatePackFileStructure(raw) {
       'It still loads. Re-export it to move it forward.');
   }
 
-  if (raw.kind !== undefined && raw.kind !== PACK_FILE_KIND) {
+  if (raw.kind !== undefined && !ACCEPTED_PACK_KINDS.includes(raw.kind)) {
     push(`"kind" is ${JSON.stringify(raw.kind)}; expected "${PACK_FILE_KIND}".`);
   }
 

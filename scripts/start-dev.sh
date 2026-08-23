@@ -5,7 +5,7 @@
 # Resolve the repo from this script's own location. A hardcoded absolute path
 # worked for exactly one machine, and this is a repository other people clone.
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 1
-SP="${GAUNTLET_LOG_DIR:-/tmp/gauntlet-dev}"; mkdir -p "$SP"
+SP="${SHELLGROUNDS_LOG_DIR:-/tmp/shellgrounds-dev}"; mkdir -p "$SP"
 pkill -f '[d]ev-functions.mjs' 2>/dev/null
 pkill -f '[b]in/vite' 2>/dev/null
 pkill -f '[n]etlify-cli' 2>/dev/null

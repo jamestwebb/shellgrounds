@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Man pages and command help definitions for The Gauntlet
+// Man pages and command help definitions for Shellgrounds
 
 export const MAN_PAGES = {
   pwd: {

@@ -5,7 +5,7 @@
 // and the SERVER evaluates them while grading a replay. A teacher's pack — or
 // one a teacher downloaded from a stranger — can therefore choose the regex the
 // server runs. `^(a+)+$` against a 40-character input pinned a CPU for 69
-// seconds; the same pattern makes `gauntlet validate` in CI never finish.
+// seconds; the same pattern makes `shellgrounds validate` in CI never finish.
 //
 // JavaScript has no regex timeout, so the defences here are: refuse patterns
 // with the nesting shape that causes catastrophic backtracking, cap the pattern

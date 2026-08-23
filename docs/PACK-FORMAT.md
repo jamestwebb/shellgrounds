@@ -55,9 +55,9 @@ document. This is the shape for **sharing**: emailing a pack to a colleague,
 attaching it to a repository release, or uploading it to a pack exchange.
 
 ```bash
-node bin/gauntlet.js export my-course  my-course.pack.json   # directory -> file
-node bin/gauntlet.js import my-course.pack.json              # file -> directory
-node bin/gauntlet.js validate my-course.pack.json            # or use it as-is
+node bin/shellgrounds.js export my-course  my-course.pack.json   # directory -> file
+node bin/shellgrounds.js import my-course.pack.json              # file -> directory
+node bin/shellgrounds.js validate my-course.pack.json            # or use it as-is
 ```
 
 ### Why the single-file format contains no code
@@ -98,7 +98,7 @@ with `//` is a comment and is discarded when the pack loads.**
 comment key can never be mistaken for a file in the filesystem tree. A file
 named `_notes.txt` or `.hidden` is left alone.
 
-`gauntlet new` writes its scaffold full of these, so the explanation of a field
+`shellgrounds new` writes its scaffold full of these, so the explanation of a field
 sits next to the field.
 
 ---
@@ -251,12 +251,12 @@ to satisfy this challenge's own success condition.
 This is not decoration and it is not documentation. A variant that fails is your
 course sanctioning an answer that does not work: a student types a line your
 pack calls correct, is marked wrong, and has no way to tell which of you is
-broken. `gauntlet validate` reports these under **BROKEN ACCEPTED VARIANTS**
+broken. `shellgrounds validate` reports these under **BROKEN ACCEPTED VARIANTS**
 with a count.
 
 Two habits keep the list honest:
 
-- **List only what you have run.** `gauntlet try` runs one in a second.
+- **List only what you have run.** `shellgrounds try` runs one in a second.
 - **Do not list a variant to be generous.** If `ls ./` should be accepted, the
   fix is to widen the success condition, not to add a line the checker rejects.
 
@@ -316,7 +316,7 @@ and the text they typed.
 **Prefer a predicate that looks at what happened over one that looks at what was
 typed.** `commandMatches` grades keystrokes. It marks a student wrong for a
 smarter equivalent command, and marks them right when the simulation printed
-something false. `gauntlet validate` counts challenges that check nothing but
+something false. `shellgrounds validate` counts challenges that check nothing but
 `commandMatches` and reports them under **GRADES KEYSTROKES ONLY**.
 
 Use `commandMatches` when the command *is* the lesson and it produces no
@@ -361,7 +361,7 @@ trailing blank space and normalising line endings.
 Use it when there is exactly one right answer and you want no partial credit —
 a count, a single field, a computed value. Be careful: it is strict, and a
 trailing detail you did not think about will fail a correct answer. Try it both
-ways with `gauntlet try` before you ship it.
+ways with `shellgrounds try` before you ship it.
 
 #### `outputLineCountIs`
 
@@ -721,7 +721,7 @@ need to say so.
 | `mode` | no | `defaults.dirMode` | Octal string. A directory needs its execute bit (`x`) to be enterable: `0755`, not `0644`. |
 | `owner` / `group` | no | defaults | Names. |
 | `mtime` | no | default | ISO timestamp. |
-| `order` | no | key order | Explicit entry order. Only needed when a name looks like a number (`2026`), because JSON objects reorder those. `gauntlet export` adds it automatically when it is needed. |
+| `order` | no | key order | Explicit entry order. Only needed when a name looks like a number (`2026`), because JSON objects reorder those. `shellgrounds export` adds it automatically when it is needed. |
 
 ### A file node
 
@@ -807,7 +807,7 @@ students to read documentation, which is the actual skill.
 computes something — that reads the filesystem, or takes a numeric offset and
 does arithmetic with it — needs code, and code cannot cross the trust boundary.
 
-`gauntlet export` does not pretend otherwise. When a directory pack has a
+`shellgrounds export` does not pretend otherwise. When a directory pack has a
 JavaScript command, the export keeps the name and the man page, marks it
 `"unconvertible": true`, and prints the list. The loader does not resurrect it
 as a silent no-op; the command simply is not there.
@@ -823,7 +823,7 @@ rather than a pack file, or open an issue.
 ```json
 {
   "formatVersion": 1,
-  "kind": "gauntlet-pack",
+  "kind": "shellgrounds-pack",
   "id": "my-course",
   "manifest":    { "id": "my-course", "name": "My Course", "platforms": ["linux"], … },
   "acts":        [ … ],
@@ -832,14 +832,14 @@ rather than a pack file, or open an issue.
   "help":        { … },
   "commands":    { … },
   "filesystems": { "linux": { "platform": "linux", "root": "/", "tree": { … } } },
-  "generator":   "gauntlet export"
+  "generator":   "shellgrounds export"
 }
 ```
 
 | Field | Required | What it is |
 |---|---|---|
 | `formatVersion` | **yes** | Integer. Currently `1`. |
-| `kind` | no | Must be `"gauntlet-pack"` if present. |
+| `kind` | no | Must be `"shellgrounds-pack"` if present. |
 | `id` | **yes** | The pack id. |
 | `manifest` | **yes** | Everything from `pack.json` except `acts` and `badges`, which are hoisted. |
 | `acts` | **yes** | §4. |
@@ -882,9 +882,9 @@ Each refusal names the path where the problem was found, e.g.
 ## 13. What the validator checks
 
 ```bash
-node bin/gauntlet.js validate            # every registered pack
-node bin/gauntlet.js validate ./my-pack  # a directory, a .pack.json, or an id
-node bin/gauntlet.js validate --json     # machine-readable, for CI
+node bin/shellgrounds.js validate            # every registered pack
+node bin/shellgrounds.js validate ./my-pack  # a directory, a .pack.json, or an id
+node bin/shellgrounds.js validate --json     # machine-readable, for CI
 ```
 
 ### Errors — these fail the run
@@ -922,11 +922,11 @@ than no check, because it certifies broken content as valid.
 ## 14. Command-line reference
 
 ```
-gauntlet validate [target ...] [--json] [--verbose]
-gauntlet new <pack-id> [outDir] [--force]
-gauntlet try <challenge-id> "<command>" [--pack <target>] [--json]
-gauntlet export <target> [out.pack.json]
-gauntlet import <file.pack.json> [outDir] [--force]
+shellgrounds validate [target ...] [--json] [--verbose]
+shellgrounds new <pack-id> [outDir] [--force]
+shellgrounds try <challenge-id> "<command>" [--pack <target>] [--json]
+shellgrounds export <target> [out.pack.json]
+shellgrounds import <file.pack.json> [outDir] [--force]
 ```
 
 A **target** is a registered pack id, a path to a `.pack.json`, or a path to a
@@ -945,6 +945,6 @@ whole cycle before anyone adds it to the registry.
 
 **A pack does not appear in the app until someone edits `packs/index.js`.** The
 app is built with Vite, which needs static imports, so a pack cannot be
-discovered at run time. `gauntlet new` and `gauntlet import` both write the
+discovered at run time. `shellgrounds new` and `shellgrounds import` both write the
 exact snippet to paste into the registry, into the pack's `README.md`. Until
 that is pasted, everything else works: validate, try, export, import.

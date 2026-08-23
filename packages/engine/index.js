@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// The Gauntlet Core Engine — Zero-Infrastructure CLI CTF Platform
+// Shellgrounds Core Engine — Zero-Infrastructure CLI CTF Platform
 
 export * from './constants.js';
 export * from './crypto-utils.js';

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// The Gauntlet CLI — curriculum validator and pack authoring tool.
+// Shellgrounds CLI — curriculum validator and pack authoring tool.
 
 import { readFile } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
@@ -27,14 +27,14 @@ const RULE = '='.repeat(80);
 const THIN = '-'.repeat(80);
 
 const USAGE = `
-The Gauntlet CLI — author and check curriculum packs.
+Shellgrounds CLI — author and check curriculum packs.
 
 Usage:
-  gauntlet validate [target ...] [--all] [--json] [--verbose]
-  gauntlet new <pack-id> [outDir] [--force]
-  gauntlet try <challenge-id> "<command>" [--pack <target>] [--json]
-  gauntlet export <target> [out.pack.json]
-  gauntlet import <file.pack.json> [outDir] [--force]
+  shellgrounds validate [target ...] [--all] [--json] [--verbose]
+  shellgrounds new <pack-id> [outDir] [--force]
+  shellgrounds try <challenge-id> "<command>" [--pack <target>] [--json]
+  shellgrounds export <target> [out.pack.json]
+  shellgrounds import <file.pack.json> [outDir] [--force]
 
 A <target> is a registered pack id, a path to a .pack.json file, or a path to a
 pack directory. With no target, validate checks every registered pack.
@@ -105,7 +105,7 @@ async function cmdValidate(args) {
   }
 
   console.log(`\n${RULE}`);
-  console.log('                 THE GAUNTLET — CONTENT PACK VALIDATOR REPORT');
+  console.log('                 SHELLGROUNDS — CONTENT PACK VALIDATOR REPORT');
   console.log(`${RULE}\n`);
 
   for (const w of loadWarnings) console.log(`  ⚠️ ${w}`);
@@ -189,7 +189,7 @@ async function cmdValidate(args) {
 
 // ── try ─────────────────────────────────────────────────────────────────────
 
-const TRY_SECRET = 'gauntlet-try-secret';
+const TRY_SECRET = 'shellgrounds-try-secret';
 const TRY_HANDLE = 'author';
 
 /** Substitutes [[FLAG:…]] placeholders the way a real session does. */
@@ -239,7 +239,7 @@ async function cmdTry(args) {
 
   const [challengeId, command] = positional;
   if (!challengeId || command === undefined) {
-    console.error('Usage: gauntlet try <challenge-id> "<command>" [--pack <target>]');
+    console.error('Usage: shellgrounds try <challenge-id> "<command>" [--pack <target>]');
     process.exit(1);
   }
 
@@ -371,7 +371,7 @@ async function cmdNew(args) {
   const force = args.includes('--force');
   const [packId, outDir] = args.filter((a) => !a.startsWith('-'));
   if (!packId) {
-    console.error('Usage: gauntlet new <pack-id> [outDir] [--force]');
+    console.error('Usage: shellgrounds new <pack-id> [outDir] [--force]');
     process.exit(1);
   }
   const r = await scaffoldPack(packId, outDir, { force });
@@ -379,15 +379,15 @@ async function cmdNew(args) {
   console.log(`Created ${rel}`);
   for (const f of r.written) console.log(`  ${f}`);
   console.log('\nIt already passes. Check for yourself:');
-  console.log(`  node bin/gauntlet.js validate ${rel}`);
-  console.log(`  node bin/gauntlet.js try ${r.idPrefix}-2-count "grep -c ERROR notes/log.txt" --pack ${rel}`);
+  console.log(`  node bin/shellgrounds.js validate ${rel}`);
+  console.log(`  node bin/shellgrounds.js try ${r.idPrefix}-2-count "grep -c ERROR notes/log.txt" --pack ${rel}`);
   console.log(`\nEvery "//" key in those files is a comment. Read them, then edit around them.`);
 }
 
 async function cmdExport(args) {
   const [target, out] = args.filter((a) => !a.startsWith('-'));
   if (!target) {
-    console.error('Usage: gauntlet export <target> [out.pack.json]');
+    console.error('Usage: shellgrounds export <target> [out.pack.json]');
     process.exit(1);
   }
   const r = await exportPack(target, out);
@@ -402,14 +402,14 @@ async function cmdExport(args) {
     console.log('  Their names and man pages survive; their behaviour does not. A .pack.json can only');
     console.log('  hold a command that prints fixed text, because anything else would be code.');
   }
-  console.log(`\nCheck the exported file: node bin/gauntlet.js validate ${displayPath(r.outPath)}`);
+  console.log(`\nCheck the exported file: node bin/shellgrounds.js validate ${displayPath(r.outPath)}`);
 }
 
 async function cmdImport(args) {
   const force = args.includes('--force');
   const [file, outDir] = args.filter((a) => !a.startsWith('-'));
   if (!file) {
-    console.error('Usage: gauntlet import <file.pack.json> [outDir] [--force]');
+    console.error('Usage: shellgrounds import <file.pack.json> [outDir] [--force]');
     process.exit(1);
   }
   const r = await importPack(file, outDir, { force });
@@ -417,7 +417,7 @@ async function cmdImport(args) {
   const rel = displayPath(r.outDir);
   console.log(`Imported ${r.packId} -> ${rel}`);
   for (const f of r.written) console.log(`  ${f}`);
-  console.log(`\nValidate it:  node bin/gauntlet.js validate ${rel}`);
+  console.log(`\nValidate it:  node bin/shellgrounds.js validate ${rel}`);
   console.log(`To show it in the app, paste the snippet in ${rel}/README.md into packs/index.js.`);
 }
 

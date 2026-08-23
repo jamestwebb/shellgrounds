@@ -37,7 +37,7 @@ function assertSafeExportName(id) {
 export async function exportPack(target, outPath = null, options = {}) {
   const { pack, origin, warnings } = await resolvePackTarget(target);
   const { file, unconvertible } = serializePack(pack, {
-    generator: options.generator || 'gauntlet export'
+    generator: options.generator || 'shellgrounds export'
   });
 
   const stats = {

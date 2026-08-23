@@ -5,7 +5,7 @@
 //   a registered id      forensics-cli-101
 //   a single file        ./my-course.pack.json
 //   a pack directory     ./packs/my-course
-// Every command in bin/gauntlet.js accepts all three, so `new` -> `validate`
+// Every command in bin/shellgrounds.js accepts all three, so `new` -> `validate`
 // -> `try` -> `export` works on a pack that is not in the registry yet. That
 // matters: today a teacher cannot see their pack validate until someone edits
 // packs/index.js for them.
@@ -82,7 +82,7 @@ export async function loadPackDirectory(dir) {
       if (!fn) throw new PackFormatError(`${jsPath} exports no filesystem function`);
       jsBuilders[plat] = fn;
       warnings.push(`${basename(root)}/fs.${plat}.js is JavaScript: building the filesystem ran the ` +
-        "author's code. `gauntlet export` turns it into data.");
+        "author's code. `shellgrounds export` turns it into data.");
       continue;
     }
     throw new PackFormatError(`${root} has neither fs.${plat}.json nor fs.${plat}.js for platform '${plat}'.`);

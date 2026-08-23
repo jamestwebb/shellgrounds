@@ -3,7 +3,7 @@
 //
 // - Deployed: blobs persist with the site; nothing to provision.
 // - Local `netlify dev`: the CLI serves a local blob sandbox automatically.
-// - New semester: change GAUNTLET_STORE (e.g. 'shellgrounds-spring2027') and
+// - New semester: change SHELLGROUNDS_STORE (e.g. 'shellgrounds-spring2027') and
 //   the class starts empty. Old data stays in the old store until deleted via
 //   `netlify blobs:delete`.
 //
@@ -26,10 +26,10 @@ const RETRIES = 12;
 const backoff = (attempt) =>
   new Promise(r => setTimeout(r, Math.min(200, 5 * 2 ** attempt) + Math.random() * 15));
 
-// GAUNTLET_BLOBS_FILE lets a test point the local backend at its own temp file
+// SHELLGROUNDS_BLOBS_FILE lets a test point the local backend at its own temp file
 // so a test run can never touch a developer's real class data.
 function localFilePath() {
-  return process.env.GAUNTLET_BLOBS_FILE
+  return process.env.SHELLGROUNDS_BLOBS_FILE
     || path.join(process.cwd(), '.netlify', 'blobs-local.json');
 }
 
@@ -116,12 +116,22 @@ function fileBackend() {
   };
 }
 
+// The store name. GAUNTLET_STORE is the pre-rename name of this variable and is
+// still honoured, because a site that set it holds a term of student scores and
+// a rename must not point that site at an empty store. Safe to delete once no
+// deployment predates the rename.
+export function storeName() {
+  return process.env.SHELLGROUNDS_STORE
+    || process.env.GAUNTLET_STORE
+    || 'shellgrounds-fall2026';
+}
+
 function store() {
   try {
     // Functions v2 runtime: strong consistency is supported and required here —
     // registration dedupe and solve reads must see their own writes.
     return getStore({
-      name: process.env.GAUNTLET_STORE || 'gauntlet-fall2026',
+      name: storeName(),
       consistency: 'strong'
     });
   } catch (err) {
