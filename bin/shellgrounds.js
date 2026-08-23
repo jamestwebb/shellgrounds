@@ -118,6 +118,7 @@ async function cmdValidate(args) {
   console.log(`${THIN}\n`);
 
   let totalBlind = 0;
+  let totalUnfair = 0;
   let totalBadVariants = 0;
 
   for (const rep of reports) {
@@ -165,6 +166,25 @@ async function cmdValidate(args) {
       }
     }
 
+    // ── Solutions refused for their spelling ──────────────────────────────
+    // Not an error: the pack works. But each line here is a student who did
+    // the job correctly and was marked wrong, which is the failure a course
+    // can least afford.
+    const unfair = rep.unfairRejections || [];
+    totalUnfair += unfair.length;
+    if (unfair.length > 0) {
+      console.log(`\nCORRECT ANSWERS REFUSED: ${unfair.length} rewritings of your own accepted answers are rejected`);
+      console.log('  Each does what the challenge asks and fails only its commandMatches pattern.');
+      const shown = verbose ? unfair : unfair.slice(0, 8);
+      for (const u of shown) {
+        console.log(`  · ${u.id} — "${u.variant}"`);
+        console.log(`      rewrites "${u.from}" · blocked by ${u.pattern}`);
+      }
+      if (!verbose && unfair.length > shown.length) {
+        console.log(`  · …and ${unfair.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
     if (rep.warnings.length > 0) {
       console.log('\nWarnings:');
       for (const warn of rep.warnings) console.log(`  ⚠️ ${warn}`);
@@ -175,6 +195,7 @@ async function cmdValidate(args) {
   if (reports.length > 1 && (totalBadVariants || totalBlind)) {
     console.log('Across all packs checked:');
     console.log(`  broken accepted variants: ${totalBadVariants}`);
+    console.log(`  correct answers refused:   ${totalUnfair}`);
     console.log(`  keystroke-only challenges: ${totalBlind}`);
     console.log(`${THIN}\n`);
   }

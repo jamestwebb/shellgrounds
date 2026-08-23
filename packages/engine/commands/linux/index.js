@@ -118,7 +118,7 @@ export function humanSize(bytes = 0) {
 export function runWrappedCommand(cmdImpl, name, args, ctx) {
   const parsed = cmdImpl.passthroughArgs
     ? { flags: {}, operands: args }
-    : parseCommandArgs(args, cmdImpl.flags || {}, false);
+    : parseCommandArgs(args, cmdImpl.flags || {}, false, cmdImpl.name || name);
 
   if (parsed.error) {
     return {

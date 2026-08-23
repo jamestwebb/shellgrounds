@@ -13,7 +13,7 @@
       "predicates": [
         {
           "predicate": "commandMatches",
-          "pattern": "^pwd\\s*$"
+          "pattern": "^pwd\\b.*$"
         },
         {
           "predicate": "outputEquals",
@@ -226,7 +226,7 @@
       "predicates": [
         {
           "predicate": "commandMatches",
-          "pattern": "^pwd\\s*$"
+          "pattern": "^pwd\\b.*$"
         },
         {
           "predicate": "outputEquals",

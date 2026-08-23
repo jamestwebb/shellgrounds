@@ -303,7 +303,7 @@ function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
         // them here would reject e.g. `sudo apt-get install pkg -y`.
         const parseRes = cmdDef.passthroughArgs
           ? { flags: {}, operands: commandArgs }
-          : parseCommandArgs(commandArgs, cmdDef.flags || {}, isWindows);
+          : parseCommandArgs(commandArgs, cmdDef.flags || {}, isWindows, cmdDef.name || commandName);
 
         if (parseRes.error) {
           const formattedErr = isWindows

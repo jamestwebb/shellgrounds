@@ -341,6 +341,51 @@ shipped art. Raster only, never SVG, and 128 KB is the cap; the reasons are in
 
 ---
 
+## Two checks that stop you failing a correct student
+
+`validate` runs both. Neither can fail your pack; both tell you when a student
+who did the job would be marked wrong.
+
+### CORRECT ANSWERS REFUSED
+
+A `commandMatches` pattern is written by hand, and one anchored a character
+tighter than you meant refuses somebody who was right. The validator rewrites
+every entry in your `acceptedVariants` in ways that cannot change what it does
+— quoting an operand, `./` and absolute paths, `-la` as `-l -a`, a short flag
+as its long name — runs each one, and reports any that produce the required
+result and are rejected anyway.
+
+Every variant it tries is a rewriting of an answer **you already accept**, so
+the report can be trusted: it never invents `cat file` for a `head` challenge,
+and a pattern that legitimately blocks the wrong tool is never flagged.
+
+It found this in the shipped packs, the same challenge written twice:
+
+```
+linux-fundamentals/l1-pwd    ^pwd\b.*$     pwd -P  accepted
+forensics-cli-101/act1-pwd   ^pwd\s*$      pwd -P  REJECTED
+```
+
+Same output, same understanding, opposite verdicts. Nobody chose that.
+
+**Writing patterns that survive it:** anchor the verb, not the whole line.
+`^find\b` says "use find" and allows every way of using it. `^find .*-name.*$`
+says "use find with -name" and still allows the rest. `^find \. -name "*.log"$`
+says "type this exact line", which is a spelling test.
+
+### The Reference tab, and being honest about gaps
+
+If a student uses a real option this simulator has not implemented, they are
+told it is **not simulated here** — not that it is invalid. The difference
+matters: `grep -e` is POSIX, and telling somebody it is an invalid option
+teaches them to distrust something they knew correctly.
+
+`packages/engine/commands/realFlags.js` holds the short option letters each
+real tool accepts. If you add a command, add its letters there too, or every
+gap in your implementation will read to a student as their own mistake.
+
+---
+
 ## Sharing the pack
 
 ```bash

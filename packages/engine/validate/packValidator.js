@@ -14,6 +14,7 @@ import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
 import { validatePresentation } from './presentation.js';
+import { auditChallenge } from './solutionSpace.js';
 import { compileSafe, probePattern, PROBE_BUDGET_MS } from './safe-regex.js';
 
 const TEST_SECRET = 'pack-validator-secret';
@@ -141,6 +142,7 @@ export async function validatePack(packObj, options = {}) {
     // warning stream is how 60 keystroke-graded challenges went unnoticed.
     variantFailures: [],
     outputBlind: [],
+    unfairRejections: [],
     checks: {
       packFormat: { pass: true, checked: false, formatVersion: packObj.formatVersion ?? null },
       vfsPaths: { pass: true, tested: 0 },
@@ -541,6 +543,36 @@ export async function validatePack(packObj, options = {}) {
   if (verbose) {
     console.log(`[${id}] valid=${results.valid} errors=${results.errors.length} warnings=${results.warnings.length}`);
     results.errors.forEach(e => console.log('  ERROR:', e));
+  }
+
+  // ── Does the wording of a check reject a correct answer? ────────────────
+  // A commandMatches pattern is written by hand, and one anchored a character
+  // tighter than its author meant refuses a student who did the job. This
+  // rewrites each accepted solution in ways that cannot change what it does --
+  // quoting, ./ and absolute paths, split and long flags -- and reports any
+  // that produce the required result and are refused anyway.
+  for (const challenge of challenges) {
+    try {
+      const audit = auditChallenge(packObj, challenge, {
+        runPipeline,
+        evaluatePredicate,
+        flagSpecsFor: (name, platform) => {
+          try { return registry.get(name, platform)?.flags || {}; } catch { return {}; }
+        }
+      });
+      for (const u of audit.unfair) {
+        results.unfairRejections.push({
+          id: challenge.id,
+          act: challenge.act,
+          title: challenge.title,
+          variant: u.variant,
+          from: u.from,
+          pattern: u.textPattern
+        });
+      }
+    } catch {
+      // A challenge this cannot rewrite is not a challenge with a problem.
+    }
   }
 
   return results;

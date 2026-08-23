@@ -3,6 +3,7 @@
 
 import { ALL_LINUX_COMMANDS } from './linux/index.js';
 import { ALL_WINDOWS_COMMANDS } from './windows/index.js';
+import { isRealFlag } from './realFlags.js';
 
 /**
  * Parses arguments against a command's flag specification.
@@ -15,8 +16,15 @@ import { ALL_WINDOWS_COMMANDS } from './windows/index.js';
  * - 'implemented' -> parsed into flags object
  * - 'notSimulated' -> returns error explaining feature is unsimulated
  * - 'unknown' -> returns invalid option error (exit 2)
+ *
+ * The middle state was unreachable for years: all 138 declared flags said
+ * 'implemented', so every REAL flag this simulator lacks fell through to
+ * "invalid option -- 'e'". `grep -e` is POSIX; telling a student it is invalid
+ * teaches them to distrust something they knew correctly. Passing `command`
+ * lets the parser consult realFlags.js and give the middle answer where it is
+ * the true one.
  */
-export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
+export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false, command = '') {
   const flags = {};
   const operands = [];
   let i = 0;
@@ -94,6 +102,10 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
       const spec = specKey ? flagSpecs[specKey] : null;
 
       if (!spec) {
+        // No claim is made about long options. realFlags.js holds SHORT option
+        // letters, and `--bogus` shares its first letter with `ls -b`, so
+        // checking it there reported an invented option as real. A guess
+        // dressed as a fact is worse than the plain refusal.
         return {
           error: `unrecognized option '--${name}'`,
           status: 2
@@ -179,7 +191,11 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
 
         if (!spec) {
           return {
-            error: `invalid option -- '${char}'`,
+            // A real option this simulator has not built is not the student's
+            // mistake, and must not be reported as one.
+            error: isRealFlag(command, char, isWindows)
+              ? `-${char} is real, but it is not simulated here (see the Reference tab).`
+              : `invalid option -- '${char}'`,
             status: 2
           };
         }

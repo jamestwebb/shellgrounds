@@ -51,7 +51,7 @@
       "predicates": [
         {
           "predicate": "commandMatches",
-          "pattern": "^ls(\\s+(\\.|\\./|~|/home/student))?\\s*$"
+          "pattern": "^ls(\\s+[\"']?(\\.|\\./|~|/home/student)/?[\"']?)?\\s*$"
         },
         {
           "predicate": "outputEquals",
@@ -90,7 +90,7 @@
       "predicates": [
         {
           "predicate": "commandMatches",
-          "pattern": "^ls\\s+-[a-z]*a[a-z]*(\\s+\\S+)?\\s*$"
+          "pattern": "^ls\\b(?=(?:.*\\s)(?:-[a-z]*a[a-z]*|--all)\\b).*$"
         },
         {
           "predicate": "outputContains",
