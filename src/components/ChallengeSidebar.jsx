@@ -7,6 +7,7 @@ import {
   Zap, Trophy, Send, Award, Layers, AlertCircle, HelpCircle, RotateCcw, Eye
 } from 'lucide-react';
 import { practiceState } from '../../packages/engine/practice.js';
+import { firstEncounters } from '../../packages/engine/glossary.js';
 import { ACT_DEFINITIONS, isActUnlockedFor, requiredSolvesToUnlock } from '../data/challenges';
 import { nextWrongAnswerMessage, actLockedCopy } from '../copy';
 import { sounds } from '../utils/audio';
@@ -50,7 +51,10 @@ export const ChallengeSidebar = ({
   // too. Opening one goes through the server, which records it and prices the
   // penalty — the count used to be the browser's word alone.
   unlockedHints = {},
-  onOpenHint = async () => null
+  onOpenHint = async () => null,
+  // The pack's own glossary, which overrides the engine's for its own
+  // commands and its own course vocabulary.
+  packManifest = {}
 }) => {
   const [flagInput, setFlagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -102,6 +106,13 @@ export const ChallengeSidebar = ({
   // hints the student already owns collapse. Recalling something unaided is
   // most of where the value is, and it cannot happen with the answer on
   // screen. They come back with one click, at no cost.
+  // What this challenge is the first to teach. Derived from the pack, so there
+  // is no per-student "seen" state to keep in step with anything.
+  const introductions = React.useMemo(
+    () => firstEncounters({ challenges, manifest: packManifest || {} }),
+    [challenges, packManifest]
+  ).get(currentChallenge?.id) || [];
+
   const hintsRevealedCount = practising ? practiceHintsShown : paidHints;
   const hintsAreFree = practising;
 
@@ -374,6 +385,27 @@ export const ChallengeSidebar = ({
                 +{currentChallenge.points} XP
               </div>
             </div>
+
+            {/* What this thing IS, before what to do with it. A brief used to
+                say "run grep" and nothing ever said what grep was; the man page
+                said it well and lived behind a command a beginner has no reason
+                to run about a tool they have not met. Shown on the challenge
+                that introduces each term, above the task. */}
+            {introductions.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {introductions.map(def => (
+                  <div
+                    key={def.tag}
+                    className="text-xs leading-relaxed bg-term-green-faint border border-term-green/30
+                               rounded-lg p-3 select-text cursor-text"
+                  >
+                    <span className="font-bold text-term-green">{def.term}</span>
+                    <span className="text-neutral-500"> — new here</span>
+                    <p className="text-neutral-200 mt-1">{formatBriefText(def.what)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Briefing text */}
             <div className="text-xs text-neutral-300 leading-relaxed bg-term-sidebar-raised p-3.5 rounded-lg border border-term-sidebar-border mb-4 font-mono select-text cursor-text">

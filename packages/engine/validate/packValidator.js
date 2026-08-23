@@ -15,6 +15,7 @@ import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
 import { validatePresentation } from './presentation.js';
 import { auditChallenge, splitPredicate } from './solutionSpace.js';
+import { undefinedTerms } from '../glossary.js';
 import { compileSafe, probePattern, PROBE_BUDGET_MS } from './safe-regex.js';
 
 const TEST_SECRET = 'pack-validator-secret';
@@ -144,6 +145,7 @@ export async function validatePack(packObj, options = {}) {
     outputBlind: [],
     unfairRejections: [],
     uncheckablePatterns: [],
+    undefinedTerms: [],
     checks: {
       packFormat: { pass: true, checked: false, formatVersion: packObj.formatVersion ?? null },
       vfsPaths: { pass: true, tested: 0 },
@@ -589,6 +591,11 @@ export async function validatePack(packObj, options = {}) {
       // A challenge this cannot rewrite is not a challenge with a problem.
     }
   }
+
+  // Something a pack claims to teach and nobody defines. The engine covers the
+  // shell; anything left is this course's own vocabulary, and only this course
+  // can write it.
+  results.undefinedTerms = undefinedTerms(packObj);
 
   return results;
 }

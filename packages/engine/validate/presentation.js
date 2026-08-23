@@ -87,6 +87,12 @@ export const MAX_LEARNING_POINTS = 12;
  */
 export const MAX_REVEAL_CAPTION_LENGTH = 240;
 
+/**
+ * A definition of a tool or an idea, shown above the brief the first time a
+ * student meets it. Two sentences: it is orientation, not the lesson.
+ */
+export const MAX_DEFINITION_LENGTH = 320;
+
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
 /**
@@ -211,6 +217,34 @@ export function validatePresentation(manifest = {}) {
       + 'told only that they finished it. One line naming what they uncovered turns the picture '
       + 'into the end of your scenario instead of decoration.'
     );
+  }
+
+  // A pack's own vocabulary: its commands, and the words its course uses that
+  // the shell does not. The engine defines the shell itself, so a key here is
+  // either something the engine cannot know or a deliberate override.
+  if (manifest.glossary !== undefined) {
+    const g = manifest.glossary;
+    if (typeof g !== 'object' || g === null || Array.isArray(g)) {
+      errors.push('manifest.glossary must be an object keyed by the `teaches` tag it defines.');
+    } else {
+      for (const [tag, entry] of Object.entries(g)) {
+        if (tag.startsWith('//')) continue;
+        const what = typeof entry === 'string' ? entry : entry?.what;
+        if (!isNonEmptyString(what)) {
+          errors.push(`manifest.glossary["${tag}"] needs text saying what it is.`);
+        } else if (what.length > MAX_DEFINITION_LENGTH) {
+          errors.push(
+            `manifest.glossary["${tag}"] is ${what.length} characters; the limit is `
+            + `${MAX_DEFINITION_LENGTH}. It is read before a student's first attempt, `
+            + 'so it competes with the brief for attention.'
+          );
+        }
+        if (entry && typeof entry === 'object' && entry.term !== undefined
+            && !isNonEmptyString(entry.term)) {
+          errors.push(`manifest.glossary["${tag}"].term must be a non-empty string when present.`);
+        }
+      }
+    }
   }
 
   if (manifest.briefing !== undefined) {

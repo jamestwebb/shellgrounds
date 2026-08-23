@@ -120,6 +120,7 @@ async function cmdValidate(args) {
   let totalBlind = 0;
   let totalUnfair = 0;
   let totalUncheckable = 0;
+  let totalUndefined = 0;
   let totalBadVariants = 0;
 
   for (const rep of reports) {
@@ -186,6 +187,21 @@ async function cmdValidate(args) {
       }
     }
 
+    // ── Words nothing defines ─────────────────────────────────────────────
+    // A pack claims to teach a thing and no one says what it is. The engine
+    // covers the shell, so whatever is left is this course's own vocabulary.
+    const undef = rep.undefinedTerms || [];
+    totalUndefined += undef.length;
+    if (undef.length > 0) {
+      console.log(`\nTAUGHT BUT NEVER DEFINED: ${undef.length} terms this pack teaches and nothing explains`);
+      console.log('  A student meets these with no idea what they are. Add them to manifest.glossary.');
+      const shown = verbose ? undef : undef.slice(0, 10);
+      for (const u of shown) console.log(`  · ${u.tag}   (first taught in ${u.firstSeenIn})`);
+      if (!verbose && undef.length > shown.length) {
+        console.log(`  · …and ${undef.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
     // ── Patterns nothing can check ────────────────────────────────────────
     // The check above can only rewrite an answer the pack already accepts. A
     // commandMatches with no acceptedVariants is therefore invisible to it --
@@ -215,6 +231,7 @@ async function cmdValidate(args) {
     console.log(`  broken accepted variants: ${totalBadVariants}`);
     console.log(`  correct answers refused:   ${totalUnfair}`);
     console.log(`  uncheckable patterns:     ${totalUncheckable}`);
+    console.log(`  taught but undefined:     ${totalUndefined}`);
     console.log(`  keystroke-only challenges: ${totalBlind}`);
     console.log(`${THIN}\n`);
   }

@@ -341,6 +341,48 @@ shipped art. Raster only, never SVG, and 128 KB is the cap; the reasons are in
 
 ---
 
+## Saying what a tool IS
+
+A brief tells a student what to do. Something has to tell them what the thing
+is. The rule for where that lives:
+
+> **The engine owns what is true of the shell everywhere.
+> Your pack owns what is true of your course.**
+
+`packages/engine/glossary.js` defines `grep`, `|`, `$?`, globbing, `dir` and
+about 130 other shell terms, keyed by the `teaches` tag you already write.
+**You get all of that for free** — a challenge that teaches `grep` shows the
+definition of grep above its brief, on the first challenge that teaches it, in
+every pack. You write nothing.
+
+You write `manifest.glossary` only for what the engine cannot know:
+
+```json
+"glossary": {
+  "scan":        { "term": "scan", "what": "A bench tool that reads a disk image's partition table." },
+  "magic-bytes": { "term": "magic bytes", "what": "The first few bytes of a file, which say what it really is. A file's extension is a claim; its magic bytes are the evidence." }
+}
+```
+
+Two things belong here and nothing else does:
+
+- **Your own commands.** forensics-cli-101 ships `scan`, `extract`, `map` and
+  `evtrace`. No engine table could know they exist.
+- **Your own vocabulary.** "Chain of custody" is forensics, not shell.
+
+A key that matches an engine term overrides it, for your pack only. Use that
+sparingly: if `grep` means something different in your course, it is probably
+the course that is wrong.
+
+A bare string works where you do not need a separate display term:
+`"pipes": "A pipe sends one command's output into the next."` 320 characters is
+the cap — it is orientation, read before a first attempt, not the lesson.
+
+`validate` reports **TAUGHT BUT NEVER DEFINED** for any `teaches` tag nothing
+explains, so a student never meets a word the course refuses to define.
+
+---
+
 ## Two checks that stop you failing a correct student
 
 `validate` runs both. Neither can fail your pack; both tell you when a student

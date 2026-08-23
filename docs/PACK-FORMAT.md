@@ -115,6 +115,7 @@ sits next to the field.
 | `icon` | string | no, but write one | `📦` | One or two emoji. How your course is recognised in a list. §3.1. |
 | `cover` | string | no | — | An image, embedded. Raster data URI only — never SVG, never a web address. §3.2. |
 | `scene` | string | no | — | The wide establishing shot across the top of the briefing. Same image rules as `cover`. §3.2. |
+| `glossary` | object | no | — | What your own commands and course vocabulary mean, keyed by `teaches` tag. The engine already defines the shell. §3.3. |
 | `reveal` | string | no | — | The picture a class uncovers together, one square per find. Same image rules as `cover`. §3.2. |
 | `revealCaption` | string | no | — | The one line printed under `reveal` when the last square turns over. Names what the class uncovered. Must not contain an answer. §3.2. |
 | `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |

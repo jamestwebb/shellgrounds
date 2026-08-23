@@ -772,6 +772,7 @@ export default function App() {
             activeActId={activeActId}
             setActiveActId={setActiveActId}
             selectedChallengeId={selectedChallengeId}
+            packManifest={currentPack.manifest}
             onSelectChallenge={(id) => {
               setSelectedChallengeId(id);
               const challenge = currentPack.challenges.find(c => c.id === id);
