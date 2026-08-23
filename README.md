@@ -44,13 +44,17 @@ a free `*.netlify.app` address. On the way through, Netlify asks you for three t
 
 Then give your class the site address and the class password. That is the whole setup.
 
-### One name you should not change
+### One name to change only between terms
 
-`GAUNTLET_STORE` is the name of the storage area holding every handle, solve, and score.
-It keeps its old name on purpose. Renaming it points the site at a fresh, empty store, and
-every score already recorded becomes invisible. Leave it alone unless you are starting a
-brand-new class with no history — in which case set it to any new name you like, once, at
-the start of term.
+`SHELLGROUNDS_STORE` names the storage area holding every handle, solve, and score. You do
+not have to set it: it has a working default. Change the value and the site starts reading
+a fresh, empty store, and every score already recorded becomes invisible — it is still on
+disk, but the site no longer looks there. So change it once, at the start of a term, and
+never in the middle of one.
+
+If you deployed this site before it was renamed from The Gauntlet, you may have a
+`GAUNTLET_STORE` variable. It still works and your scores are safe. Leave it, or copy its
+value into `SHELLGROUNDS_STORE` and delete the old one.
 
 ---
 
@@ -100,8 +104,8 @@ npm run build     # production build
 The pack validator also runs standalone, and takes a single pack:
 
 ```bash
-node bin/gauntlet.js validate
-node bin/gauntlet.js validate packs/linux-fundamentals --json
+node bin/shellgrounds.js validate
+node bin/shellgrounds.js validate packs/linux-fundamentals --json
 ```
 
 ---

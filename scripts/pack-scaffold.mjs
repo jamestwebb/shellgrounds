@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Scaffold a new pack that passes `gauntlet validate` the moment it is written.
+// Scaffold a new pack that passes `shellgrounds validate` the moment it is written.
 //
 // The point is not to save typing. It is that a first pack should be a WORKING
 // pack, so the author's first run is green and every later red is something
@@ -298,12 +298,12 @@ export function create${pascal(packId)}Filesystem() {
   const P = pascal(packId);
   await put('README.md', `# ${name}
 
-A starter pack, scaffolded by \`gauntlet new ${packId}\`. It already passes validation.
+A starter pack, scaffolded by \`shellgrounds new ${packId}\`. It already passes validation.
 
 \`\`\`bash
-node bin/gauntlet.js validate ${displayPath(dir)}
-node bin/gauntlet.js try ${p}-2-count "grep -c ERROR notes/log.txt" --pack ${displayPath(dir)}
-node bin/gauntlet.js export ${displayPath(dir)} ${packId}.pack.json
+node bin/shellgrounds.js validate ${displayPath(dir)}
+node bin/shellgrounds.js try ${p}-2-count "grep -c ERROR notes/log.txt" --pack ${displayPath(dir)}
+node bin/shellgrounds.js export ${displayPath(dir)} ${packId}.pack.json
 \`\`\`
 
 ## The files

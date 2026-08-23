@@ -28,7 +28,7 @@ import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 
 const tempDirs = [];
 async function tmp(prefix) {
-  const d = await mkdtemp(join(tmpdir(), `gauntlet-${prefix}-`));
+  const d = await mkdtemp(join(tmpdir(), `shellgrounds-${prefix}-`));
   tempDirs.push(d);
   return d;
 }
@@ -59,7 +59,7 @@ const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 function minimalPackFile(overrides = {}) {
   return {
     formatVersion: PACK_FORMAT_VERSION,
-    kind: 'gauntlet-pack',
+    kind: 'shellgrounds-pack',
     id: 'test-pack',
     manifest: {
       id: 'test-pack',
@@ -350,7 +350,16 @@ describe('format version', () => {
 
   it('rejects the wrong kind', () => {
     expect(validatePackFileStructure(minimalPackFile({ kind: 'something-else' })).errors.join(' '))
-      .toMatch(/expected "gauntlet-pack"/);
+      .toMatch(/expected "shellgrounds-pack"/);
+  });
+
+  // The project was called The Gauntlet before it was called Shellgrounds. A
+  // teacher who exported a course under the old name still owns that file, and
+  // it is still a valid pack. Renaming the product must not strand it.
+  it('still accepts a file exported under the former product name', () => {
+    const legacy = minimalPackFile({ kind: 'gauntlet-pack' });
+    expect(validatePackFileStructure(legacy).errors).toEqual([]);
+    expect(loadPackFile(legacy).id).toBe(loadPackFile(minimalPackFile()).id);
   });
 
   it('is reported by the validator for a pack that came from a file', async () => {
@@ -568,7 +577,7 @@ describe('validator: an accepted variant that does not work is its own category'
 });
 
 // ───────────────────────────────────────────────────────────────────────────
-describe('gauntlet new: the scaffold is a working pack, not a template', () => {
+describe('shellgrounds new: the scaffold is a working pack, not a template', () => {
   it('scaffolds a pack that validates with no errors and no findings', async () => {
     const dir = await tmp('scaffold');
     const { outDir, idPrefix } = await scaffoldPack('demo-course', join(dir, 'demo-course'));

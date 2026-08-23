@@ -56,5 +56,5 @@ letters as a separate word, so `dir /ah` is rejected and `dir /a Documents` read
 current directory instead of `Documents`; and `where cmd.exe` reports
 `C:\Windows\System32\cmd.exe.exe`.
 
-Run `node bin/gauntlet.js validate windows-cmd-essentials` to re-prove every accepted answer
+Run `node bin/shellgrounds.js validate windows-cmd-essentials` to re-prove every accepted answer
 against the real engine.

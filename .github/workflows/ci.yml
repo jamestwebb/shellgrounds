@@ -28,7 +28,7 @@ jobs:
         run: npm test
 
       - name: Validate all content packs (Machine Solvability Verification)
-        run: node bin/gauntlet.js validate --all --json
+        run: node bin/shellgrounds.js validate --all --json
 
       - name: Build production web bundle
         run: npm run build

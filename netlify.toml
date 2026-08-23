@@ -16,11 +16,12 @@
 # it after the first deploy with `openssl rand -hex 32` and paste it into
 # Site configuration -> Environment variables.
 #
-# GAUNTLET_STORE is also deliberately absent, and must NOT be renamed to match
-# the product. It is the name of the Netlify Blobs store that holds every
-# handle, solve, and score. Change the name and the site starts reading an
-# empty store: every existing student score is orphaned, still on disk, and
-# invisible. The old name is the price of not losing a term's worth of work.
+# SHELLGROUNDS_STORE is also deliberately absent. It names the Netlify Blobs
+# store that holds every handle, solve, and score, and it has a working default.
+# Change the value and the site starts reading an empty store: every existing
+# score is orphaned, still on disk, and invisible. That is exactly what you want
+# at the start of a new term, and never what you want in the middle of one, so
+# it is not a question to answer while deploying.
 [template.environment]
   CLASS_PASSWORD = "The password you tell your class. Students type it once, to create their handle. Pick something you are happy to say out loud and write on a board, and change it here if it leaks."
   ADMIN_HANDLES = "Your own handle, so the site knows you are the teacher and shows you the instructor view. Comma-separated if there is more than one of you, for example: ms_okafor,ta_alex"

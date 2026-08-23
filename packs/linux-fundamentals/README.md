@@ -51,5 +51,5 @@ the lesson (`find`, `sudo`, globbing), the command pattern is kept, widened to a
 reasonable equivalent, and paired with an output assertion so a broken simulation cannot
 pass silently.
 
-Run `node bin/gauntlet.js validate linux-fundamentals` to re-prove every accepted answer
+Run `node bin/shellgrounds.js validate linux-fundamentals` to re-prove every accepted answer
 against the real engine.

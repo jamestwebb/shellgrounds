@@ -20,12 +20,12 @@ let storeFile = null;
 
 /** Point the store at a fresh empty file and set the env every handler reads. */
 export function freshStore() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gauntlet-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'shellgrounds-test-'));
   storeFile = path.join(dir, 'blobs.json');
   fs.writeFileSync(storeFile, '{}');
 
   process.env.NETLIFY_DEV = 'true';
-  process.env.GAUNTLET_BLOBS_FILE = storeFile;
+  process.env.SHELLGROUNDS_BLOBS_FILE = storeFile;
   process.env.SESSION_SECRET = SECRET;
   process.env.CLASS_PASSWORD = CLASS_PASSWORD;
   process.env.INSTRUCTOR_SETUP_CODE = SETUP_CODE;

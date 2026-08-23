@@ -5,7 +5,7 @@
 // closes the case you thought of and leaves the one you did not is worth a test
 // more than an apology.
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { freshStore, call, get, post, register, SETUP_CODE } from './functions.helpers.js';
 import { PACKS, hasPack, getPack } from '../packs/index.js';
 import { compileSafe, testSafe, assertSafePattern, UnsafePatternError } from '../packages/engine/validate/safe-regex.js';
@@ -172,5 +172,34 @@ describe('concurrent solves', () => {
       call(sub, post('/api/submit-flag', { challengeId: c.id, commandText: c.acceptedVariants[0] }, token))
     ));
     expect(results.filter(r => r.status >= 500).length, 'no submission should 500').toBe(0);
+  });
+});
+
+// Renaming the product renamed the environment variable that names the blob
+// store. A site deployed under the old name holds a term of student scores, and
+// reading the new name only would point that site at an empty store — the
+// scores still on disk, invisible, and blamed on the upgrade.
+describe('the store name survives the rename', () => {
+  const KEYS = ['SHELLGROUNDS_STORE', 'GAUNTLET_STORE'];
+  let saved;
+  beforeEach(() => { saved = KEYS.map(k => process.env[k]); for (const k of KEYS) delete process.env[k]; });
+  afterEach(() => { KEYS.forEach((k, i) => { if (saved[i] === undefined) delete process.env[k]; else process.env[k] = saved[i]; }); });
+
+  it('prefers the new variable', async () => {
+    process.env.SHELLGROUNDS_STORE = 'new-name';
+    process.env.GAUNTLET_STORE = 'old-name';
+    const { storeName } = await import('../netlify/functions/utils/store.js');
+    expect(storeName()).toBe('new-name');
+  });
+
+  it('still reads a pre-rename deployment', async () => {
+    process.env.GAUNTLET_STORE = 'gauntlet-fall2026';
+    const { storeName } = await import('../netlify/functions/utils/store.js');
+    expect(storeName()).toBe('gauntlet-fall2026');
+  });
+
+  it('falls back to a default when neither is set', async () => {
+    const { storeName } = await import('../netlify/functions/utils/store.js');
+    expect(storeName()).toBe('shellgrounds-fall2026');
   });
 });

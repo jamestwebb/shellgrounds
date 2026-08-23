@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Tokenizer for The Gauntlet CLI engine supporting quoting, pipes, and redirection
+// Tokenizer for the Shellgrounds CLI engine supporting quoting, pipes, and redirection
 
 /**
  * Tokenizes a raw command line into command stages connected by pipes,

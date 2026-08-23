@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// VFS Builder for The Gauntlet virtual filesystems
+// VFS Builder for Shellgrounds virtual filesystems
 
 import { md5, sha256Sync } from './crypto-utils.js';
 

@@ -1,6 +1,6 @@
 // GENERATED FILE — do not edit by hand.
 // Written by scripts/build-registry.mjs, which scans packs/*/pack.json.
-// Add a pack directory (or run `gauntlet import`), then regenerate:
+// Add a pack directory (or run `shellgrounds import`), then regenerate:
 //   node scripts/build-registry.mjs
 
 import forensicsCli101Manifest from './forensics-cli-101/pack.json' with { type: 'json' };
