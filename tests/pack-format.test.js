@@ -7,6 +7,7 @@
 // nearly, not visually. So these compare the whole flat filesystem node by node
 // and field by field, not a summary of it.
 
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, afterAll } from 'vitest';
 import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -261,12 +262,28 @@ describe('the no-code guard', () => {
     expect({}.polluted).toBeUndefined();
   });
 
-  it('a js predicate cannot pass for a pack loaded from a file, even if it got through', () => {
-    // The guard above stops this reaching the engine. This proves the second
-    // layer holds on its own: predicates.js refuses `js` for untrusted packs.
-    const cfg = { predicate: 'js', fn: () => true };
+  it('the engine has no predicate that runs a function at all', () => {
+    // This used to assert that the js predicate was refused for untrusted packs
+    // and honoured for trusted ones — a hole with two guards on it. The
+    // predicate has been removed: nothing among the 104 challenges used it, and
+    // it was the single field that could have run a pack author's own code.
+    //
+    // No level of declared trust brings it back. A pack cannot execute.
+    const spy = { called: false };
+    const cfg = { predicate: 'js', fn: () => { spy.called = true; return true; } };
     expect(evaluatePredicate(cfg, { trusted: false })).toBe(false);
-    expect(evaluatePredicate(cfg, { trusted: true })).toBe(true);
+    expect(evaluatePredicate(cfg, { trusted: true })).toBe(false);
+    expect(evaluatePredicate({ kind: 'js', check: () => { spy.called = true; return true; } },
+      { trusted: true })).toBe(false);
+    expect(spy.called, 'a pack-supplied function was invoked').toBe(false);
+  });
+
+  it('lists no predicate whose value is executable', () => {
+    // A structural guard, so re-introducing an escape hatch has to be deliberate.
+    const src = readFileSync(new URL('../packages/engine/validate/predicates.js', import.meta.url), 'utf8');
+    for (const forbidden of ['predicateConfig.fn(', 'predicateConfig.check(', 'new Function', 'eval(']) {
+      expect(src, `predicates.js should not contain ${forbidden}`).not.toContain(forbidden);
+    }
   });
 
   it('marks a pack loaded from a file as untrusted', () => {

@@ -73,7 +73,7 @@ So the shareable format cannot contain code — not "should not", cannot. A
 filesystem is a tree of nodes with content, a mode and an owner. A success
 condition is a named check with arguments. A pack command prints fixed text.
 The loader refuses a pack file that contains a function, an accessor, a
-`__proto__` key, or the JavaScript-running `js` predicate, and tells you where
+`__proto__` key, or the removed `js` predicate, and tells you where
 it found it.
 
 The cost of that rule is real and you should know it: **a pack command that
@@ -871,7 +871,7 @@ A pack file is rejected outright — not warned about — when it contains:
 | a function value | The format is data. A function is code, and code from a stranger runs in a student's browser. |
 | a getter or setter | Same, one level less obvious. |
 | an own key `__proto__`, `constructor` or `prototype` | `JSON.parse` really does create an own `__proto__` property, and merging that object elsewhere is a prototype-pollution primitive. |
-| a `js` predicate | It runs JavaScript. Available only to packs shipped with the platform. |
+| a `js` predicate | Removed. It was the one field that could run a pack author's own JavaScript. No pack, first-party or not, can execute code. |
 | more than 64 levels of nesting | A stack-exhaustion shape, and nothing legitimate needs it. |
 
 Each refusal names the path where the problem was found, e.g.

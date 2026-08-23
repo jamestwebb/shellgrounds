@@ -59,3 +59,4 @@
 1787447089	netlify/functions/utils/admin.js
 1787447275	scripts/pack-export.mjs
 1787447291	packages/engine/validate/packFile.js
+1787448475	tests/pack-format.test.js
