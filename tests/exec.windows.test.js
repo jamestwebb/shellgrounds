@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { executeWindowsCommand } from '../src/engine/exec.windows.js';
+import { executeWindowsCommand } from './helpers/legacy-exec.windows.js';
 import { createWindowsFilesystem } from '../src/engine/fs.windows.js';
 
 describe('Windows Command Executor', () => {

@@ -1,33 +1,40 @@
 import { describe, it, expect } from 'vitest';
-import { tokenizeCommandLine } from '../src/engine/tokenizer.js';
-import { runPipeline } from '../src/engine/pipeline.js';
+import { tokenizeCommandLine } from '../packages/engine/shell/tokenizer.js';
+import { runPipeline } from '../packages/engine/shell/exec.js';
 import { createLinuxFilesystem } from '../src/engine/fs.linux.js';
 import { createWindowsFilesystem } from '../src/engine/fs.windows.js';
 import { injectFlagsIntoVFS, replaceFlagTokens, FLAG_UNAVAILABLE } from '../src/utils/vfs-injector.js';
 import { generateUserFlag, createSessionToken } from '../src/engine/crypto-utils.js';
-import { executeWindowsCommand } from '../src/engine/exec.windows.js';
+import { executeWindowsCommand } from './helpers/legacy-exec.windows.js';
 
+// These three were written against a `{ pipeline: [{ argv }] }` shape that the
+// shipping tokenizer has not had for some time. They passed because they were
+// aimed at src/engine/tokenizer.js, a copy nothing imported. Same assertions,
+// against the parser students actually type into.
 describe('Tokenizer redirection fixes', () => {
+  const stages = (line) => tokenizeCommandLine(line).lists[0].stages;
+  const argv = (stage) => (stage.rawTokens || []).map(tok => tok.map(t => t.value).join(''));
+
   it('keeps parsing after > file so a trailing 2>/dev/null is honored', () => {
-    const { pipeline } = tokenizeCommandLine('grep -i error logs.txt > /tmp/errors.log 2>/dev/null');
-    expect(pipeline).toHaveLength(1);
-    expect(pipeline[0].argv).toEqual(['grep', '-i', 'error', 'logs.txt']);
-    expect(pipeline[0].redirectOut).toEqual({ file: '/tmp/errors.log', append: false });
-    expect(pipeline[0].redirectErr).toBe('null');
+    const st = stages('grep -i error logs.txt > /tmp/errors.log 2>/dev/null');
+    expect(st).toHaveLength(1);
+    expect(argv(st[0])).toEqual(['grep', '-i', 'error', 'logs.txt']);
+    expect(st[0].redirectOut).toEqual({ file: '/tmp/errors.log', append: false });
+    expect(st[0].redirectErr).toBe('null');
   });
 
   it('parses 2>&1 mid-stage instead of writing a file named &1', () => {
-    const { pipeline } = tokenizeCommandLine('cat missing.txt 2>&1 | wc -l');
-    expect(pipeline).toHaveLength(2);
-    expect(pipeline[0].redirectErr).toBe('stdout');
-    expect(pipeline[1].argv).toEqual(['wc', '-l']);
+    const st = stages('cat missing.txt 2>&1 | wc -l');
+    expect(st).toHaveLength(2);
+    expect(st[0].redirectErr).toBe('stdout');
+    expect(argv(st[1])).toEqual(['wc', '-l']);
   });
 
   it('does not treat a trailing digit in a word as a stderr file descriptor', () => {
-    const { pipeline } = tokenizeCommandLine('echo abc2>out.txt');
-    expect(pipeline[0].argv).toEqual(['echo', 'abc2']);
-    expect(pipeline[0].redirectOut).toEqual({ file: 'out.txt', append: false });
-    expect(pipeline[0].redirectErr).toBeNull();
+    const st = stages('echo abc2>out.txt');
+    expect(argv(st[0])).toEqual(['echo', 'abc2']);
+    expect(st[0].redirectOut).toEqual({ file: 'out.txt', append: false });
+    expect(st[0].redirectErr).toBeNull();
   });
 });
 

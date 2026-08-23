@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildFS, file } from '../src/engine/fs-builder.js';
+import { buildFS, file } from '../packages/engine/vfs/builder.js';
 import { injectFlagsIntoVFS } from '../src/utils/vfs-injector.js';
 
 describe('VFS Builder & Flag Injection', () => {
