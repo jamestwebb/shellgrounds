@@ -15,10 +15,17 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resumeSelection } from '../src/App.jsx';
+import { resumeSelection, homeFor, cwdExists } from '../src/App.jsx';
 import { PACKS } from '../packs/index.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Source with comments removed, for assertions about what the code DOES.
+ * A file that documents a mistake contains the mistake as prose, and a plain
+ * search cannot tell the difference.
+ */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 
 describe('a returning student lands where they stopped', () => {
   const challenges = [
@@ -93,5 +100,51 @@ describe('the resume is actually wired up', () => {
   // dead resume was first noticed at all.
   it('answers a student who redoes a challenge they already own', () => {
     expect(app).toMatch(/Still right/);
+  });
+});
+
+describe('a student always stands somewhere that exists', () => {
+  // '/home/analyst' was the initial cwd and the fallback on both platform
+  // branches, and no pack has ever contained it. Anybody who reached it was in
+  // a directory that is not there: `ls` answered "cannot access '.'", and every
+  // relative path in every brief was wrong.
+  it('never falls back to a directory no pack has', () => {
+    // Comments are stripped first. The file explains this bug at length, and a
+    // naive search finds the explanation and calls it the bug -- which is how
+    // this assertion failed the first time it was written.
+    const code = stripComments(fs.readFileSync(path.join(ROOT, 'src/App.jsx'), 'utf8'));
+    expect(code).not.toMatch(/home\/analyst/);
+    expect(code).not.toMatch(/Users\\\\Analyst/);
+    // And the replacement is actually used on both platform branches.
+    expect((code.match(/setCwd\(homeFor\(/g) || []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('every pack home is a real directory in that pack', () => {
+    for (const pack of Object.values(PACKS)) {
+      for (const platform of pack.manifest.platforms || ['linux']) {
+        const home = homeFor(pack, platform);
+        const vfs = pack.createFs(platform);
+        expect(cwdExists(vfs, home), `${pack.id} ${platform} home ${home}`).toBe(true);
+      }
+    }
+  });
+
+  // Every challenge declares the directory the server replays it from. If the
+  // client puts the student anywhere else, the brief's relative paths are wrong
+  // for them and right for the grader.
+  it('every declared setup.cwd is a real directory', () => {
+    for (const pack of Object.values(PACKS)) {
+      for (const c of pack.challenges) {
+        if (!c.setup?.cwd) continue;
+        const platform = c.platform || pack.manifest.platforms?.[0] || 'linux';
+        const vfs = pack.createFs(platform);
+        expect(cwdExists(vfs, c.setup.cwd), `${pack.id}/${c.id} -> ${c.setup.cwd}`).toBe(true);
+      }
+    }
+  });
+
+  it('the resume puts the student where the challenge expects', () => {
+    const app = fs.readFileSync(path.join(ROOT, 'src/App.jsx'), 'utf8');
+    expect(app).toMatch(/resume\.setup\?\.cwd/);
   });
 });

@@ -54,7 +54,7 @@ export const TEXT_KEYS = ['fg', 'input', 'user', 'path', 'punct', 'success', 'er
 export const TERMINAL_THEMES = {
   green: {
     name: 'Terminal green',
-    note: 'The default. Green on near-black, the way a terminal has looked since 1975.',
+    note: 'Green on near-black, the way a terminal has looked since 1975.',
     bg: '#0a0a09', bar: '#111110', border: '#2b2a27',
     fg: '#d4d4d4', input: '#ffffff', user: '#4ade80', path: '#22d3ee', punct: '#a3a3a3',
     success: '#34d399', error: '#f87171', coach: '#67e8f9', dim: '#a3a3a3', caret: '#34d399'
@@ -62,8 +62,8 @@ export const TERMINAL_THEMES = {
 
   blue: {
     name: 'Deep blue',
-    note: 'White on blue. A coloured background rather than black reduces visual stress for '
-      + 'some readers, and glare for most.',
+    note: 'The default. White on blue: a coloured background rather than black reduces visual '
+      + 'stress for some readers, and glare for most.',
     bg: '#0b2545', bar: '#0a1f3a', border: '#1e3a5f',
     fg: '#e8eef7', input: '#ffffff', user: '#7dd3fc', path: '#fcd34d', punct: '#b3c4dd',
     success: '#6ee7b7', error: '#fca5a5', coach: '#a5d8ff', dim: '#b3c4dd', caret: '#ffffff'
@@ -110,7 +110,12 @@ export const TERMINAL_THEMES = {
   }
 };
 
-export const DEFAULT_THEME_ID = 'green';
+// Deep blue rather than the classic green-on-black. A coloured background is
+// gentler than pure black for most readers and materially better for the ones
+// who get visual stress from maximum-contrast screens, and a default is what
+// the great majority of students will ever see -- the picker exists for the
+// rest. Green is one click away and loses nothing by not being first.
+export const DEFAULT_THEME_ID = 'blue';
 
 const STORAGE_KEY = 'shellgrounds.terminalTheme';
 

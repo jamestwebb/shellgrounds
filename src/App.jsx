@@ -46,6 +46,25 @@ import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
 // student who signed in landed on challenge one -- "Where Am I?" -- however
 // much of the course they had already finished. Nothing looked broken, because
 // the first screen of a course is a perfectly plausible first screen.
+// Where a student stands when a pack opens.
+//
+// The old fallback was '/home/analyst', and no pack has ever had such a
+// directory: the homes that exist are /home/examiner, /home/student and their
+// Windows equivalents. Any path that reached the fallback therefore put the
+// student in a directory that is not there, where `ls` answers "cannot access
+// '.'", `cat notes.txt` cannot find the file, and every relative path in every
+// brief is wrong. The prompt showed the phantom path the whole time.
+export const homeFor = (pack, platform) => {
+  const declared = platform === 'windows'
+    ? pack?.manifest?.windows?.home
+    : pack?.manifest?.linux?.home;
+  return declared || (platform === 'windows' ? 'C:\\Users\\Student' : '/home/student');
+};
+
+/** True when `path` is a directory the given filesystem actually contains. */
+export const cwdExists = (fs, path) =>
+  !!fs && typeof path === 'string' && Object.prototype.hasOwnProperty.call(fs, path);
+
 export const resumeSelection = (challenges, solves) => {
   const linux = challenges.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
   if (linux) return linux;
@@ -85,7 +104,9 @@ export default function App() {
 
   // Terminal & Filesystem State
   const [platform, setPlatform] = useState('linux'); // 'linux' | 'windows'
-  const [cwd, setCwd] = useState('/home/analyst');
+  // Seeded from the default pack rather than from a literal, so the very first
+  // render is already somewhere that exists.
+  const [cwd, setCwd] = useState(() => homeFor(getPack(DEFAULT_PACK_ID), 'linux'));
   const [linuxFs, setLinuxFs] = useState(() => currentPack.createFs('linux'));
   const [windowsFs, setWindowsFs] = useState(() => currentPack.createFs('windows'));
   const [installedPackages, setInstalledPackages] = useState(new Set());
@@ -144,6 +165,16 @@ export default function App() {
     setWindowsFs(injectFlagsIntoVFS(currentPack.createFs('windows'), handle, flagMap, challenges).fs);
   }, [flagMap, currentPack, session?.handle]);
 
+  // A cwd outside the filesystem is a dead end: every relative path fails and
+  // nothing on screen explains why. Rather than leave a student stranded there,
+  // step back to the pack's home. This runs whenever the filesystem or platform
+  // changes, which is every route by which the two could disagree.
+  useEffect(() => {
+    if (!activeFs) return;
+    if (cwdExists(activeFs, cwd)) return;
+    setCwd(homeFor(currentPack, platform));
+  }, [activeFs, currentPack, platform, cwd]);
+
   // Load / Switch Pack
   // Opening a hint tells the server, which records it and prices the penalty.
   // The count used to live only in the browser, so the cost was whatever the
@@ -172,7 +203,7 @@ export default function App() {
     const pack = getPack(newPackId);
     const plat = pack.manifest.platforms?.[0] || 'linux';
     setPlatform(plat);
-    setCwd(plat === 'windows' ? (pack.manifest.windows?.home || 'C:\\Users\\Student') : (pack.manifest.linux?.home || '/home/student'));
+    setCwd(homeFor(pack, plat));
     setLinuxFs(pack.createFs('linux'));
     setWindowsFs(pack.createFs('windows'));
     setActiveActId(1);
@@ -223,6 +254,13 @@ export default function App() {
           if (resume) {
             setSelectedChallengeId(resume.id);
             setActiveActId(resume.act || 1);
+            // Stand where the brief assumes you are standing. Every challenge
+            // declares the directory the server replays it from, and until now
+            // the client ignored that field entirely -- so a brief written
+            // against `Documents/notes.txt` could be read from somewhere the
+            // path does not resolve.
+            const plat = resume.platform || landing.manifest.platforms?.[0] || 'linux';
+            setCwd(resume.setup?.cwd || homeFor(landing, plat));
           }
 
           const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
@@ -302,11 +340,7 @@ export default function App() {
   // Switch Platform (Linux <-> Windows)
   const handleSwitchPlatform = (newPlatform, targetChallengeId = null) => {
     setPlatform(newPlatform);
-    if (newPlatform === 'windows') {
-      setCwd(currentPack.manifest.windows?.home || 'C:\\Users\\Analyst');
-    } else {
-      setCwd(currentPack.manifest.linux?.home || '/home/analyst');
-    }
+    setCwd(homeFor(currentPack, newPlatform));
     if (targetChallengeId) {
       setSelectedChallengeId(targetChallengeId);
     }
