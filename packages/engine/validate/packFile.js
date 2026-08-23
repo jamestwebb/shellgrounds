@@ -110,7 +110,10 @@ export function assertNoCode(value, path = '$', depth = 0) {
     assertNoCode(value[key], `${path}.${key}`, depth + 1);
   }
 
-  if (typeof value.predicate === 'string' && value.predicate === 'js') {
+  // predicates.js reads `predicate || kind`, so a pack could request the js
+  // predicate under the other name and slip past a check that read only one.
+  if ((typeof value.predicate === 'string' && value.predicate === 'js')
+      || (typeof value.kind === 'string' && value.kind === 'js')) {
     throw new PackFormatError(
       "Pack file uses the 'js' predicate. That predicate runs JavaScript and is available only to " +
       'packs shipped with the platform. Use a declarative predicate, or allOf/anyOf to combine ' +

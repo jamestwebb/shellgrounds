@@ -109,7 +109,43 @@ function probeRedirectTargets(stage, cwd, fs, isWindows, user) {
 /**
  * Runs a command string through full tokenization, expansion, pipeline & list execution.
  */
+/**
+ * The single entry point the browser calls, wrapped so it can never throw.
+ *
+ * src/App.jsx calls this from a React event handler and there is no error
+ * boundary anywhere in the app, so an exception here does not surface as an
+ * error — the terminal silently swallows the student's command and they cannot
+ * tell whether they typed something wrong. A malformed glob (`echo [`) and a
+ * malformed sed expression (`sed 's/(/x/'`) both did exactly that.
+ *
+ * A real shell answers a bad expression with a message and a non-zero status,
+ * so that is what an unexpected failure becomes here.
+ */
 export function runPipeline(input, cwd, fs, platform = 'linux', context = {}) {
+  try {
+    return runPipelineInner(input, cwd, fs, platform, context);
+  } catch (err) {
+    const isWin = platform === 'windows';
+    const nl = isWin ? '\r\n' : '\n';
+    const message = isWin
+      ? `The command could not be processed.${nl}`
+      : `bash: ${String(err && err.message ? err.message : err)}${nl}`;
+    console.error('runPipeline failed:', err);
+    return {
+      output: message,
+      stdout: '',
+      stderr: message,
+      status: 2,
+      newCwd: cwd,
+      fs,
+      env: context.env,
+      hasError: true,
+      executedCommand: input
+    };
+  }
+}
+
+function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
   const isWindows = platform === 'windows';
 
   if (!input || !input.trim()) {

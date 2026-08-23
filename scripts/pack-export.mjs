@@ -17,6 +17,20 @@ import { pathToFileURL } from 'node:url';
 import { serializePack } from '../packages/engine/validate/packFile.js';
 import { resolvePackTarget } from '../packages/engine/validate/packSource.js';
 
+// A pack id becomes a filename when no output path is given. It comes from a
+// pack.json that may have been downloaded, and `"id": "../../../../tmp/x"`
+// wrote outside the repository. Ids are identifiers, not paths.
+const SAFE_EXPORT_ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+function assertSafeExportName(id) {
+  if (!SAFE_EXPORT_ID.test(String(id ?? ''))) {
+    throw new Error(
+      `Refusing to export: the pack id ${JSON.stringify(id)} is not a safe filename. `
+      + 'Use letters, numbers, dot, dash or underscore, or pass an explicit output path.'
+    );
+  }
+  return id;
+}
+
 /**
  * @returns {{ outPath: string, file: object, unconvertible: string[], stats: object, warnings: string[] }}
  */
@@ -45,7 +59,9 @@ export async function exportPack(target, outPath = null, options = {}) {
   }
 
   const json = `${JSON.stringify(file, null, 2)}\n`;
-  const finalPath = resolve(outPath || `${file.id}.pack.json`);
+  // Only the id needs guarding: an explicit output path is the operator's own
+  // choice, but a downloaded pack's id must not decide where we write.
+  const finalPath = resolve(outPath || `${assertSafeExportName(file.id)}.pack.json`);
   if (options.write !== false) {
     await mkdir(dirname(finalPath), { recursive: true });
     await writeFile(finalPath, json, 'utf8');

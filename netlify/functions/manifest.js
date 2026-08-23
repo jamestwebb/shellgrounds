@@ -11,7 +11,7 @@
 // command-proof challenges, which the server replays and cannot be faked.
 
 import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
-import { getPack, PACKS, DEFAULT_PACK_ID } from '../../packs/index.js';
+import { getPack, hasPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -34,18 +34,25 @@ export default async (req) => {
 
   const handle = verified.handle;
   const requested = new URL(req.url).searchParams.get('packId');
-  const packId = PACKS[requested] ? requested : (verified.packId || DEFAULT_PACK_ID);
+  const packId = hasPack(requested) ? requested : (verified.packId || DEFAULT_PACK_ID);
   const pack = getPack(packId);
 
-  const flags = {};
-  for (const c of pack.challenges) {
-    if (c.success?.kind === 'flag') {
-      flags[c.id] = c.success.staticFlag
-        ? c.success.staticFlag
-        : generateUserFlag(sessionSecret, handle, c.id, pack.id);
+  // This was the one handler with no try/catch, so anything unexpected became
+  // an unhandled rejection rather than a 500 the student could act on.
+  try {
+    const flags = {};
+    for (const c of pack.challenges) {
+      if (c.success?.kind === 'flag') {
+        flags[c.id] = c.success.staticFlag
+          ? c.success.staticFlag
+          : generateUserFlag(sessionSecret, handle, c.id, pack.id);
+      }
     }
-  }
 
-  return json(200, { success: true, handle, packId: pack.id, flags },
-    { 'Cache-Control': 'private, no-cache' });
+    return json(200, { success: true, handle, packId: pack.id, flags },
+      { 'Cache-Control': 'private, no-cache' });
+  } catch (err) {
+    console.error('Manifest error:', err);
+    return json(500, { error: 'Could not load this module. Try again in a moment.' });
+  }
 };

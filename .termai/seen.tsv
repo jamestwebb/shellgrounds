@@ -55,3 +55,7 @@
 1787445500	packages/engine/commands/registry.js
 1787445544	packages/engine/vfs/builder.js
 1787445687	tests/fixes.test.js
+1787447089	tests/tmp-verify.test.js
+1787447089	netlify/functions/utils/admin.js
+1787447275	scripts/pack-export.mjs
+1787447291	packages/engine/validate/packFile.js

@@ -4,6 +4,7 @@
 import { findVfsKey, resolvePath, normalizePath } from '../vfs/path.js';
 import { stat, readFile } from '../vfs/ops.js';
 import { md5, sha256Sync } from '../crypto-utils.js';
+import { compileSafe, testSafe } from './safe-regex.js';
 
 /**
  * Evaluates a declarative predicate against an execution result state.
@@ -58,8 +59,8 @@ export function evaluatePredicate(predicateConfig, context = {}) {
       const resolved = resolvePath(cwd, predicateConfig.path, isWindows);
       const res = readFile(fs, resolved, isWindows, { user });
       if (!res.ok) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(res.content);
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, res.content);
     }
 
     case 'fileEquals': {
@@ -94,15 +95,15 @@ export function evaluatePredicate(predicateConfig, context = {}) {
 
     case 'commandMatches': {
       if (!commandText || !predicateConfig.pattern) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(commandText.trim());
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, commandText.trim());
     }
 
     case 'outputMatches': {
       const textToTest = stdout || output || '';
       if (!predicateConfig.pattern) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(textToTest);
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, textToTest);
     }
 
     // Output predicates. A challenge that only checks the typed command grades
@@ -162,8 +163,12 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     }
 
     case 'js': {
+      // Two independent gates, deliberately. The pack loader refuses this
+      // predicate in a downloaded pack file, and this refuses it again unless
+      // the caller positively declared the pack trusted. Either alone would be
+      // a single point of failure for arbitrary code in a student's browser.
       if (!trusted) {
-        console.warn('Untrusted pack attempted to execute JS predicate; rejected.');
+        console.warn('Untrusted pack attempted to execute a JS predicate; rejected.');
         return false;
       }
       if (typeof predicateConfig.fn === 'function') {

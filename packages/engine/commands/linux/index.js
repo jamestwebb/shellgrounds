@@ -1250,7 +1250,20 @@ export const sedCmd = {
         const isGlobal = sedFlags.includes('g');
         const isIgnoreCase = sedFlags.includes('i');
         const isPrint = sedFlags.includes('p');
-        const regex = new RegExp(pattern, `${isGlobal ? 'g' : ''}${isIgnoreCase ? 'i' : ''}`);
+        // A student's expression can be malformed — `sed 's/(/x/'` is a normal
+        // typo. Real sed answers with a message and exits 1; this used to throw
+        // an uncaught SyntaxError out of the engine, and the terminal simply
+        // ate the command with no output at all.
+        let regex;
+        try {
+          regex = new RegExp(pattern, `${isGlobal ? 'g' : ''}${isIgnoreCase ? 'i' : ''}`);
+        } catch {
+          return {
+            stdout: '',
+            stderr: `sed: -e expression #1, char ${script.length}: unterminated or invalid regex\n`,
+            status: 1
+          };
+        }
 
         for (const line of lines) {
           const matched = regex.test(line);

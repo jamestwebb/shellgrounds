@@ -3,9 +3,9 @@
 
 import { checkSFW } from '../../packages/engine/sfw-filter.js';
 import { createSessionToken } from '../../packages/engine/crypto-utils.js';
-import { DEFAULT_PACK_ID, PACKS } from '../../packs/index.js';
+import { DEFAULT_PACK_ID, hasPack } from '../../packs/index.js';
 import { createPlayer } from './utils/store.js';
-import { isAdminHandle } from './utils/admin.js';
+import { isAdminHandle, setupCodeMatches, grantInstructor } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -47,30 +47,30 @@ export default async (req) => {
 
     const cleanHandle = sfw.handle;
 
-    // An instructor handle needs the setup code as well as the class password.
+    // Anyone may offer the setup code, and offering a correct one is what makes
+    // an account an instructor. Being named in ADMIN_HANDLES is checked at
+    // request time and is never sufficient on its own.
     //
-    // Every student holds the class password, and registration is first-come,
-    // so without this any student could claim the handle named in
-    // ADMIN_HANDLES before the teacher did and walk off with the whole
-    // gradebook. Demonstrated, not theorised. The name filter does not help:
-    // it blocks the literal word "admin", not the handle actually configured.
-    if (isAdminHandle(cleanHandle)) {
-      const expectedSetup = process.env.INSTRUCTOR_SETUP_CODE;
-      if (!expectedSetup) {
-        console.error('An instructor handle was claimed but INSTRUCTOR_SETUP_CODE is not set');
-        return json(403, {
-          error: 'This handle is reserved for an instructor. The site owner must set '
+    // Checking only the env list left a window: with ADMIN_HANDLES unset — which
+    // .env.example documents as supported — a student could register the handle
+    // the teacher intended to use, be asked for nothing, and become an
+    // instructor the instant the teacher configured the variable. Demonstrated
+    // end to end, not theorised.
+    const offeredSetup = setupCode !== undefined && String(setupCode).trim() !== '';
+    const setupOk = offeredSetup && setupCodeMatches(setupCode);
+    if (offeredSetup && !setupOk) {
+      return json(403, { error: 'That instructor setup code did not match.' });
+    }
+    if (isAdminHandle(cleanHandle) && !setupOk) {
+      return json(403, {
+        error: process.env.INSTRUCTOR_SETUP_CODE
+          ? 'This handle is reserved for an instructor. Enter the setup code to claim it.'
+          : 'This handle is reserved for an instructor. The site owner must set '
             + 'INSTRUCTOR_SETUP_CODE in the site settings before it can be claimed.'
-        });
-      }
-      if (!setupCode || String(setupCode).trim() !== expectedSetup.trim()) {
-        return json(403, {
-          error: 'This handle is reserved for an instructor, and the setup code did not match.'
-        });
-      }
+      });
     }
 
-    const activePackId = PACKS[packId] ? packId : DEFAULT_PACK_ID;
+    const activePackId = hasPack(packId) ? packId : DEFAULT_PACK_ID;
 
     const { created } = await createPlayer(cleanHandle);
     if (!created) {
@@ -80,13 +80,17 @@ export default async (req) => {
       });
     }
 
+    // Record the proof on the account, so a later config change can neither
+    // grant nor be needed to grant instructor rights.
+    if (setupOk) await grantInstructor(cleanHandle);
+
     const token = createSessionToken(sessionSecret, cleanHandle, activePackId);
 
     return json(200, {
       success: true,
       handle: cleanHandle,
       packId: activePackId,
-      isAdmin: isAdminHandle(cleanHandle),
+      isAdmin: setupOk && isAdminHandle(cleanHandle),
       token,
       message: 'You are in. Good luck.'
     }, { 'Cache-Control': 'no-store' });

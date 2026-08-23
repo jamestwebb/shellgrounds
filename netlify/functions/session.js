@@ -4,7 +4,7 @@
 import { verifySessionToken, createSessionToken } from '../../packages/engine/crypto-utils.js';
 import { DEFAULT_PACK_ID, PACKS } from '../../packs/index.js';
 import { getPlayer, getSolves, getHintsUsed, normalizeSolve, splitSolveKey } from './utils/store.js';
-import { isAdminHandle } from './utils/admin.js';
+import { resolveIsInstructor } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -32,7 +32,7 @@ export default async (req) => {
   // server resolves the pack of each submission from its challenge id, so a
   // student may move between modules freely.
   const packId = verified.packId || DEFAULT_PACK_ID;
-  const isAdmin = isAdminHandle(handle);
+  const isAdmin = await resolveIsInstructor(handle);
 
   try {
     const player = await getPlayer(handle);
