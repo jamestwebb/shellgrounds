@@ -65,20 +65,22 @@ export default async (req) => {
 
     // The target scales with the roster, so the picture takes a comparable
     // share of the course whether the class is one person or two hundred.
-    const floorFraction = await getRevealProgress(packId);
+    const { fraction: floorFraction, grid: pinnedGrid } = await getRevealProgress(packId);
     const state = buildReveal(solves, packId, {
       viewer: verified.handle,
       roster: players.length,
       challenges: pack.challenges.length,
-      floorFraction
+      floorFraction,
+      pinnedGrid
     });
 
-    // Remember how far it got, so a late intake raising the target can never
-    // make the class watch its own picture re-cover. Only ever raised, and only
-    // when it actually moved, so this is a rare write rather than one per read.
-    if (state.fraction > floorFraction + 0.0005) {
-      raiseRevealProgress(packId, state.fraction).catch(err =>
-        console.error('Could not record reveal progress:', err));
+    // Remember how far it got and which grid it is drawn on. The fraction stops
+    // a late intake shrinking the picture; the grid stops a finer one reshuffling
+    // which squares are open. Written only when something changed, so this is a
+    // rare write rather than one per read.
+    if (state.fraction > floorFraction + 0.0005 || !pinnedGrid) {
+      raiseRevealProgress(packId, state.fraction, { columns: state.columns, rows: state.rows })
+        .catch(err => console.error('Could not record reveal progress:', err));
     }
 
     // Titles, so the feed can say what somebody found rather than an id.

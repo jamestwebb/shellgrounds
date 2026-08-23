@@ -9,7 +9,6 @@
 import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
 import { runPipeline } from '../../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../../packages/engine/validate/predicates.js';
-import { ERROR_MARKERS } from '../../packages/engine/constants.js';
 import { stat } from '../../packages/engine/vfs/ops.js';
 import { getPack, getPackForChallenge, PACKS } from '../../packs/index.js';
 import { isPackEnabled } from './utils/enabled.js';
@@ -103,7 +102,17 @@ function replayCommand(challenge, commandText, sessionSecret, handle, clientCwd,
       || (isWindows ? 'Student' : 'student')
   });
 
-  const ok = !res.hasError && (!ERROR_MARKERS.test(res.output || '') || commandText.includes('||'));
+  // Exit status decides, and only exit status. This used to ALSO reject any
+  // output matching ERROR_MARKERS, which is a list of English error phrases —
+  // so a student who correctly ran `grep "Permission denied" auth.log`, or any
+  // command whose legitimate output quoted one of those phrases, was marked
+  // wrong for succeeding. The `|| commandText.includes('||')` beside it was a
+  // patch on that same false positive.
+  //
+  // Nothing is lost: runPipeline sets hasError from the exit status, and every
+  // real failure — unknown command, not simulated, wrong platform, denied —
+  // exits non-zero. Grepping output for phrases only ever added false alarms.
+  const ok = !res.hasError;
   return { ok, res, startCwd: cwd, isWindows };
 }
 

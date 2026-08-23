@@ -352,3 +352,68 @@ describe('reading a big class does not run one student at a time', () => {
     }
   });
 });
+
+// Findings from the third-party audit, pinned so they cannot come back.
+// Each of these passed a full test suite before it was reported.
+describe('audit regressions', () => {
+  it('keeps the SAME squares open when the class outgrows the grid (F4)', async () => {
+    const { buildReveal, revealGrid, revealTarget } = await import('../packages/engine/reveal.js');
+    const solves = Array.from({ length: 40 }, (_, i) => solve(`s${i % 4}`, `c${i}`, i));
+
+    const small = buildReveal(solves, 'p', { roster: 4, challenges: 20 });
+    const grown = revealGrid(revealTarget(40, 20));
+    expect(grown.tiles, 'the class really does outgrow the first grid')
+      .toBeGreaterThan(small.total);
+
+    // Unpinned, the picture is redrawn on a different permutation and squares
+    // a student watched open would shut again.
+    const unpinned = buildReveal(solves, 'p', {
+      roster: 40, challenges: 20, floorFraction: small.fraction
+    });
+    expect(unpinned.total, 'the hazard is real').not.toBe(small.total);
+
+    // Pinned, the grid and every open square stay exactly as they were.
+    const pinned = buildReveal(solves, 'p', {
+      roster: 40, challenges: 20, floorFraction: small.fraction,
+      pinnedGrid: { columns: small.columns, rows: small.rows }
+    });
+    expect(pinned.total).toBe(small.total);
+    expect(pinned.tiles.map(t => t.index)).toEqual(small.tiles.map(t => t.index));
+  });
+
+  it('ignores a pinned grid that is not one of the real ones', async () => {
+    const { buildReveal } = await import('../packages/engine/reveal.js');
+    const r = buildReveal([solve('a', 'c1', 1)], 'p', {
+      roster: 4, challenges: 20, pinnedGrid: { columns: 7, rows: 3 }
+    });
+    expect(r.columns * r.rows).toBe(r.total);
+    expect(r.total).toBeGreaterThan(0);
+  });
+
+  it('never lets the shuffle seed stick at zero (F8)', async () => {
+    const { tileOrder } = await import('../packages/engine/reveal.js');
+    // Whatever the seed, the order must be a permutation and must not be a
+    // plain rotation, which is what a stuck PRNG produces.
+    for (const seed of ['', ' ', 'linux-fundamentals', 'a']) {
+      const order = tileOrder(seed, 96);
+      expect(new Set(order).size, seed).toBe(96);
+      const rotation = order.every((v, i) => v === (i + 1) % 96);
+      expect(rotation, `seed ${JSON.stringify(seed)} degenerated to a rotation`).toBe(false);
+    }
+  });
+
+  it('stops the whole batch when one read fails (F7)', async () => {
+    const { mapLimit } = await import('../netlify/functions/utils/store.js');
+    let calls = 0;
+    await expect(mapLimit(Array.from({ length: 200 }, (_, i) => i), 24, async (n) => {
+      calls++;
+      if (n === 5) throw new Error('simulated blob timeout');
+      await new Promise(r => setTimeout(r, 1));
+      return n;
+    })).rejects.toThrow('simulated blob timeout');
+
+    await new Promise(r => setTimeout(r, 200));
+    expect(calls, 'workers kept calling the API after the batch had already failed')
+      .toBeLessThan(60);
+  });
+});

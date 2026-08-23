@@ -60,7 +60,11 @@ const csvCell = (v) => {
   // A leading =, +, - or @ makes a spreadsheet treat the cell as a formula.
   // Handles are restricted to [A-Za-z0-9_-] so this cannot trigger today, but
   // the export also carries free text, and the guard costs nothing.
-  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  // Leading whitespace is ignored by the spreadsheet but not by a naive
+  // check, so " =CMD()" would slip through and then be treated as a formula.
+  // A handle cannot contain a space today; the free-text columns are the
+  // reason this guard is here at all, and they are not so restricted.
+  const safe = /^[ \t\r\n]*[=+\-@]/.test(s) ? `'${s}` : s;
   return `"${safe.replace(/"/g, '""')}"`;
 };
 

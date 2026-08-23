@@ -203,3 +203,84 @@ describe('the store name survives the rename', () => {
     expect(storeName()).toBe('shellgrounds-fall2026');
   });
 });
+
+// Findings from the third-party audit, pinned so they cannot come back.
+describe('audit regressions: grading and pattern safety', () => {
+  it('does not mark a correct answer wrong for quoting an error phrase (F3)', async () => {
+    const { runPipeline } = await import('../packages/engine/shell/exec.js');
+    const { createLinuxFundamentalsFilesystem } =
+      await import('../packs/linux-fundamentals/fs.linux.js');
+    const fs = createLinuxFundamentalsFilesystem();
+
+    // A command that SUCCEEDS but whose output contains an error phrase. The
+    // grader used to reject on the phrase; it now reads the exit status.
+    const good = runPipeline('echo "Permission denied"', '/home/student', fs, 'linux', {});
+    expect(good.hasError, 'echo succeeded, so nothing failed').toBe(false);
+    expect(good.output).toContain('Permission denied');
+
+    // And a command that really fails is still caught.
+    for (const bad of ['ls /nope', 'frobnicate', 'ssh host']) {
+      expect(runPipeline(bad, '/home/student', fs, 'linux', {}).hasError, bad).toBe(true);
+    }
+  });
+
+  it('grades on exit status alone, with no phrase matching left in the path (F3)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../netlify/functions/submit-flag.js', import.meta.url), 'utf8');
+    // The comment explaining WHY it was removed is welcome; the code is not.
+    expect(src, 'the grader must not import the phrase list').not.toMatch(/^import .*ERROR_MARKERS/m);
+    expect(src, 'the grader must not grep output for English error phrases')
+      .not.toContain('ERROR_MARKERS.test');
+  });
+
+  it('refuses a quantifier anywhere inside a quantified group (F2)', async () => {
+    const { assertSafePattern } = await import('../packages/engine/validate/safe-regex.js');
+    // All four of these were accepted before, and (a+a)+ costs two seconds
+    // against forty characters -- exponentially more against fifty.
+    for (const pattern of ['(a+)+', '(a+a)+', '(a+[a-z])+', '([a-z]+x)+', '(\\d+\\d)+']) {
+      expect(() => assertSafePattern(pattern), pattern).toThrow();
+    }
+  });
+
+  it('still accepts the patterns a real pack is written with (F2)', async () => {
+    const { assertSafePattern } = await import('../packages/engine/validate/safe-regex.js');
+    for (const pattern of ['^grep -c ERROR', '^ls( -[la]+)?$', '\\d{4}-\\d{2}-\\d{2}',
+                           '(foo|bar)+', '^cat [a-z.]+$', '^sudo\\b']) {
+      expect(() => assertSafePattern(pattern), pattern).not.toThrow();
+    }
+  });
+
+  it('times a pattern as well as reading it, because the check is a heuristic (F2)', async () => {
+    const { probePattern, PROBE_BUDGET_MS } = await import('../packages/engine/validate/safe-regex.js');
+    const slow = probePattern(new RegExp('^(a+a)+$'));
+    expect(slow.ok, 'catastrophic backtracking must be measured, not only guessed at').toBe(false);
+    expect(slow.worstMs).toBeGreaterThan(PROBE_BUDGET_MS);
+
+    for (const ok of ['^grep -c ERROR', '^[a-z]+$', '^\\d{4}-\\d{2}$']) {
+      expect(probePattern(new RegExp(ok)).ok, ok).toBe(true);
+    }
+  });
+
+  it('refuses to write at all when a swap cannot be made safe (F1)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../netlify/functions/utils/store.js', import.meta.url), 'utf8');
+    // The old fallback returned etag:null and the callers then wrote with no
+    // condition, silently becoming last-write-wins.
+    expect(src).not.toContain("return { data: await s.get(key, { type: 'json' }), etag: null };");
+    expect(src).toContain('getWithMetadata');
+  });
+
+  it('escapes a formula even behind leading whitespace (F6)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../netlify/functions/admin-overview.js', import.meta.url), 'utf8');
+    const match = src.match(/const safe = (\/[^\/]+\/)\.test/);
+    expect(match, 'csvCell should still guard the cell').toBeTruthy();
+    const guard = new RegExp(match[1].slice(1, -1));
+    for (const cell of ['=CMD()', ' =CMD()', '\t=CMD()', '  +1+1', '@SUM(A1)']) {
+      expect(guard.test(cell), JSON.stringify(cell)).toBe(true);
+    }
+    for (const cell of ['ada_1', 'Night Shift', '2026-08-23']) {
+      expect(guard.test(cell), JSON.stringify(cell)).toBe(false);
+    }
+  });
+});
