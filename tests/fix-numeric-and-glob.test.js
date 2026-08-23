@@ -1,0 +1,213 @@
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
+// Regression suite for two engine defects:
+//   1. Numeric short options (head -3, tail -2, ls -1) were parsed as filenames.
+//   2. An unmatched '[' made globToRegex throw an uncaught SyntaxError.
+
+import { describe, it, expect } from 'vitest';
+import { runPipeline } from '../packages/engine/shell/exec.js';
+import { buildFS, file } from '../packages/engine/vfs/builder.js';
+import { parseCommandArgs } from '../packages/engine/commands/registry.js';
+import { globToRegex, expandGlob } from '../packages/engine/shell/expand.js';
+
+function createTestFs() {
+  return buildFS({
+    home: '/home/student',
+    isWindows: false,
+    tree: {
+      'home/student': {
+        'data.csv': file('id,name\n1,Alice\n2,Bob\n3,Cara\n4,Dan\n5,Eve\n'),
+        'b.txt': file('cherry\napple\nbanana\n'),
+        'notes.txt': file('first\nsecond\n'),
+        'sub': {
+          'deep.txt': file('deep\n')
+        }
+      }
+    }
+  }).fs;
+}
+
+function run(cmd, cwd = '/home/student') {
+  return runPipeline(cmd, cwd, createTestFs(), 'linux', {});
+}
+
+const HEAD_FLAGS = { n: { type: 'string', status: 'implemented', long: 'lines' } };
+const LS_FLAGS = { l: { type: 'bool', status: 'implemented' }, 1: { type: 'bool', status: 'implemented' } };
+
+describe('Defect 1: numeric short options are counts, not filenames', () => {
+  it('parses -NUM into the line-count flag instead of an operand', () => {
+    const res = parseCommandArgs(['-3', 'data.csv'], HEAD_FLAGS, false);
+    expect(res.error).toBeUndefined();
+    expect(res.flags.n).toBe('3');
+    expect(res.operands).toEqual(['data.csv']);
+  });
+
+  it('still parses a digit that the command declares as a real flag (ls -1)', () => {
+    const res = parseCommandArgs(['-1', 'sub'], LS_FLAGS, false);
+    expect(res.flags['1']).toBe(true);
+    expect(res.operands).toEqual(['sub']);
+  });
+
+  it('leaves -NUM as an operand for a command with no line count (kill -9)', () => {
+    const res = parseCommandArgs(['-9', '1234'], {}, false);
+    expect(res.error).toBeUndefined();
+    expect(res.operands).toEqual(['-9', '1234']);
+  });
+
+  it('head -3 equals head -n 3', () => {
+    const obsolete = run('head -3 data.csv');
+    const modern = run('head -n 3 data.csv');
+
+    expect(obsolete.status).toBe(0);
+    expect(obsolete.hasError).toBe(false);
+    expect(obsolete.stderr).toBe('');
+    expect(obsolete.stdout).toBe('id,name\n1,Alice\n2,Bob\n');
+    expect(obsolete.stdout).toBe(modern.stdout);
+    expect(obsolete.status).toBe(modern.status);
+  });
+
+  it('tail -2 equals tail -n 2', () => {
+    const obsolete = run('tail -2 data.csv');
+    const modern = run('tail -n 2 data.csv');
+
+    expect(obsolete.status).toBe(0);
+    expect(obsolete.hasError).toBe(false);
+    expect(obsolete.stderr).toBe('');
+    expect(obsolete.stdout).toBe('4,Dan\n5,Eve\n');
+    expect(obsolete.stdout).toBe(modern.stdout);
+  });
+
+  it('never reports the count as a missing file', () => {
+    for (const cmd of ['head -3 data.csv', 'tail -2 data.csv', 'head -5 data.csv']) {
+      const res = run(cmd);
+      expect(res.output).not.toMatch(/cannot open/);
+      expect(res.output).not.toMatch(/-\d/);
+    }
+  });
+
+  it('sort file | head -1 prints the first sorted line', () => {
+    const res = run('sort b.txt | head -1');
+    expect(res.status).toBe(0);
+    expect(res.hasError).toBe(false);
+    expect(res.stdout).toBe('apple\n');
+  });
+
+  it('prints no ==> header for a single file operand', () => {
+    const res = run('head -3 data.csv');
+    expect(res.output).not.toContain('==>');
+  });
+
+  it('prints the ==> header for two file operands', () => {
+    const res = run('head -2 data.csv notes.txt');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('==> data.csv <==');
+    expect(res.stdout).toContain('==> notes.txt <==');
+  });
+
+  it('ls -1 lists one entry per line instead of failing', () => {
+    const res = run('ls -1');
+    expect(res.status).toBe(0);
+    expect(res.hasError).toBe(false);
+    expect(res.stdout.trim().split('\n')).toEqual(['b.txt', 'data.csv', 'notes.txt', 'sub']);
+  });
+
+  it('accepts the -NUM form used by the act2-head, l1-head and l1-tail challenges', () => {
+    const cases = [
+      ['head -5 data.csv', 5],
+      ['head -3 data.csv', 3],
+      ['tail -2 data.csv', 2]
+    ];
+    for (const [cmd, count] of cases) {
+      const res = run(cmd);
+      expect(res.hasError).toBe(false);
+      expect(res.stdout.split('\n').filter(Boolean)).toHaveLength(count);
+    }
+  });
+});
+
+describe('Defect 2: a malformed glob is a literal, never a thrown regex', () => {
+  it('echo [ prints a literal bracket', () => {
+    const res = run('echo [');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toBe('[\n');
+  });
+
+  it('echo ] prints a literal bracket', () => {
+    const res = run('echo ]');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toBe(']\n');
+  });
+
+  it('ls [abc looks for a file named [abc and reports it missing', () => {
+    const res = run('ls [abc');
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toContain('[abc');
+    expect(res.stderr).toMatch(/No such file or directory/);
+  });
+
+  it('does not throw for echo [a- or echo *[', () => {
+    expect(() => run('echo [a-')).not.toThrow();
+    expect(() => run('echo *[')).not.toThrow();
+    expect(run('echo [a-').stdout).toBe('[a-\n');
+    expect(run('echo *[').stdout).toBe('*[\n');
+  });
+
+  it('does not throw for the [ builtin', () => {
+    expect(() => run('[ -f data.csv ]')).not.toThrow();
+  });
+
+  it('still expands a well-formed character class', () => {
+    const res = run('ls [bd]*');
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain('b.txt');
+    expect(res.stdout).toContain('data.csv');
+    expect(res.stdout).not.toContain('notes.txt');
+  });
+
+  it('treats a leading ! in a class as negation, as the shell does', () => {
+    const regex = globToRegex('[!b]*.txt');
+    expect(regex.test('notes.txt')).toBe(true);
+    expect(regex.test('b.txt')).toBe(false);
+  });
+
+  it('expandGlob returns the pattern untouched when a class never closes', () => {
+    const fs = createTestFs();
+    expect(expandGlob('[abc', '/home/student', fs, false)).toEqual(['[abc']);
+    expect(expandGlob('[', '/home/student', fs, false)).toEqual(['[']);
+  });
+
+  it('globToRegex never throws for malformed patterns (fuzz list)', () => {
+    const malformed = [
+      '[', ']', '[]', '[[', ']]', '[a', '[abc', '[a-', '[-a', '[z-a]', '[a-b-c',
+      '*[', '[*', '?[', '[?', '[!', '[!]', '[^', '[^]', '[\\', '\\[', '[a\\]',
+      '[[]]', '[[:alpha:]', '[[:alpha:]]', 'a[b', 'a]b', '**[', '{[}', '([)',
+      '$[', '+[', '|[', '(', ')', '{', '}', '+', '|', '^', '$', '.', '\\',
+      'a{1,2}[', '[0-9', '[0-9]', '[]]', '[]a]', '[!]]', '((((', '[[[[',
+      '', '*', '?', '***', '?*?', 'file[1', 'file]1', 'f[i]l[e', '[a-z',
+      '\\\\[', '[/]', '[a/b', '[\u0000]', '[😀', '[--]', '[+-*]'
+    ];
+
+    for (const pattern of malformed) {
+      let regex;
+      expect(() => { regex = globToRegex(pattern); }, `pattern ${JSON.stringify(pattern)} threw`).not.toThrow();
+      expect(regex).toBeInstanceOf(RegExp);
+      // The compiled regex must also be safe to run.
+      expect(() => regex.test('anything')).not.toThrow();
+    }
+  });
+
+  // A pattern whose class never closes has no glob meaning left, so it can only
+  // match its own text. ([z-a] closes, but is an impossible range, and degrades
+  // to a literal the same way.)
+  it('a malformed pattern matches itself literally', () => {
+    for (const pattern of ['[', '[abc', '[a-', '[z-a]', 'file[1']) {
+      expect(globToRegex(pattern).test(pattern)).toBe(true);
+    }
+  });
+
+  it('expandGlob never throws for any malformed pattern', () => {
+    const fs = createTestFs();
+    for (const pattern of ['[', '[abc', '*[', '[a-', 'sub/[', '[z-a]', 'sub/[!']) {
+      expect(() => expandGlob(pattern, '/home/student', fs, false)).not.toThrow();
+    }
+  });
+});

@@ -1,22 +1,25 @@
 {
   "id": "forensics-cli-101",
-  "name": "Forensics CLI 101",
+  "name": "Forensics CLI 101: The Aurora Case",
   "version": "1.0.0",
-  "platforms": ["linux", "windows"],
+  "platforms": [
+    "linux",
+    "windows"
+  ],
   "linux": {
-    "home": "/home/analyst",
-    "user": "analyst",
-    "host": "warren",
+    "home": "/home/examiner",
+    "user": "examiner",
+    "host": "fieldlab",
     "shell": "bash"
   },
   "windows": {
-    "home": "C:\\Users\\Analyst",
-    "user": "Analyst",
+    "home": "C:\\Users\\Examiner",
+    "user": "Examiner",
     "shell": "cmd"
   },
   "theme": {
     "accent": "#10b981",
-    "titleBar": "WARREN TTY1",
+    "titleBar": "FIELDLAB TTY1",
     "sidebarTone": "emerald"
   },
   "messages": {
@@ -50,8 +53,8 @@
   "acts": [
     {
       "id": 1,
-      "name": "Act I: First Steps",
-      "tagline": "Basic navigation, paths, prompt, and directory structure",
+      "name": "Act I: First on Scene",
+      "tagline": "Get your bearings on the bench: paths, prompt, and what is really in a directory",
       "icon": "🧭",
       "glyph": "─·─",
       "unlockThreshold": 0.0
@@ -59,22 +62,22 @@
     {
       "id": 2,
       "name": "Act II: Reading the Evidence",
-      "tagline": "Inspecting files, headers, and forensic checksums",
+      "tagline": "Open the exhibits: file contents, true file types, and forensic checksums",
       "icon": "📜",
       "glyph": "─··─",
       "unlockThreshold": 0.8
     },
     {
       "id": 3,
-      "name": "Act III: Search & Discovery",
-      "tagline": "Pattern search, find, manual pages, and the WSL /mnt/c bridge",
+      "name": "Act III: Following the Trail",
+      "tagline": "Search, find, manual pages, and the WSL bridge to the seized laptop",
       "icon": "🔎",
       "glyph": "─···─",
       "unlockThreshold": 0.8
     },
     {
       "id": 4,
-      "name": "Act IV: The Plumbing",
+      "name": "Act IV: The Pipeline",
       "tagline": "Pipes, redirection, filters, and multi-stage analysis",
       "icon": "🔧",
       "glyph": "─[|||]─",
@@ -82,15 +85,15 @@
     },
     {
       "id": 5,
-      "name": "Act V: The Capstone",
-      "tagline": "Multi-step investigation: partition offsets and evidence carving",
+      "name": "Act V: Closing the Case",
+      "tagline": "Read the partition table, carry the offset, carve the container",
       "icon": "🏁",
       "glyph": "═★═",
       "unlockThreshold": 0.8
     },
     {
       "id": 6,
-      "name": "Topside (Windows Quest)",
+      "name": "Act VI: The Seized Laptop (Windows)",
       "tagline": "Windows CMD parity: dir /a, type, findstr, attrib, and certutil",
       "icon": "🪟",
       "glyph": "[ C:\\>_ ]",
@@ -100,17 +103,17 @@
   ],
   "badges": [
     {
-      "id": "badge-groundbreaker",
-      "name": "Groundbreaker",
-      "description": "Completed Act I and found your bearings in the terminal.",
-      "icon": "⛏️",
+      "id": "badge-first-on-scene",
+      "name": "First on Scene",
+      "description": "Completed Act I and found your bearings on the examination bench.",
+      "icon": "🧭",
       "color": "from-emerald-500 to-green-600",
       "act": 1
     },
     {
       "id": "badge-signal",
       "name": "Signal in the Noise",
-      "description": "Excavated hidden evidence using cryptographic hashes and file headers.",
+      "description": "Pulled hidden evidence out of binaries, headers, and checksums.",
       "icon": "🔍",
       "color": "from-cyan-500 to-blue-600",
       "act": 2
@@ -124,26 +127,26 @@
       "act": 3
     },
     {
-      "id": "badge-plumber",
-      "name": "Master Plumber",
-      "description": "Constructed multi-stage data pipelines and redirected standard streams.",
+      "id": "badge-pipeline-examiner",
+      "name": "Pipeline Examiner",
+      "description": "Built multi-stage data pipelines and redirected standard streams.",
       "icon": "🚰",
       "color": "from-amber-500 to-yellow-600",
       "act": 4
     },
     {
-      "id": "badge-out-of-warren",
-      "name": "Gauntlet Champion",
-      "description": "Solved the Capstone investigation and recovered the master evidence.",
+      "id": "badge-case-closed",
+      "name": "Case Closed",
+      "description": "Carved the encrypted container and closed Case 1042.",
       "icon": "🏆",
       "color": "from-yellow-400 to-amber-500",
       "special": true,
       "act": 5
     },
     {
-      "id": "badge-topsider",
-      "name": "Topsider",
-      "description": "Explored the Windows CMD environment and recovered Topside artifacts.",
+      "id": "badge-dual-booter",
+      "name": "Dual Booter",
+      "description": "Worked the seized laptop from the Windows command line as well as from Linux.",
       "icon": "🪟",
       "color": "from-sky-500 to-indigo-600",
       "act": 6

@@ -1,11 +1,12 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Linux Command Implementations with Full Simulation Fidelity
 
 import { resolvePath, findVfsKey, dirname, basename } from '../../vfs/path.js';
 import {
-  stat, readFile, writeFile, mkdir, rmdir, unlink, chmod, chown, copyFile, moveFile, touch, formatMode
+  stat, readFile, writeFile, mkdir, rmdir, unlink, chmod, chown, copyFile, moveFile, touch, formatMode, hasPermission
 } from '../../vfs/ops.js';
 import { md5, sha256Sync } from '../../crypto-utils.js';
+import { parseCommandArgs } from '../registry.js';
 
 // Helper: read file or stdin with multi-file support
 export function readInputs(operands, cwd, fs, stdin = '', user = 'student') {
@@ -26,6 +27,115 @@ export function readInputs(operands, cwd, fs, stdin = '', user = 'student') {
   });
 }
 
+/**
+ * GNU tools let the LAST of two opposing options win (`head -q -v` prints
+ * headers, `echo -e -E` does not interpret escapes). The parsed flags object
+ * has no ordering, so this rescans argv. `map` maps a short letter or a long
+ * name to the token this function should return.
+ */
+export function lastOptionWins(argv, map) {
+  let winner = null;
+  for (const arg of argv.slice(1)) {
+    if (arg === '--') break;
+    if (arg.startsWith('--') && arg.length > 2) {
+      const name = arg.slice(2).split('=')[0];
+      if (map[name]) winner = map[name];
+      continue;
+    }
+    if (arg.startsWith('-') && arg.length > 1) {
+      for (const ch of arg.slice(1)) {
+        if (map[ch]) winner = map[ch];
+      }
+    }
+  }
+  return winner;
+}
+
+/**
+ * Translates a POSIX Basic Regular Expression into JavaScript's (ERE-shaped)
+ * RegExp syntax. In a BRE — which is what `grep` uses without -E — the
+ * characters ? + { } | ( ) are LITERAL and their backslashed forms are the
+ * operators; ERE is the other way round. Without this, `grep 'a|b'` matched
+ * alternation, which real grep only does under -E.
+ */
+export function breToJs(pattern) {
+  const SWAPPED = '?+{}|()';
+  let out = '';
+  let i = 0;
+
+  while (i < pattern.length) {
+    const ch = pattern[i];
+
+    if (ch === '\\' && i + 1 < pattern.length) {
+      const next = pattern[i + 1];
+      out += SWAPPED.includes(next) ? next : `\\${next}`;
+      i += 2;
+      continue;
+    }
+
+    if (ch === '[') {
+      // A bracket expression is copied verbatim; ] first inside is a literal.
+      let j = i + 1;
+      if (pattern[j] === '^') j++;
+      if (pattern[j] === ']') j++;
+      while (j < pattern.length && pattern[j] !== ']') j++;
+      out += pattern.slice(i, Math.min(j + 1, pattern.length));
+      i = j + 1;
+      continue;
+    }
+
+    out += SWAPPED.includes(ch) ? `\\${ch}` : ch;
+    i++;
+  }
+
+  return out;
+}
+
+// Helper: GNU `ls -h` / `du -h` size abbreviation (1024-based, one decimal
+// below 10 units, e.g. 1023, 1.5K, 12K, 2.0G).
+export function humanSize(bytes = 0) {
+  const units = ['', 'K', 'M', 'G', 'T'];
+  let value = Number(bytes) || 0;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  if (unit === 0) return String(Math.round(value));
+  return value < 10 ? `${value.toFixed(1)}${units[unit]}` : `${Math.round(value)}${units[unit]}`;
+}
+
+/**
+ * Runs a wrapped command the way the shell would have run it directly.
+ *
+ * sudo and xargs both build a command line and hand it to another command.
+ * Passing `flags: {}` (as they used to) threw every option away, so
+ * `sudo ls -l` reached ls with '-l' as a FILE operand. Parsing the wrapped
+ * argv against the wrapped command's own flag spec — including its
+ * passthroughArgs opt-out and the same error formatting the shell uses —
+ * makes the wrapped command behave exactly as if it had been typed alone.
+ */
+export function runWrappedCommand(cmdImpl, name, args, ctx) {
+  const parsed = cmdImpl.passthroughArgs
+    ? { flags: {}, operands: args }
+    : parseCommandArgs(args, cmdImpl.flags || {}, false);
+
+  if (parsed.error) {
+    return {
+      stdout: '',
+      stderr: `${name}: ${parsed.error}\nTry '${name} --help' for more information.\n`,
+      status: parsed.status || 2
+    };
+  }
+
+  return cmdImpl.run({
+    argv: [name, ...args],
+    flags: parsed.flags,
+    operands: parsed.operands,
+    ...ctx
+  });
+}
+
 // 1. pwd
 export const pwdCmd = {
   name: 'pwd',
@@ -43,6 +153,9 @@ export const pwdCmd = {
     examples: ['pwd']
   },
   run({ cwd }) {
+    // -L prints the logical path (what the shell believes) and -P the physical
+    // one (symlinks resolved). This filesystem has no symlink nodes, so the two
+    // are provably the same string; neither flag is being quietly discarded.
     return { stdout: `${cwd}\n`, stderr: '', status: 0 };
   }
 };
@@ -110,7 +223,7 @@ export const lsCmd = {
       '-a, --all        do not ignore entries starting with .',
       '-l               use a long listing format',
       '-1               list one file per line',
-      '-h               with -l, print sizes like 1K 234M 2G etc.',
+      '-h, --human-readable  with -l, print sizes like 1K 234M 2G etc.',
       '-r, --reverse    reverse order while sorting',
       '-t               sort by modification time, newest first',
       '-S               sort by file size, largest first'
@@ -120,15 +233,37 @@ export const lsCmd = {
   run({ flags, operands, cwd, fs, isTTY }) {
     const showHidden = !!(flags.a || flags.all);
     const showLong = !!flags.l;
+    const human = !!(flags.h || flags['human-readable']);
     const forceOneLine = !!flags['1'] || !isTTY;
 
     const targets = operands.length > 0 ? operands : ['.'];
-    let stdout = '';
     let stderr = '';
     let status = 0;
 
-    for (let tIdx = 0; tIdx < targets.length; tIdx++) {
-      const target = targets[tIdx];
+    // Shared comparator so operands and directory entries sort the same way.
+    const compare = (aName, aPath, bName, bPath) => {
+      let cmp;
+      if (flags.t) {
+        const mtimeA = fs[aPath]?.mtime || 0;
+        const mtimeB = fs[bPath]?.mtime || 0;
+        cmp = mtimeB > mtimeA ? 1 : (mtimeB < mtimeA ? -1 : 0);
+      } else if (flags.S) {
+        cmp = (fs[bPath]?.size || 0) - (fs[aPath]?.size || 0);
+      } else {
+        cmp = aName.localeCompare(bName);
+      }
+      return flags.r ? -cmp : cmp;
+    };
+
+    // Real ls prints a `name:` header only for DIRECTORY operands, and only
+    // when more than one operand was given. A plain file operand prints as the
+    // path the user typed, one per line, with no header and no `total` line.
+    // Non-directory operands form a single first block; each directory then
+    // gets its own block, separated by a blank line.
+    const fileTargets = [];
+    const dirTargets = [];
+
+    for (const target of targets) {
       const resolved = resolvePath(cwd, target, false);
       const realKey = findVfsKey(fs, resolved, false);
 
@@ -138,23 +273,42 @@ export const lsCmd = {
         continue;
       }
 
-      const node = fs[realKey];
+      (fs[realKey].type === 'dir' ? dirTargets : fileTargets).push({ target, realKey });
+    }
 
-      if (targets.length > 1) {
-        stdout += `${target}:\n`;
-      }
+    fileTargets.sort((a, b) => compare(a.target, a.realKey, b.target, b.realKey));
+    dirTargets.sort((a, b) => compare(a.target, a.realKey, b.target, b.realKey));
 
-      if (node.type === 'file') {
+    const longLine = (st, displayName, isDir) => {
+      const modeStr = formatMode(st.mode, isDir);
+      const owner = st.owner || 'student';
+      const group = st.group || 'student';
+      const sizeStr = (human ? humanSize(st.size) : String(st.size)).padStart(5, ' ');
+      return `${modeStr} 1 ${owner} ${group} ${sizeStr} Aug 17 09:30 ${displayName}\n`;
+    };
+
+    const blocks = [];
+
+    // Block 1: every non-directory operand, printed as the given path.
+    if (fileTargets.length > 0) {
+      let body = '';
+      for (const ft of fileTargets) {
         if (showLong) {
-          const st = stat(fs, realKey, false);
-          stdout += `${st.modeStr} 1 ${st.owner} ${st.group} ${String(st.size).padStart(5, ' ')} Aug 17 09:30 ${basename(realKey, false)}\n`;
+          body += longLine(stat(fs, ft.realKey, false), ft.target, false);
         } else {
-          stdout += `${basename(realKey, false)}\n`;
+          body += `${ft.target}\n`;
         }
-        continue;
       }
+      blocks.push(body);
+    }
 
-      // Directory listing
+    // One block per directory operand.
+    const wantHeaders = targets.length > 1;
+    for (const dt of dirTargets) {
+      const resolved = dt.realKey;
+      const node = fs[resolved];
+      let body = wantHeaders ? `${dt.target}:\n` : '';
+
       let entries = [...(node.contents || [])];
       if (showHidden) {
         entries.unshift('.', '..');
@@ -162,55 +316,38 @@ export const lsCmd = {
         entries = entries.filter(e => !e.startsWith('.'));
       }
 
-      // Sort entries: standard collation (dotfiles first, case-sensitive lexicographical)
-      entries.sort((a, b) => {
-        if (flags.t) {
-          const mtimeA = fs[resolvePath(resolved, a, false)]?.mtime || 0;
-          const mtimeB = fs[resolvePath(resolved, b, false)]?.mtime || 0;
-          return mtimeB > mtimeA ? 1 : -1;
-        }
-        if (flags.S) {
-          const szA = fs[resolvePath(resolved, a, false)]?.size || 0;
-          const szB = fs[resolvePath(resolved, b, false)]?.size || 0;
-          return szB - szA;
-        }
-        return a.localeCompare(b);
-      });
+      const childPathOf = (entry) => (
+        entry === '.' ? resolved
+          : (entry === '..' ? dirname(resolved, false) : resolvePath(resolved, entry, false))
+      );
 
-      if (flags.r) {
-        entries.reverse();
-      }
+      // '.' and '..' are already in position; only the real entries sort.
+      const dots = entries.filter(e => e === '.' || e === '..');
+      const rest = entries.filter(e => e !== '.' && e !== '..');
+      rest.sort((a, b) => compare(a, childPathOf(a), b, childPathOf(b)));
+      entries = [...dots, ...rest];
 
       if (showLong) {
         const totalBlocks = Math.ceil(entries.length * 4);
-        stdout += `total ${totalBlocks}\n`;
+        body += `total ${totalBlocks}\n`;
         for (const entry of entries) {
-          const childPath = entry === '.' ? resolved : (entry === '..' ? dirname(resolved, false) : resolvePath(resolved, entry, false));
-          const st = stat(fs, childPath, false);
+          const st = stat(fs, childPathOf(entry), false);
           const isDir = entry === '.' || entry === '..' || st.isDir;
-          const modeStr = formatMode(st.mode, isDir);
-          const owner = st.owner || 'student';
-          const group = st.group || 'student';
-          const sizeStr = String(st.size).padStart(5, ' ');
-          stdout += `${modeStr} 1 ${owner} ${group} ${sizeStr} Aug 17 09:30 ${entry}\n`;
+          body += longLine(st, entry, isDir);
         }
       } else if (forceOneLine) {
         for (const entry of entries) {
-          stdout += `${entry}\n`;
+          body += `${entry}\n`;
         }
-      } else {
+      } else if (entries.length > 0) {
         // TTY interactive column view
-        if (entries.length > 0) {
-          stdout += `${entries.join('  ')}\n`;
-        }
+        body += `${entries.join('  ')}\n`;
       }
 
-      if (targets.length > 1 && tIdx < targets.length - 1) {
-        stdout += '\n';
-      }
+      blocks.push(body);
     }
 
-    return { stdout, stderr, status };
+    return { stdout: blocks.join('\n'), stderr, status };
   }
 };
 
@@ -300,11 +437,12 @@ export const headCmd = {
     options: [
       '-n, --lines=[-]NUM   print the first NUM lines; with \'-\', print all but the last NUM lines of each file',
       '-c, --bytes=[-]NUM   print the first NUM bytes of each file',
-      '-q, --quiet          never print headers giving file names'
+      '-q, --quiet          never print headers giving file names',
+      '-v, --verbose        always print headers giving file names'
     ],
     examples: ['head access.log', 'head -n 5 system.log', 'head -n -2 file.txt']
   },
-  run({ flags, operands, cwd, fs, stdin, user }) {
+  run({ argv, flags, operands, cwd, fs, stdin, user }) {
     const inputs = readInputs(operands, cwd, fs, stdin, user);
     let stdout = '';
     let stderr = '';
@@ -323,7 +461,9 @@ export const headCmd = {
       }
     }
 
-    const showHeaders = inputs.length > 1 && !flags.q;
+    // -v always prints headers, -q never does; the later option wins.
+    const headerChoice = lastOptionWins(argv, { q: 'q', v: 'v', quiet: 'q', verbose: 'v', silent: 'q' });
+    const showHeaders = headerChoice === 'v' ? true : (headerChoice === 'q' ? false : inputs.length > 1);
 
     for (let i = 0; i < inputs.length; i++) {
       const inp = inputs[i];
@@ -518,6 +658,8 @@ export const grepCmd = {
       '-l, --files-with-matches  print only names of FILEs with selected lines',
       '-w, --word-regexp         force PATTERNS to match only whole words',
       '-o, --only-matching       show only nonempty parts of lines matching PATTERNS',
+      '-E, --extended-regexp     PATTERNS are extended regular expressions',
+      '-F, --fixed-strings       PATTERNS are literal strings',
       '-A NUM                    print NUM lines of trailing context',
       '-B NUM                    print NUM lines of leading context',
       '-C NUM                    print NUM lines of output context'
@@ -568,7 +710,12 @@ export const grepCmd = {
     // Build regex pattern
     let regex;
     try {
-      let regPattern = flags.F ? patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : patternStr;
+      // -F: every character literal. -E: extended regexp, which is what
+      // JavaScript's RegExp already is. Neither: POSIX basic regexp, so the
+      // pattern has to be translated or grep would silently accept ERE syntax.
+      let regPattern = flags.F
+        ? patternStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        : (flags.E ? patternStr : breToJs(patternStr));
       if (flags.w) {
         regPattern = `\\b(?:${regPattern})\\b`;
       }
@@ -1103,7 +1250,20 @@ export const sedCmd = {
         const isGlobal = sedFlags.includes('g');
         const isIgnoreCase = sedFlags.includes('i');
         const isPrint = sedFlags.includes('p');
-        const regex = new RegExp(pattern, `${isGlobal ? 'g' : ''}${isIgnoreCase ? 'i' : ''}`);
+        // A student's expression can be malformed — `sed 's/(/x/'` is a normal
+        // typo. Real sed answers with a message and exits 1; this used to throw
+        // an uncaught SyntaxError out of the engine, and the terminal simply
+        // ate the command with no output at all.
+        let regex;
+        try {
+          regex = new RegExp(pattern, `${isGlobal ? 'g' : ''}${isIgnoreCase ? 'i' : ''}`);
+        } catch {
+          return {
+            stdout: '',
+            stderr: `sed: -e expression #1, char ${script.length}: unterminated or invalid regex\n`,
+            status: 1
+          };
+        }
 
         for (const line of lines) {
           const matched = regex.test(line);
@@ -1208,19 +1368,50 @@ export const awkCmd = {
             continue;
           }
 
-          const terms = expr.split(',').map(t => t.trim());
-          const renderedTerms = terms.map(term => {
+          // Split the argument list on commas that are NOT inside a quoted
+          // string. Splitting on every comma broke `print $2 "," $4`, which is
+          // the ordinary way to build a CSV line: the quoted comma tore the
+          // expression in half and `$4` was printed literally.
+          const args = [];
+          let buf = '';
+          let quote = null;
+          for (const ch of expr) {
+            if (quote) {
+              buf += ch;
+              if (ch === quote) quote = null;
+            } else if (ch === '"' || ch === "'") {
+              quote = ch;
+              buf += ch;
+            } else if (ch === ',') {
+              args.push(buf.trim());
+              buf = '';
+            } else {
+              buf += ch;
+            }
+          }
+          if (buf.trim() !== '') args.push(buf.trim());
+
+          // Within one argument, awk CONCATENATES juxtaposed terms with no
+          // separator: `$1 "-" $2` is one string.
+          const renderTerm = (term) => {
             if (term === 'NR') return String(nr);
             if (term === 'NF') return String(nf);
             if (term === '$0') return line;
-            if (term.startsWith('$')) {
+            if (/^\$\d+$/.test(term)) {
               const fNum = parseInt(term.slice(1), 10);
               return (fNum >= 1 && fNum <= fields.length) ? fields[fNum - 1] : '';
             }
-            return term.replace(/^["']|["']$/g, '');
-          });
+            if (/^".*"$|^'.*'$/.test(term)) return term.slice(1, -1);
+            return term;
+          };
 
-          stdout += `${renderedTerms.join(' ')}\n`;
+          const renderArg = (arg) => {
+            // Terms are quoted strings, $N, NR, NF, or bare words, in sequence.
+            const parts = arg.match(/"[^"]*"|'[^']*'|\$\d+|\$0|NR|NF|[^\s]+/g) || [];
+            return parts.map(renderTerm).join('');
+          };
+
+          stdout += `${args.map(renderArg).join(' ')}\n`;
         }
       }
     }
@@ -1269,28 +1460,62 @@ export const xargsCmd = {
     n: { type: 'number', status: 'implemented', long: 'max-args' },
     I: { type: 'string', status: 'implemented', long: 'replace' }
   },
+  // Everything after the options belongs to the command being built, so the
+  // generic parser must not try to claim `-n` in `xargs grep -n pattern`.
+  passthroughArgs: true,
   usage: 'xargs [options] [command [initial-arguments]]',
   man: {
     name: 'xargs - build and execute command lines from standard input',
     synopsis: 'xargs [options] [command [initial-arguments]]',
-    description: 'xargs reads items from standard input and executes the specified command with those items as arguments.',
+    description: 'xargs reads items from standard input and executes the specified command with those items as arguments. The command keeps its own options.',
     options: ['-n MAX-ARGS   use at most MAX-ARGS arguments per command line', '-I REPLACE    replace occurrences of REPLACE with input items'],
-    examples: ['find . -name "*.txt" | xargs grep "secret"', 'cat files.txt | xargs -n 1 md5sum']
+    examples: ['find . -name "*.txt" | xargs grep "secret"', 'cat files.txt | xargs -n 1 md5sum', 'echo notes.txt | xargs grep -n TODO']
   },
-  run({ flags, operands, cwd, fs, stdin, user, context }) {
-    const rawItems = (stdin || '').trim().split(/\s+/).filter(Boolean);
-    const targetCmd = operands.length > 0 ? operands[0] : 'echo';
-    const initialArgs = operands.slice(1);
+  run({ argv, cwd, fs, stdin, isTTY, context }) {
+    // xargs' own options stop at the command name; anything after it belongs
+    // to that command (`xargs grep -n pattern` passes -n to grep, not xargs).
+    let rest = argv.slice(1);
+    let maxArgs = null;
+    let replaceStr = null;
 
-    // Form combined arguments
-    let combinedArgs = [...initialArgs];
-    if (flags.I) {
-      const replaceStr = flags.I;
-      const val = rawItems.join(' ');
-      combinedArgs = initialArgs.map(arg => arg.replaceAll(replaceStr, val));
-    } else {
-      combinedArgs.push(...rawItems);
+    while (rest.length > 0 && rest[0].startsWith('-') && rest[0].length > 1) {
+      const opt = rest[0];
+      const takeValue = (inline) => {
+        if (inline !== '') return [inline, 1];
+        if (rest.length < 2) return [null, 1];
+        return [rest[1], 2];
+      };
+
+      if (opt === '-n' || opt === '--max-args' || /^-n./.test(opt) || opt.startsWith('--max-args=')) {
+        const inline = opt.startsWith('--max-args=') ? opt.slice(11) : (opt.startsWith('-n') ? opt.slice(2) : '');
+        const [val, consumed] = takeValue(inline);
+        if (val === null || !/^\d+$/.test(val) || Number(val) < 1) {
+          return { stdout: '', stderr: `xargs: invalid number for -n option\n`, status: 1 };
+        }
+        maxArgs = Number(val);
+        rest = rest.slice(consumed);
+        continue;
+      }
+      if (opt === '-I' || opt === '--replace' || /^-I./.test(opt) || opt.startsWith('--replace=')) {
+        const inline = opt.startsWith('--replace=') ? opt.slice(10) : (opt.startsWith('-I') ? opt.slice(2) : '');
+        const [val, consumed] = takeValue(inline);
+        if (val === null) {
+          return { stdout: '', stderr: `xargs: option requires an argument -- 'I'\n`, status: 1 };
+        }
+        replaceStr = val;
+        rest = rest.slice(consumed);
+        continue;
+      }
+      return {
+        stdout: '',
+        stderr: `xargs: invalid option -- '${opt.replace(/^-+/, '').charAt(0)}'\nUsage: xargs [OPTION]... COMMAND [INITIAL-ARGS]...\n`,
+        status: 1
+      };
     }
+
+    const rawItems = (stdin || '').trim().split(/\s+/).filter(Boolean);
+    const targetCmd = rest.length > 0 ? rest[0] : 'echo';
+    const initialArgs = rest.slice(1);
 
     const { registry } = context;
     const cmdImpl = registry?.get(targetCmd, 'linux');
@@ -1298,19 +1523,183 @@ export const xargsCmd = {
       return { stdout: '', stderr: `xargs: ${targetCmd}: No such file or directory\n`, status: 127 };
     }
 
-    return cmdImpl.run({
-      argv: [targetCmd, ...combinedArgs],
-      flags: {},
-      operands: combinedArgs,
-      cwd,
-      fs,
-      stdin: '',
-      user,
-      isTTY: false,
-      context
-    });
+    const childCtx = { cwd, fs, stdin: '', env: context.env, user: context.user, isTTY, context };
+
+    // -I runs the command once per input item, substituting the placeholder.
+    if (replaceStr !== null) {
+      let stdout = '';
+      let stderr = '';
+      let status = 0;
+      let workingFs = fs;
+      for (const item of rawItems) {
+        const args = initialArgs.map(arg => arg.replaceAll(replaceStr, item));
+        const res = runWrappedCommand(cmdImpl, targetCmd, args, { ...childCtx, fs: workingFs });
+        stdout += res.stdout || '';
+        stderr += res.stderr || '';
+        if (res.fs) workingFs = res.fs;
+        if (res.status) status = res.status;
+      }
+      return { stdout, stderr, status, fs: workingFs };
+    }
+
+    // -n batches the items; without it every item goes on one command line.
+    const batchSize = maxArgs || Math.max(rawItems.length, 1);
+    const batches = [];
+    for (let i = 0; i < rawItems.length; i += batchSize) {
+      batches.push(rawItems.slice(i, i + batchSize));
+    }
+    if (batches.length === 0) batches.push([]);
+
+    let stdout = '';
+    let stderr = '';
+    let status = 0;
+    let workingFs = fs;
+    for (const batch of batches) {
+      const res = runWrappedCommand(cmdImpl, targetCmd, [...initialArgs, ...batch], { ...childCtx, fs: workingFs });
+      stdout += res.stdout || '';
+      stderr += res.stderr || '';
+      if (res.fs) workingFs = res.fs;
+      if (res.status) status = res.status;
+    }
+
+    return { stdout, stderr, status, fs: workingFs };
   }
 };
+
+// 18. diff
+/**
+ * Whole-line diff by longest common subsequence. Files in this simulator are
+ * small, so the O(n*m) table is fine. `keyA`/`keyB` are what gets COMPARED
+ * (so -w can compare whitespace-insensitively) while `a`/`b` are what gets
+ * PRINTED.
+ */
+function diffOps(a, b, keyA = a, keyB = b) {
+  const n = a.length;
+  const m = b.length;
+  const lcs = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      lcs[i][j] = keyA[i] === keyB[j]
+        ? lcs[i + 1][j + 1] + 1
+        : Math.max(lcs[i + 1][j], lcs[i][j + 1]);
+    }
+  }
+
+  const ops = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (keyA[i] === keyB[j]) {
+      ops.push({ op: ' ', text: a[i] });
+      i++;
+      j++;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      ops.push({ op: '-', text: a[i] });
+      i++;
+    } else {
+      ops.push({ op: '+', text: b[j] });
+      j++;
+    }
+  }
+  while (i < n) ops.push({ op: '-', text: a[i++] });
+  while (j < m) ops.push({ op: '+', text: b[j++] });
+  return ops;
+}
+
+const diffRange = (start, end) => (start === end ? String(start) : `${start},${end}`);
+
+// diff's default output: "3c3" / "2a3" / "4d3" headers with < and > bodies.
+function normalDiff(ops) {
+  let out = '';
+  let lineA = 1;
+  let lineB = 1;
+  let k = 0;
+
+  while (k < ops.length) {
+    if (ops[k].op === ' ') {
+      lineA++;
+      lineB++;
+      k++;
+      continue;
+    }
+
+    const dels = [];
+    const adds = [];
+    const startA = lineA;
+    const startB = lineB;
+    while (k < ops.length && ops[k].op !== ' ') {
+      if (ops[k].op === '-') {
+        dels.push(ops[k].text);
+        lineA++;
+      } else {
+        adds.push(ops[k].text);
+        lineB++;
+      }
+      k++;
+    }
+
+    if (dels.length > 0 && adds.length > 0) {
+      out += `${diffRange(startA, lineA - 1)}c${diffRange(startB, lineB - 1)}\n`;
+      for (const line of dels) out += `< ${line}\n`;
+      out += '---\n';
+      for (const line of adds) out += `> ${line}\n`;
+    } else if (dels.length > 0) {
+      out += `${diffRange(startA, lineA - 1)}d${lineB - 1}\n`;
+      for (const line of dels) out += `< ${line}\n`;
+    } else {
+      out += `${startA - 1}a${diffRange(startB, lineB - 1)}\n`;
+      for (const line of adds) out += `> ${line}\n`;
+    }
+  }
+
+  return out;
+}
+
+// diff -u output: @@ hunks with three lines of surrounding context.
+function unifiedDiff(ops, nameA, nameB, context = 3) {
+  const changed = ops.map(o => o.op !== ' ');
+  const keep = new Array(ops.length).fill(false);
+  for (let i = 0; i < ops.length; i++) {
+    if (!changed[i]) continue;
+    for (let j = Math.max(0, i - context); j <= Math.min(ops.length - 1, i + context); j++) {
+      keep[j] = true;
+    }
+  }
+
+  const stamp = '2026-08-17 09:30:00.000000000 +0000';
+  let out = `--- ${nameA}\t${stamp}\n+++ ${nameB}\t${stamp}\n`;
+  let lineA = 1;
+  let lineB = 1;
+  let i = 0;
+
+  while (i < ops.length) {
+    if (!keep[i]) {
+      if (ops[i].op !== '+') lineA++;
+      if (ops[i].op !== '-') lineB++;
+      i++;
+      continue;
+    }
+
+    const startA = lineA;
+    const startB = lineB;
+    let countA = 0;
+    let countB = 0;
+    let body = '';
+    while (i < ops.length && keep[i]) {
+      const { op, text } = ops[i];
+      body += `${op}${text}\n`;
+      if (op !== '+') { countA++; lineA++; }
+      if (op !== '-') { countB++; lineB++; }
+      i++;
+    }
+
+    out += `@@ -${countA === 0 ? startA - 1 : startA},${countA} +${countB === 0 ? startB - 1 : startB},${countB} @@\n`;
+    out += body;
+  }
+
+  return out;
+}
 
 // 18. diff
 export const diffCmd = {
@@ -1325,9 +1714,13 @@ export const diffCmd = {
   man: {
     name: 'diff - compare files line by line',
     synopsis: 'diff [OPTION]... FILE1 FILE2',
-    description: 'Compare FILE1 and FILE2 line by line.',
-    options: ['-u, --unified   output unified diff format', '-q, --brief     report only when files differ', '-w              ignore all white space'],
-    examples: ['diff old.txt new.txt', 'diff -u file1.conf file2.conf']
+    description: 'Compare FILE1 and FILE2 line by line. The default output uses < and > with NcN headers; -u asks for the unified format instead.',
+    options: [
+      '-u, --unified   output unified diff format (3 lines of context)',
+      '-q, --brief     report only when files differ',
+      '-w, --ignore-all-space  ignore all white space'
+    ],
+    examples: ['diff old.txt new.txt', 'diff -u file1.conf file2.conf', 'diff -q a.txt b.txt']
   },
   run({ flags, operands, cwd, fs, user }) {
     if (operands.length < 2) {
@@ -1340,14 +1733,20 @@ export const diffCmd = {
     if (!res1.ok) return { stdout: '', stderr: `diff: ${operands[0]}: ${res1.error}\n`, status: 2 };
     if (!res2.ok) return { stdout: '', stderr: `diff: ${operands[1]}: ${res2.error}\n`, status: 2 };
 
-    let c1 = res1.content;
-    let c2 = res2.content;
-    if (flags.w) {
-      c1 = c1.replace(/\s+/g, ' ');
-      c2 = c2.replace(/\s+/g, ' ');
-    }
+    const splitLines = (text) => {
+      const lines = text.split('\n');
+      if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+      return lines;
+    };
 
-    if (c1 === c2) {
+    const lines1 = splitLines(res1.content);
+    const lines2 = splitLines(res2.content);
+    const normalize = (line) => line.replace(/\s+/g, ' ').trim();
+    const keys1 = flags.w ? lines1.map(normalize) : lines1;
+    const keys2 = flags.w ? lines2.map(normalize) : lines2;
+
+    const ops = diffOps(lines1, lines2, keys1, keys2);
+    if (!ops.some(o => o.op !== ' ')) {
       return { stdout: '', stderr: '', status: 0 };
     }
 
@@ -1355,12 +1754,9 @@ export const diffCmd = {
       return { stdout: `Files ${operands[0]} and ${operands[1]} differ\n`, stderr: '', status: 1 };
     }
 
-    const lines1 = res1.content.split('\n');
-    const lines2 = res2.content.split('\n');
-
-    let stdout = `--- ${operands[0]}\t2026-08-17 09:30:00.000000000 +0000\n+++ ${operands[1]}\t2026-08-17 09:30:00.000000000 +0000\n@@ -1,${lines1.length} +1,${lines2.length} @@\n`;
-    for (const l of lines1) stdout += `-${l}\n`;
-    for (const l of lines2) stdout += `+${l}\n`;
+    const stdout = flags.u
+      ? unifiedDiff(ops, operands[0], operands[1])
+      : normalDiff(ops);
 
     return { stdout, stderr: '', status: 1 };
   }
@@ -1426,10 +1822,16 @@ export const stringsCmd = {
     name: 'strings - print the sequences of printable characters in files',
     synopsis: 'strings [option(s)] [file(s)]',
     description: 'For each file specified, strings prints printable character sequences that are at least 4 characters long.',
-    options: ['-n MIN-LEN   locate and print any sequence at least MIN-LEN characters long'],
+    options: [
+      '-n MIN-LEN   locate and print any sequence at least MIN-LEN characters long',
+      '-a, --all    scan the whole file (already the default here: the simulated filesystem stores no section table to skip)'
+    ],
     examples: ['strings binary_data', 'strings -n 6 evidence.bin']
   },
   run({ flags, operands, cwd, fs, stdin, user }) {
+    // -a asks strings to scan the entire file rather than only the loaded
+    // sections of an object file. Simulated files have no section table, so
+    // every scan is already a whole-file scan and -a changes nothing.
     const inputs = readInputs(operands, cwd, fs, stdin, user);
     const minLen = Number(flags.n || 4);
     let stdout = '';
@@ -1516,6 +1918,72 @@ export const fileCmd = {
   }
 };
 
+/**
+ * Shared implementation of `md5sum -c` / `sha256sum -c`: read lines of
+ * "<digest>  <name>" from each operand and re-hash every named file.
+ */
+function checkSums({ tool, hashOf, operands, cwd, fs, stdin, user }) {
+  const listings = readInputs(operands, cwd, fs, stdin, user);
+  let stdout = '';
+  let stderr = '';
+  let status = 0;
+  let mismatches = 0;
+  let unreadable = 0;
+  let parsed = 0;
+
+  for (const listing of listings) {
+    if (!listing.ok) {
+      stderr += `${tool}: ${listing.name}: ${listing.error || 'No such file or directory'}\n`;
+      status = 1;
+      continue;
+    }
+
+    for (const rawLine of listing.content.split('\n')) {
+      const line = rawLine.trim();
+      if (line === '') continue;
+
+      const match = line.match(/^([0-9a-fA-F]+)\s+\*?(.+)$/);
+      if (!match) {
+        stderr += `${tool}: ${listing.name}: no properly formatted checksum lines found\n`;
+        status = 1;
+        continue;
+      }
+      parsed++;
+
+      const [, expected, name] = match;
+      const target = readFile(fs, resolvePath(cwd, name, false), false, { user });
+      if (!target.ok) {
+        stdout += `${name}: FAILED open or read\n`;
+        stderr += `${tool}: ${name}: No such file or directory\n`;
+        unreadable++;
+        status = 1;
+        continue;
+      }
+
+      if (hashOf(target).toLowerCase() === expected.toLowerCase()) {
+        stdout += `${name}: OK\n`;
+      } else {
+        stdout += `${name}: FAILED\n`;
+        mismatches++;
+        status = 1;
+      }
+    }
+  }
+
+  if (unreadable > 0) {
+    stderr += `${tool}: WARNING: ${unreadable} listed file could not be read\n`;
+  }
+  if (mismatches > 0) {
+    stderr += `${tool}: WARNING: ${mismatches} computed checksum${mismatches === 1 ? '' : 's'} did NOT match\n`;
+  }
+  if (parsed === 0 && status === 0) {
+    stderr += `${tool}: no properly formatted checksum lines found\n`;
+    status = 1;
+  }
+
+  return { stdout, stderr, status };
+}
+
 // 22. md5sum
 export const md5sumCmd = {
   name: 'md5sum',
@@ -1529,9 +1997,17 @@ export const md5sumCmd = {
     synopsis: 'md5sum [OPTION]... [FILE]...',
     description: 'Print or check MD5 (128-bit) checksums.',
     options: ['-c, --check   read MD5 sums from the FILEs and check them'],
-    examples: ['md5sum evidence.img', 'md5sum file1.txt file2.txt']
+    examples: ['md5sum evidence.img', 'md5sum file1.txt file2.txt', 'md5sum -c sums.md5']
   },
   run({ flags, operands, cwd, fs, stdin, user }) {
+    if (flags.c || flags.check) {
+      return checkSums({
+        tool: 'md5sum',
+        hashOf: (res) => res.node?.md5 || md5(res.content),
+        operands, cwd, fs, stdin, user
+      });
+    }
+
     const inputs = readInputs(operands, cwd, fs, stdin, user);
     let stdout = '';
     let stderr = '';
@@ -1566,9 +2042,17 @@ export const sha256sumCmd = {
     synopsis: 'sha256sum [OPTION]... [FILE]...',
     description: 'Print or check SHA256 (256-bit) checksums.',
     options: ['-c, --check   read SHA256 sums from the FILEs and check them'],
-    examples: ['sha256sum evidence.img', 'sha256sum file.txt']
+    examples: ['sha256sum evidence.img', 'sha256sum file.txt', 'sha256sum -c sums.sha256']
   },
   run({ flags, operands, cwd, fs, stdin, user }) {
+    if (flags.c || flags.check) {
+      return checkSums({
+        tool: 'sha256sum',
+        hashOf: (res) => res.node?.sha256 || sha256Sync(res.content),
+        operands, cwd, fs, stdin, user
+      });
+    }
+
     const inputs = readInputs(operands, cwd, fs, stdin, user);
     let stdout = '';
     let stderr = '';
@@ -1658,14 +2142,46 @@ export const rmdirCmd = {
     let stderr = '';
     let status = 0;
 
+    // NOTE: vfs/ops.js rmdir() forwards to unlink() WITHOUT recursive:true, and
+    // unlink() refuses every directory unless recursive is set — so ops.rmdir()
+    // can never succeed. The emptiness and type checks are therefore done here
+    // and the removal is issued directly. (The ops.js bug still needs fixing
+    // for any other caller.)
+    const removeEmptyDir = (fsMap, path) => {
+      const st = stat(fsMap, path, false);
+      if (!st.exists) return { ok: false, error: `No such file or directory: ${path}` };
+      if (!st.isDir) return { ok: false, error: `Not a directory: ${path}` };
+      if ((st.node.contents || []).length > 0) return { ok: false, error: `Directory not empty: ${path}` };
+      return unlink(fsMap, path, false, { recursive: true, user });
+    };
+
     for (const op of operands) {
-      const resolved = resolvePath(cwd, op, false);
-      const res = rmdir(workingFs, resolved, false, { user });
+      let resolved = resolvePath(cwd, op, false);
+      let label = op;
+      const res = removeEmptyDir(workingFs, resolved);
       if (!res.ok) {
-        stderr += `rmdir: failed to remove '${op}': ${res.error}\n`;
+        stderr += `rmdir: failed to remove '${label}': ${res.error}\n`;
         status = 1;
-      } else {
-        workingFs = res.fs;
+        continue;
+      }
+      workingFs = res.fs;
+
+      // -p also removes each parent that the removal has just emptied, and
+      // reports the ancestor's own name when one of them cannot be removed.
+      if (flags.p) {
+        let parentLabel = label.replace(/\/+$/, '');
+        while (parentLabel.includes('/')) {
+          parentLabel = parentLabel.slice(0, parentLabel.lastIndexOf('/'));
+          if (parentLabel === '' || parentLabel === '.' || parentLabel === '..') break;
+          resolved = resolvePath(cwd, parentLabel, false);
+          const upRes = removeEmptyDir(workingFs, resolved);
+          if (!upRes.ok) {
+            stderr += `rmdir: failed to remove '${parentLabel}': ${upRes.error}\n`;
+            status = 1;
+            break;
+          }
+          workingFs = upRes.fs;
+        }
       }
     }
 
@@ -1678,7 +2194,10 @@ export const touchCmd = {
   name: 'touch',
   platforms: ['linux'],
   flags: {
-    a: { type: 'bool', status: 'implemented' },
+    // -a changes only the ACCESS time. The simulated filesystem stores mtime
+    // and nothing else, so honouring -a is impossible; say so rather than
+    // silently updating the modification time the student asked to preserve.
+    a: { type: 'bool', status: 'notSimulated' },
     m: { type: 'bool', status: 'implemented' }
   },
   usage: 'touch [OPTION]... FILE...',
@@ -1686,7 +2205,7 @@ export const touchCmd = {
     name: 'touch - change file timestamps or create empty files',
     synopsis: 'touch [OPTION]... FILE...',
     description: 'Update the access and modification times of each FILE to the current time. A FILE that does not exist is created empty.',
-    options: [],
+    options: ['-m   change only the modification time (the only timestamp this simulator keeps)'],
     examples: ['touch file.txt', 'touch /tmp/marker.log']
   },
   run({ operands, cwd, fs, user }) {
@@ -1721,7 +2240,10 @@ export const cpCmd = {
     r: { type: 'bool', status: 'implemented', long: 'recursive' },
     R: { type: 'bool', status: 'implemented' },
     f: { type: 'bool', status: 'implemented', long: 'force' },
-    i: { type: 'bool', status: 'implemented', long: 'interactive' }
+    // -i asks a yes/no question on the terminal. This shell runs one command
+    // and returns; there is nowhere for the student to answer, so pretending
+    // -i was honoured would be a lie about whether the file was overwritten.
+    i: { type: 'bool', status: 'notSimulated', long: 'interactive' }
   },
   usage: 'cp [OPTION]... SOURCE... DEST',
   man: {
@@ -1745,6 +2267,17 @@ export const cpCmd = {
     for (const src of sources) {
       const srcResolved = resolvePath(cwd, src, false);
       const destResolved = resolvePath(cwd, dest, false);
+
+      // -f: if the destination cannot be opened for writing, remove it and
+      // retry, exactly as GNU cp does.
+      if (flags.f) {
+        const destSt = stat(workingFs, destResolved, false);
+        if (destSt.exists && destSt.isFile && !hasPermission(destSt.node, 'w', user, false)) {
+          const rmRes = unlink(workingFs, destResolved, false, { force: true, user });
+          if (rmRes.ok) workingFs = rmRes.fs;
+        }
+      }
+
       const res = copyFile(workingFs, srcResolved, destResolved, false, {
         recursive: !!(flags.r || flags.R),
         user
@@ -1767,7 +2300,8 @@ export const mvCmd = {
   platforms: ['linux'],
   flags: {
     f: { type: 'bool', status: 'implemented', long: 'force' },
-    i: { type: 'bool', status: 'implemented', long: 'interactive' }
+    // See cp -i: there is no terminal to answer the prompt on.
+    i: { type: 'bool', status: 'notSimulated', long: 'interactive' }
   },
   usage: 'mv [OPTION]... SOURCE... DEST',
   man: {
@@ -1777,7 +2311,7 @@ export const mvCmd = {
     options: ['-f, --force   do not prompt before overwriting'],
     examples: ['mv old_name.txt new_name.txt', 'mv file.txt Documents/']
   },
-  run({ operands, cwd, fs, user }) {
+  run({ flags, operands, cwd, fs, user }) {
     if (operands.length < 2) {
       return { stdout: '', stderr: 'mv: missing destination file operand\n', status: 1 };
     }
@@ -1791,6 +2325,16 @@ export const mvCmd = {
     for (const src of sources) {
       const srcResolved = resolvePath(cwd, src, false);
       const destResolved = resolvePath(cwd, dest, false);
+
+      // -f: overwrite an unwritable destination instead of refusing.
+      if (flags.f) {
+        const destSt = stat(workingFs, destResolved, false);
+        if (destSt.exists && destSt.isFile && !hasPermission(destSt.node, 'w', user, false)) {
+          const rmRes = unlink(workingFs, destResolved, false, { force: true, user });
+          if (rmRes.ok) workingFs = rmRes.fs;
+        }
+      }
+
       const res = moveFile(workingFs, srcResolved, destResolved, false, { user });
       if (!res.ok) {
         stderr += `mv: cannot move '${src}' to '${dest}': ${res.error}\n`;
@@ -1812,7 +2356,8 @@ export const rmCmd = {
     r: { type: 'bool', status: 'implemented', long: 'recursive' },
     R: { type: 'bool', status: 'implemented' },
     f: { type: 'bool', status: 'implemented', long: 'force' },
-    i: { type: 'bool', status: 'implemented', long: 'interactive' }
+    // See cp -i: a confirmation prompt needs a terminal this shell has not got.
+    i: { type: 'bool', status: 'notSimulated', long: 'interactive' }
   },
   usage: 'rm [OPTION]... [FILE]...',
   man: {
@@ -2011,15 +2556,31 @@ export const duCmd = {
   man: {
     name: 'du - estimate file space usage',
     synopsis: 'du [OPTION]... [FILE]...',
-    description: 'Summarize disk usage of the set of FILEs, recursively for directories.',
-    options: ['-h, --human-readable   print sizes in human readable format (e.g., 1K 234M 2G)', '-s, --summarize        display only a total for each argument'],
-    examples: ['du -sh Documents', 'du -h']
+    description: 'Summarize disk usage of the set of FILEs, recursively for directories. Without -s, every subdirectory is listed before its parent.',
+    options: [
+      '-h, --human-readable   print sizes in human readable format (e.g., 1K 234M 2G)',
+      '-s, --summarize        display only a total for each argument',
+      '-a, --all              write counts for all files, not just directories'
+    ],
+    examples: ['du -sh Documents', 'du -h', 'du -a Documents']
   },
   run({ flags, operands, cwd, fs }) {
     const targets = operands.length > 0 ? operands : ['.'];
+    const summarize = !!(flags.s || flags.summarize);
+    const listFiles = !!(flags.a || flags.all);
     let stdout = '';
     let stderr = '';
     let status = 0;
+
+    if (summarize && listFiles) {
+      return { stdout: '', stderr: 'du: cannot both summarize and show all entries\n', status: 1 };
+    }
+
+    // du reports allocated space, not file length: an ext4 filesystem hands
+    // out whole 4 KiB blocks, so a 6-byte file costs 4K and an empty one 0.
+    // The figures are printed in 1K units, which is du's default.
+    const blocksOf = (bytes) => Math.ceil((Number(bytes) || 0) / 4096) * 4;
+    const render = (kb) => (flags.h || flags['human-readable'] ? humanSize(kb * 1024) : String(kb));
 
     for (const target of targets) {
       const resolved = resolvePath(cwd, target, false);
@@ -2030,19 +2591,44 @@ export const duCmd = {
         continue;
       }
 
-      let totalSize = st.size;
-      if (st.isDir) {
-        const prefix = resolved === '/' ? '/' : `${resolved}/`;
-        for (const [key, node] of Object.entries(fs)) {
-          if (key.startsWith(prefix) && node.type === 'file') {
-            totalSize += (node.size || node.content?.length || 0);
-          }
-        }
+      const label = target.replace(/\/+$/, '') || target;
+
+      if (!st.isDir) {
+        stdout += `${render(blocksOf(st.size))}\t${label}\n`;
+        continue;
       }
 
-      const sizeKb = Math.ceil(totalSize / 1024) || 4;
-      const sizeDisplay = flags.h ? `${sizeKb}K` : String(sizeKb);
-      stdout += `${sizeDisplay}\t${target}\n`;
+      // Post-order walk: children are reported before the directory that
+      // contains them, which is the order real du prints.
+      const walk = (dirKey, displayPath) => {
+        let total = blocksOf(4096);
+        let out = '';
+        const node = fs[dirKey];
+        const entries = [...(node?.contents || [])].sort((x, y) => x.localeCompare(y));
+
+        for (const entry of entries) {
+          const childKey = resolvePath(dirKey, entry, false);
+          const childSt = stat(fs, childKey, false);
+          if (!childSt.exists) continue;
+          const childDisplay = `${displayPath}/${entry}`;
+
+          if (childSt.isDir) {
+            const sub = walk(childKey, childDisplay);
+            total += sub.total;
+            out += sub.out;
+          } else {
+            const kb = blocksOf(childSt.size);
+            total += kb;
+            if (listFiles && !summarize) out += `${render(kb)}\t${childDisplay}\n`;
+          }
+        }
+
+        if (!summarize) out += `${render(total)}\t${displayPath}\n`;
+        return { total, out };
+      };
+
+      const res = walk(resolved, label);
+      stdout += summarize ? `${render(res.total)}\t${label}\n` : res.out;
     }
 
     return { stdout, stderr, status };
@@ -2090,6 +2676,10 @@ export const echoCmd = {
     e: { type: 'bool', status: 'implemented' },
     E: { type: 'bool', status: 'implemented' }
   },
+  // bash's echo parses its own options: they must be leading, must consist
+  // only of n/e/E, and stop at the first other word (`echo hi -n` prints
+  // "hi -n"). The generic parser cannot express that, so echo reads argv.
+  passthroughArgs: true,
   usage: 'echo [SHORT-OPTION]... [STRING]...',
   man: {
     name: 'echo - display a line of text',
@@ -2097,16 +2687,38 @@ export const echoCmd = {
     description: 'Echo the STRING(s) to standard output.',
     options: [
       '-n   do not output the trailing newline',
-      '-e   enable interpretation of backslash escapes (e.g. \\n, \\t)'
+      '-e   enable interpretation of backslash escapes (e.g. \\n, \\t)',
+      '-E   disable interpretation of backslash escapes (default)'
     ],
-    examples: ['echo "Hello world"', 'echo -n "flag:"', 'echo $HOME']
+    examples: ['echo "Hello world"', 'echo -n "flag:"', 'echo -e "a\\tb"', 'echo $HOME']
   },
-  run({ flags, operands }) {
-    let text = operands.join(' ');
-    if (flags.e) {
-      text = text.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
+  run({ argv }) {
+    const words = argv.slice(1);
+    let idx = 0;
+    let noNewline = false;
+    let escapes = false;
+
+    // Leading -n/-e/-E only, in any combination; the later letter wins.
+    while (idx < words.length && /^-[neE]+$/.test(words[idx])) {
+      for (const ch of words[idx].slice(1)) {
+        if (ch === 'n') noNewline = true;
+        else if (ch === 'e') escapes = true;
+        else if (ch === 'E') escapes = false;
+      }
+      idx++;
     }
-    const stdout = flags.n ? text : `${text}\n`;
+
+    let text = words.slice(idx).join(' ');
+    if (escapes) {
+      text = text
+        .replace(/\\\\/g, '\u0000')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\r/g, '\r')
+        .replace(/\u0000/g, '\\');
+    }
+
+    const stdout = noNewline ? text : `${text}\n`;
     return { stdout, stderr: '', status: 0 };
   }
 };
@@ -2117,51 +2729,123 @@ export const testCmd = {
   aliases: ['['],
   platforms: ['linux'],
   flags: {},
+  // Every word after `test` is part of the EXPRESSION, not an option of test
+  // itself: `test -f x` must reach run() as -f and x, so the generic flag
+  // parser (which would reject -f as an invalid option) is bypassed.
+  passthroughArgs: true,
   usage: 'test EXPRESSION or [ EXPRESSION ]',
   man: {
     name: 'test - check file types and compare values',
     synopsis: 'test EXPRESSION or [ EXPRESSION ]',
-    description: 'Exit with the status determined by EXPRESSION.',
-    options: ['-f FILE   FILE exists and is a regular file', '-d FILE   FILE exists and is a directory', '-z STRING the length of STRING is zero', '-n STRING the length of STRING is nonzero'],
-    examples: ['test -f access.log && echo "found"', '[ -d Documents ]']
+    description: 'Exit with the status determined by EXPRESSION. Prints nothing; only the exit status is set, so test is normally used with && or ||.',
+    options: [
+      '-e FILE            FILE exists',
+      '-f FILE            FILE exists and is a regular file',
+      '-d FILE            FILE exists and is a directory',
+      '-r FILE            FILE exists and read permission is granted',
+      '-w FILE            FILE exists and write permission is granted',
+      '-x FILE            FILE exists and execute permission is granted',
+      '-s FILE            FILE exists and has a size greater than zero',
+      '-z STRING          the length of STRING is zero',
+      '-n STRING          the length of STRING is nonzero',
+      'STRING1 = STRING2  the strings are equal',
+      'STRING1 != STRING2 the strings are not equal',
+      'INT1 -eq INT2      the integers are equal (also -ne -lt -le -gt -ge)',
+      '! EXPRESSION       EXPRESSION is false'
+    ],
+    examples: ['test -f access.log && echo "found"', '[ -d Documents ] && cd Documents', '[ "$USER" = student ] || echo "not student"']
   },
-  run({ argv, cwd, fs }) {
+  run({ argv, cwd, fs, user = 'student' }) {
+    const name = argv[0] === '[' ? '[' : 'test';
     let args = argv.slice(1);
-    if (args[args.length - 1] === ']') args.pop();
 
-    if (args.length === 0) return { stdout: '', stderr: '', status: 1 };
+    // `[` is a command whose last argument must be `]`.
+    if (name === '[') {
+      if (args.length === 0 || args[args.length - 1] !== ']') {
+        return { stdout: '', stderr: `[: missing ']'\n`, status: 2 };
+      }
+      args = args.slice(0, -1);
+    }
 
-    if (args.length === 2 && args[0] === '-f') {
-      const st = stat(fs, resolvePath(cwd, args[1], false), false);
-      return { stdout: '', stderr: '', status: st.exists && st.isFile ? 0 : 1 };
+    const fail = (msg) => ({ stdout: '', stderr: `${name}: ${msg}\n`, status: 2 });
+    const result = (ok) => ({ stdout: '', stderr: '', status: ok ? 0 : 1 });
+
+    const FILE_OPS = new Set(['-e', '-f', '-d', '-r', '-w', '-x', '-s']);
+    const STRING_OPS = new Set(['-z', '-n']);
+    const UNARY_OPS = new Set([...FILE_OPS, ...STRING_OPS]);
+    const STRING_CMP = new Set(['=', '==', '!=']);
+    const INT_CMP = new Set(['-eq', '-ne', '-lt', '-le', '-gt', '-ge']);
+
+    const unary = (op, operand) => {
+      if (STRING_OPS.has(op)) {
+        return op === '-z' ? operand.length === 0 : operand.length > 0;
+      }
+      const st = stat(fs, resolvePath(cwd, operand, false), false);
+      if (!st.exists) return false;
+      switch (op) {
+        case '-e': return true;
+        case '-f': return st.isFile;
+        case '-d': return st.isDir;
+        case '-s': return st.isFile && st.size > 0;
+        case '-r': return hasPermission(st.node, 'r', user, false);
+        case '-w': return hasPermission(st.node, 'w', user, false);
+        case '-x': return hasPermission(st.node, 'x', user, false);
+        default: return false;
+      }
+    };
+
+    const INT_RE = /^[+-]?\d+$/;
+    const binary = (left, op, right) => {
+      if (STRING_CMP.has(op)) {
+        if (op === '!=') return { ok: left !== right };
+        return { ok: left === right };
+      }
+      if (!INT_RE.test(left.trim())) return { err: `${left}: integer expression expected` };
+      if (!INT_RE.test(right.trim())) return { err: `${right}: integer expression expected` };
+      const a = parseInt(left, 10);
+      const b = parseInt(right, 10);
+      switch (op) {
+        case '-eq': return { ok: a === b };
+        case '-ne': return { ok: a !== b };
+        case '-lt': return { ok: a < b };
+        case '-le': return { ok: a <= b };
+        case '-gt': return { ok: a > b };
+        case '-ge': return { ok: a >= b };
+        default: return { err: `${op}: binary operator expected` };
+      }
+    };
+
+    // Leading `!` negates whatever the rest of the expression evaluates to.
+    let negate = false;
+    while (args.length > 1 && args[0] === '!') {
+      negate = !negate;
+      args = args.slice(1);
     }
-    if (args.length === 2 && args[0] === '-d') {
-      const st = stat(fs, resolvePath(cwd, args[1], false), false);
-      return { stdout: '', stderr: '', status: st.exists && st.isDir ? 0 : 1 };
+    const decide = (res) => (
+      res.status === 2 ? res : { stdout: '', stderr: '', status: negate ? (res.status === 0 ? 1 : 0) : res.status }
+    );
+
+    // 0 args: false. 1 arg: true when the string is non-empty (so `test !`
+    // and `test -f` with no operand are both true, as in bash).
+    if (args.length === 0) return decide(result(false));
+    if (args.length === 1) return decide(result(args[0].length > 0));
+
+    if (args.length === 2) {
+      if (!UNARY_OPS.has(args[0])) return fail(`${args[0]}: unary operator expected`);
+      return decide(result(unary(args[0], args[1])));
     }
-    if (args.length === 2 && args[0] === '-e') {
-      const st = stat(fs, resolvePath(cwd, args[1], false), false);
-      return { stdout: '', stderr: '', status: st.exists ? 0 : 1 };
-    }
-    if (args.length === 2 && args[0] === '-z') {
-      return { stdout: '', stderr: '', status: args[1].length === 0 ? 0 : 1 };
-    }
-    if (args.length === 2 && args[0] === '-n') {
-      return { stdout: '', stderr: '', status: args[1].length > 0 ? 0 : 1 };
-    }
+
     if (args.length === 3) {
       const [left, op, right] = args;
-      if (op === '=' || op === '==') return { stdout: '', stderr: '', status: left === right ? 0 : 1 };
-      if (op === '!=') return { stdout: '', stderr: '', status: left !== right ? 0 : 1 };
-      if (op === '-eq') return { stdout: '', stderr: '', status: Number(left) === Number(right) ? 0 : 1 };
-      if (op === '-ne') return { stdout: '', stderr: '', status: Number(left) !== Number(right) ? 0 : 1 };
-      if (op === '-lt') return { stdout: '', stderr: '', status: Number(left) < Number(right) ? 0 : 1 };
-      if (op === '-gt') return { stdout: '', stderr: '', status: Number(left) > Number(right) ? 0 : 1 };
-      if (op === '-le') return { stdout: '', stderr: '', status: Number(left) <= Number(right) ? 0 : 1 };
-      if (op === '-ge') return { stdout: '', stderr: '', status: Number(left) >= Number(right) ? 0 : 1 };
+      if (!STRING_CMP.has(op) && !INT_CMP.has(op)) {
+        return fail(`${op}: binary operator expected`);
+      }
+      const res = binary(left, op, right);
+      if (res.err) return fail(res.err);
+      return decide(result(res.ok));
     }
 
-    return { stdout: '', stderr: '', status: args[0] ? 0 : 1 };
+    return fail('too many arguments');
   }
 };
 
@@ -2283,16 +2967,68 @@ export const psCmd = {
     u: { type: 'bool', status: 'implemented' },
     x: { type: 'bool', status: 'implemented' }
   },
-  usage: 'ps [options]',
-  man: { name: 'ps - report a snapshot of the current processes', synopsis: 'ps aux', description: 'ps displays information about a selection of the active processes.' },
-  run({ user = 'student' }) {
-    const lines = [
-      'USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND',
-      'root           1  0.0  0.1  22580  4096 ?        Ss   09:00   0:01 /sbin/init',
-      'root         412  0.0  0.2  45120  6144 ?        Ss   09:00   0:00 /usr/sbin/sshd -D',
-      `${user.padEnd(8, ' ')}  1024  0.0  0.2  18432  5120 pts/0    Ss   09:30   0:00 -bash`,
-      `${user.padEnd(8, ' ')}  2048  0.0  0.1  10240  3072 pts/0    R+   09:30   0:00 ps`
+  // `ps aux` is BSD syntax: the option letters carry no leading dash, so the
+  // generic parser would read "aux" as a file operand. ps reads argv itself.
+  passthroughArgs: true,
+  usage: 'ps [aux]',
+  man: {
+    name: 'ps - report a snapshot of the current processes',
+    synopsis: 'ps [aux]',
+    description: 'ps displays information about a selection of the active processes. With no options it shows only the processes of this terminal.',
+    options: [
+      'a   also show processes belonging to other users',
+      'u   user-oriented output format (USER, %CPU, %MEM, ...)',
+      'x   also show processes with no controlling terminal'
+    ],
+    examples: ['ps', 'ps aux']
+  },
+  run({ argv, user = 'student' }) {
+    let showOthers = false;
+    let userFormat = false;
+    let bad = null;
+
+    // Accept both BSD (`ps aux`) and UNIX (`ps -aux`) spellings.
+    for (const word of argv.slice(1)) {
+      const letters = word.startsWith('-') ? word.slice(1) : word;
+      for (const ch of letters) {
+        if (ch === 'a' || ch === 'x') showOthers = true;
+        else if (ch === 'u') userFormat = true;
+        else bad = ch;
+      }
+    }
+
+    if (bad) {
+      return { stdout: '', stderr: `error: unsupported option (BSD syntax) -- '${bad}'\nusage: ps [aux]\n`, status: 1 };
+    }
+
+    const own = [
+      { user, pid: 1024, cpu: '0.0', mem: '0.1', vsz: 18432, rss: 5120, tty: 'pts/0', stat: 'Ss', cmd: '-bash', shortCmd: 'bash' },
+      { user, pid: 2048, cpu: '0.0', mem: '0.1', vsz: 10240, rss: 3072, tty: 'pts/0', stat: 'R+', cmd: 'ps', shortCmd: 'ps' }
     ];
+    const others = [
+      { user: 'root', pid: 1, cpu: '0.0', mem: '0.1', vsz: 22580, rss: 4096, tty: '?', stat: 'Ss', cmd: '/sbin/init', shortCmd: 'init' },
+      { user: 'root', pid: 412, cpu: '0.0', mem: '0.2', vsz: 45120, rss: 6144, tty: '?', stat: 'Ss', cmd: '/usr/sbin/sshd -D', shortCmd: 'sshd' }
+    ];
+
+    const procs = showOthers ? [...others, ...own].sort((p, q) => p.pid - q.pid) : own;
+
+    if (userFormat) {
+      const lines = ['USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND'];
+      for (const p of procs) {
+        lines.push(
+          `${p.user.padEnd(9, ' ')}${String(p.pid).padStart(7, ' ')} ${p.cpu.padStart(4, ' ')} ${p.mem.padStart(4, ' ')} `
+          + `${String(p.vsz).padStart(6, ' ')} ${String(p.rss).padStart(5, ' ')} ${p.tty.padEnd(8, ' ')} ${p.stat.padEnd(4, ' ')} `
+          + `${p.tty === '?' ? '09:00' : '09:30'}   0:00 ${p.cmd}`
+        );
+      }
+      return { stdout: `${lines.join('\n')}\n`, stderr: '', status: 0 };
+    }
+
+    // Default (no options): the short four-column listing.
+    const lines = ['    PID TTY          TIME CMD'];
+    for (const p of procs) {
+      lines.push(`${String(p.pid).padStart(7, ' ')} ${p.tty.padEnd(8, ' ')} 00:00:00 ${p.shortCmd}`);
+    }
     return { stdout: `${lines.join('\n')}\n`, stderr: '', status: 0 };
   }
 };
@@ -2326,11 +3062,38 @@ export const sudoCmd = {
   // sudo wraps another command; its arguments belong to that command.
   passthroughArgs: true,
   usage: 'sudo [-u user] command',
-  man: { name: 'sudo - execute a command as another user', synopsis: 'sudo command', description: 'sudo allows a permitted user to execute a command as the superuser or another user.' },
-  run({ argv, cwd, fs, stdin, context }) {
-    const subArgs = argv.slice(1);
+  man: {
+    name: 'sudo - execute a command as another user',
+    synopsis: 'sudo [-u user] command [args]',
+    description: 'sudo allows a permitted user to execute a command as the superuser or another user. The command keeps its own options: sudo ls -l runs ls -l as root.',
+    options: ['-u USER   run the command as USER instead of root'],
+    examples: ['sudo cat /etc/shadow', 'sudo ls -la /var/log', 'sudo -u root wc -l /etc/passwd']
+  },
+  run({ argv, cwd, fs, stdin, isTTY, context }) {
+    let subArgs = argv.slice(1);
+
+    // sudo's own options come first and stop at the command name.
+    let asUser = 'root';
+    while (subArgs.length > 0 && subArgs[0].startsWith('-')) {
+      const opt = subArgs[0];
+      if (opt === '-u' || opt === '--user') {
+        if (subArgs.length < 2) {
+          return { stdout: '', stderr: 'sudo: option requires an argument -- \'u\'\n', status: 1 };
+        }
+        asUser = subArgs[1];
+        subArgs = subArgs.slice(2);
+        continue;
+      }
+      if (opt.startsWith('-u') && opt.length > 2) {
+        asUser = opt.slice(2);
+        subArgs = subArgs.slice(1);
+        continue;
+      }
+      return { stdout: '', stderr: `sudo: invalid option -- '${opt.replace(/^-+/, '')}'\nusage: sudo [-u user] command\n`, status: 1 };
+    }
+
     if (subArgs.length === 0) {
-      return { stdout: '', stderr: 'usage: sudo command\n', status: 1 };
+      return { stdout: '', stderr: 'usage: sudo [-u user] command\n', status: 1 };
     }
 
     // Special handler for simulated apt-get
@@ -2372,16 +3135,15 @@ export const sudoCmd = {
       return { stdout: '', stderr: `sudo: ${subArgs[0]}: command not found\n`, status: 1 };
     }
 
-    return cmdImpl.run({
-      argv: subArgs,
-      flags: {},
-      operands: subArgs.slice(1),
+    // The wrapped command parses its OWN options, so `sudo ls -l` is `ls -l`.
+    return runWrappedCommand(cmdImpl, subArgs[0], subArgs.slice(1), {
       cwd,
       fs,
       stdin,
-      user: 'root', // Elevate user to root!
-      isTTY: false,
-      context: { ...context, user: 'root' }
+      env: context.env,
+      user: asUser, // Elevate: root by default, or whoever -u named.
+      isTTY,
+      context: { ...context, user: asUser }
     });
   }
 };
@@ -2424,21 +3186,25 @@ export const nanoCmd = {
 export const tarCmd = {
   name: 'tar',
   platforms: ['linux'],
+  // Nothing here is simulated: there is no archive format in this filesystem,
+  // so -c wrote no archive, -x extracted nothing and -t printed an invented
+  // listing. Each flag now says so instead of appearing to work.
   flags: {
-    c: { type: 'bool', status: 'implemented' },
-    x: { type: 'bool', status: 'implemented' },
-    t: { type: 'bool', status: 'implemented' },
-    z: { type: 'bool', status: 'implemented' },
-    f: { type: 'string', status: 'implemented' },
-    v: { type: 'bool', status: 'implemented' }
+    c: { type: 'bool', status: 'notSimulated' },
+    x: { type: 'bool', status: 'notSimulated' },
+    t: { type: 'bool', status: 'notSimulated' },
+    z: { type: 'bool', status: 'notSimulated' },
+    f: { type: 'string', status: 'notSimulated' },
+    v: { type: 'bool', status: 'notSimulated' }
   },
   usage: 'tar [OPTION...] [FILE]...',
   man: { name: 'tar - an archiving utility', synopsis: 'tar -czf archive.tar.gz files...', description: 'tar saves many files together into a single tape or disk archive, and can restore individual files.' },
-  run({ flags, operands }) {
-    if (flags.t) {
-      return { stdout: 'backup/\nbackup/notes.txt\nbackup/access.log\n', stderr: '', status: 0 };
-    }
-    return { stdout: '', stderr: '', status: 0 };
+  run() {
+    return {
+      stdout: '',
+      stderr: 'tar: archives are not simulated here (see the Reference tab). On a real system, tar -czf backup.tar.gz DIR packs DIR into one compressed file.\n',
+      status: 2
+    };
   }
 };
 
@@ -2446,10 +3212,18 @@ export const gzipCmd = {
   name: 'gzip',
   aliases: ['gunzip'],
   platforms: ['linux'],
-  flags: { d: { type: 'bool', status: 'implemented' } },
+  flags: { d: { type: 'bool', status: 'notSimulated', long: 'decompress' } },
   usage: 'gzip [ -d ] [ name ...  ]',
-  man: { name: 'gzip - compress or expand files', synopsis: 'gzip file.txt', description: 'gzip reduces the size of named files using Lempel-Ziv coding.' },
-  run() { return { stdout: '', stderr: '', status: 0 }; }
+  man: { name: 'gzip - compress or expand files', synopsis: 'gzip file.txt', description: 'gzip reduces the size of named files using Lempel-Ziv coding. Compression is not simulated here.' },
+  run() {
+    // It used to exit 0 having done nothing, so `gzip notes.txt` looked like
+    // it had produced notes.txt.gz. There is no compression in this filesystem.
+    return {
+      stdout: '',
+      stderr: 'gzip: compression is not simulated here (see the Reference tab). On a real system, gzip FILE replaces FILE with FILE.gz.\n',
+      status: 2
+    };
+  }
 };
 
 // 45. clear
@@ -2472,10 +3246,19 @@ export const findCmd = {
     type: { type: 'string', status: 'implemented' },
     maxdepth: { type: 'number', status: 'implemented' },
     size: { type: 'string', status: 'implemented' },
-    mtime: { type: 'string', status: 'implemented' },
-    delete: { type: 'bool', status: 'implemented' },
-    exec: { type: 'string', status: 'implemented' }
+    // -mtime needs a clock. Every node in this filesystem carries the same
+    // frozen build timestamp, so any answer would be fiction.
+    mtime: { type: 'string', status: 'notSimulated' },
+    // -delete and -exec run an ACTION per match. find here only reports paths;
+    // it never writes the filesystem back, so both used to be silent no-ops.
+    delete: { type: 'bool', status: 'notSimulated' },
+    exec: { type: 'string', status: 'notSimulated' }
   },
+  // find's expression is not a list of options: `-size -1k` has an argument
+  // that starts with a dash, and the generic parser reads it as the unknown
+  // short options -1 and -k. find walks argv itself and rejects the predicates
+  // it cannot honour below.
+  passthroughArgs: true,
   usage: 'find [-H] [-L] [-P] [path...] [expression]',
   man: {
     name: 'find - search for files in a directory hierarchy',
@@ -2486,7 +3269,7 @@ export const findCmd = {
       '-iname PATTERN     like -name, but case-insensitive',
       '-type [f|d|l]      file is of type: f (file), d (directory), l (symlink)',
       '-maxdepth LEVELS   descend at most LEVELS directory levels',
-      '-size [+-]N[cwbkMG] file uses N units of space'
+      '-size [+-]N[cwbkMG] file uses N units of space (c bytes, k KiB, M MiB, G GiB; b 512-byte blocks, the default)'
     ],
     examples: ['find . -name "*.txt"', 'find /var/log -type f', 'find . -name "*.log" -maxdepth 2']
   },
@@ -2496,11 +3279,45 @@ export const findCmd = {
     let isCaseInsensitive = false;
     let typeFilter = null;
     let maxDepth = Infinity;
+    let sizeTest = null;
+
+    // Predicates that exist in real find and are deliberately not simulated
+    // here. Refusing them is the point: silently ignoring one would make find
+    // print matches the student did not ask for.
+    const UNSIMULATED = {
+      '-mtime': '-mtime needs a clock; every file here carries the same frozen build timestamp',
+      '-mmin': '-mmin needs a clock; every file here carries the same frozen build timestamp',
+      '-newer': '-newer needs a clock; every file here carries the same frozen build timestamp',
+      '-delete': '-delete is an action; find here only reports paths',
+      '-exec': '-exec is an action; find here only reports paths',
+      '-execdir': '-execdir is an action; find here only reports paths',
+      '-ok': '-ok is an action; find here only reports paths',
+      '-perm': '-perm matching is not simulated here'
+    };
+    const KNOWN = new Set(['-name', '-iname', '-type', '-maxdepth', '-mindepth', '-size', '-print']);
+
+    for (const arg of argv.slice(1)) {
+      if (UNSIMULATED[arg]) {
+        return {
+          stdout: '',
+          stderr: `find: ${arg} is not simulated here (see the Reference tab).\nTry 'find --help' for more information.\n`,
+          status: 2
+        };
+      }
+    }
 
     let i = 1;
     while (i < argv.length) {
       const arg = argv[i];
-      if (arg === '-name' && i + 1 < argv.length) {
+      if (arg === '-size' && i + 1 < argv.length) {
+        const spec = argv[++i];
+        const m = spec.match(/^([+-]?)(\d+)([cwbkMG]?)$/);
+        if (!m) {
+          return { stdout: '', stderr: `find: invalid -size type \`${spec.slice(-1)}'\n`, status: 1 };
+        }
+        const UNITS = { c: 1, w: 2, b: 512, k: 1024, M: 1024 * 1024, G: 1024 * 1024 * 1024 };
+        sizeTest = { sign: m[1], count: Number(m[2]), unit: UNITS[m[3] || 'b'] };
+      } else if (arg === '-name' && i + 1 < argv.length) {
         namePattern = argv[++i];
       } else if (arg === '-iname' && i + 1 < argv.length) {
         namePattern = argv[++i];
@@ -2509,6 +3326,10 @@ export const findCmd = {
         typeFilter = argv[++i];
       } else if (arg === '-maxdepth' && i + 1 < argv.length) {
         maxDepth = parseInt(argv[++i], 10) || Infinity;
+      } else if (arg === '-print') {
+        // The default action; nothing to record.
+      } else if (arg.startsWith('-') && arg.length > 1 && !KNOWN.has(arg)) {
+        return { stdout: '', stderr: `find: unknown predicate \`${arg}'\n`, status: 2 };
       } else if (!arg.startsWith('-')) {
         startPaths.push(arg);
       }
@@ -2550,6 +3371,17 @@ export const findCmd = {
 
           const nodeBase = basename(key, false);
           if (regex && !regex.test(nodeBase)) continue;
+
+          if (sizeTest) {
+            // find rounds a file UP to the next whole unit before comparing.
+            const bytes = node.type === 'file'
+              ? (typeof node.size === 'number' ? node.size : (node.content || '').length)
+              : 4096;
+            const units = Math.ceil(bytes / sizeTest.unit);
+            if (sizeTest.sign === '+' && !(units > sizeTest.count)) continue;
+            if (sizeTest.sign === '-' && !(units < sizeTest.count)) continue;
+            if (sizeTest.sign === '' && units !== sizeTest.count) continue;
+          }
 
           // Format relative or absolute as requested
           let displayPath = key;

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Adapter routing legacy executeLinuxCommand to new modular core engine
 
 import { runPipeline } from '../../packages/engine/shell/exec.js';

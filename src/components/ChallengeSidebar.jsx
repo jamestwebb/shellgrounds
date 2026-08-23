@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Challenge Sidebar / Left Rail component for navigation, briefs, hints, and scoring
 
 import React, { useState } from 'react';
@@ -7,6 +7,7 @@ import {
   Zap, Trophy, Send, Award, Layers, AlertCircle, HelpCircle
 } from 'lucide-react';
 import { ACT_DEFINITIONS, isActUnlockedFor, requiredSolvesToUnlock } from '../data/challenges';
+import { nextWrongAnswerMessage, actLockedCopy } from '../copy';
 import { sounds } from '../utils/audio';
 
 // Helper to highlight backtick-wrapped commands in text
@@ -43,9 +44,11 @@ export const ChallengeSidebar = ({
   // Instructors need to read and work every challenge in any order to build a
   // lesson. Students keep the act gate: it is the pacing mechanism.
   isAdmin = false,
-  // Hint state lives in App so the terminal `submit` path counts revealed hints too
+  // Hint state lives in App so the terminal `submit` path counts revealed hints
+  // too. Opening one goes through the server, which records it and prices the
+  // penalty — the count used to be the browser's word alone.
   unlockedHints = {},
-  setUnlockedHints = () => {}
+  onOpenHint = async () => null
 }) => {
   const [flagInput, setFlagInput] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -61,15 +64,17 @@ export const ChallengeSidebar = ({
 
   // Check which acts are unlocked. An instructor is never gated.
   const isActUnlocked = (act) =>
-    isAdmin || isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
+    isAdmin || isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges, acts);
   // What a STUDENT would see, so the instructor can tell the gate still works.
   const isActUnlockedForStudent = (act) =>
-    isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges);
+    isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges, acts);
 
   const hintsRevealedCount = (currentChallenge && unlockedHints[currentChallenge.id]) || 0;
 
-  const handleRevealNextHint = (cost) => {
-    if (!currentChallenge?.hints) return;
+  const [openingHint, setOpeningHint] = useState(false);
+
+  const handleRevealNextHint = async (cost) => {
+    if (!currentChallenge?.hints || openingHint) return;
     if (hintsRevealedCount >= currentChallenge.hints.length) return;
 
     if (cost > 0) {
@@ -78,10 +83,12 @@ export const ChallengeSidebar = ({
     }
 
     sounds.playKeypress();
-    setUnlockedHints(prev => ({
-      ...prev,
-      [currentChallenge.id]: hintsRevealedCount + 1
-    }));
+    setOpeningHint(true);
+    try {
+      await onOpenHint(currentChallenge.id, hintsRevealedCount);
+    } finally {
+      setOpeningHint(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -104,7 +111,7 @@ export const ChallengeSidebar = ({
         }
         setFlagInput('');
       } else {
-        setFeedback({ type: 'error', message: res.error || 'Incorrect flag. Try again.' });
+        setFeedback({ type: 'error', message: res.error || nextWrongAnswerMessage() });
       }
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Submission error' });
@@ -127,14 +134,19 @@ export const ChallengeSidebar = ({
         if (nextActChallenges[0]) onSelectChallenge(nextActChallenges[0].id);
         setFeedback(null);
       } else if (nextAct) {
+        // How many more solves in THIS act would open the next one.
+        const solvedInThisAct = actChallenges.filter(c => solvesMap[c.id]).length;
         setFeedback({
           type: 'success',
-          message: `LOCKED: ${nextAct.name} opens once you have solved ${requiredSolvesToUnlock(nextAct.id, challenges)} of this act's ${actChallenges.length} challenges.`
+          message: actLockedCopy(
+            Math.max(0, requiredSolvesToUnlock(nextAct.id, challenges, acts) - solvedInThisAct),
+            currentAct?.name || 'the previous act'
+          )
         });
       } else {
         setFeedback({
           type: 'success',
-          message: 'That was the last challenge in this act — check the leaderboard, or try the Topside (WIN) quest!'
+          message: 'That was the last challenge in this act. Take a look at the leaderboard, or switch packs for something new.'
         });
       }
     }
@@ -193,8 +205,8 @@ export const ChallengeSidebar = ({
                 }`}
                 title={
                   isAdmin && !studentUnlocked
-                    ? `${act.name} — open to you as instructor. A student would still need ${requiredSolvesToUnlock(act.id, challenges)} solves in the previous act.`
-                    : `${act.name}${!unlocked ? ` (Locked — solve ${requiredSolvesToUnlock(act.id, challenges)} of the previous act's challenges)` : ''}`
+                    ? `${act.name} — open to you as instructor. A student would still need ${requiredSolvesToUnlock(act.id, challenges, acts)} solves in the previous act.`
+                    : `${act.name}${!unlocked ? ` — locked. Solve ${requiredSolvesToUnlock(act.id, challenges, acts)} of the previous act's challenges.` : ''}`
                 }
               >
                 <span>{label}</span>
@@ -317,6 +329,7 @@ export const ChallengeSidebar = ({
                 {hintsRevealedCount < currentChallenge.hints.length && (
                   <button
                     onClick={() => handleRevealNextHint(currentChallenge.hints[hintsRevealedCount].cost || 0)}
+                    disabled={openingHint}
                     className="w-full py-2 px-3 rounded-lg bg-term-sidebar-raised border border-dashed border-term-sidebar-border hover:border-amber-500/50 hover:bg-term-sidebar-deep text-xs text-amber-300 flex items-center justify-between transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">

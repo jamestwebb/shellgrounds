@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// The Gauntlet — Interactive Proving Ground
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
+// Shellgrounds — learn the command line by capturing flags
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -12,7 +12,7 @@ import { Gate } from './components/Gate';
 import { Terminal } from './components/Terminal';
 import { ChallengeSidebar } from './components/ChallengeSidebar';
 import { Leaderboard } from './components/Leaderboard';
-import { WarrenMap } from './components/WarrenMap';
+import { SystemMap } from './components/SystemMap';
 import { AdminOverview } from './components/AdminOverview';
 import { CommandReference } from './components/CommandReference';
 import { BadgeCelebration } from './components/BadgeCelebration';
@@ -24,10 +24,14 @@ import { getPack, DEFAULT_PACK_ID, listPacks } from '../packs/index.js';
 import { runPipeline } from '../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../packages/engine/constants.js';
-import { fetchSession, fetchManifest, submitFlagApi, getAuthToken, setAuthToken } from './utils/api';
+import {
+  fetchSession, fetchManifest, submitFlagApi, openHintApi,
+  getAuthToken, setAuthToken, getStoredPackId, setStoredPackId
+} from './utils/api';
 import { replaceFlagTokens, injectFlagsIntoVFS } from './utils/vfs-injector';
 import { explainCommand } from '../packages/engine/coach.js';
 import { sounds } from './utils/audio';
+import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
 
 const resumeSelection = (challenges, solves) => {
   const linux = challenges.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
@@ -52,6 +56,11 @@ export default function App() {
   const [linuxFs, setLinuxFs] = useState(() => currentPack.createFs('linux'));
   const [windowsFs, setWindowsFs] = useState(() => currentPack.createFs('windows'));
   const [installedPackages, setInstalledPackages] = useState(new Set());
+  // The shell's environment. `set FOO=bar` returns a new env from runPipeline;
+  // dropping it is why %VAR% never worked and `set` never persisted. Linux and
+  // Windows keep separate environments, so this resets on a platform or pack
+  // change.
+  const [shellEnv, setShellEnv] = useState(undefined);
   const [terminalHistory, setTerminalHistory] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
 
@@ -95,8 +104,30 @@ export default function App() {
   }, [flagMap, currentPack, session?.handle]);
 
   // Load / Switch Pack
+  // Opening a hint tells the server, which records it and prices the penalty.
+  // The count used to live only in the browser, so the cost was whatever the
+  // client felt like reporting at submission time.
+  const handleOpenHint = useCallback(async (challengeId, index) => {
+    if (isPracticeMode) {
+      setUnlockedHints(prev => ({ ...prev, [challengeId]: (prev[challengeId] || 0) + 1 }));
+      return null;
+    }
+    try {
+      const res = await openHintApi(challengeId, index);
+      setUnlockedHints(prev => ({ ...prev, [challengeId]: res.hintsOpened }));
+      return res;
+    } catch (err) {
+      console.warn('Could not open hint:', err);
+      return null;
+    }
+  }, [isPracticeMode]);
+
   const handleSelectPack = useCallback((newPackId) => {
     setActivePackId(newPackId);
+    // The student's choice, remembered. The server used to own this and would
+    // overwrite it on every reload, which silently undid the switch.
+    setStoredPackId(newPackId);
+    setShellEnv(undefined);
     const pack = getPack(newPackId);
     const plat = pack.manifest.platforms?.[0] || 'linux';
     setPlatform(plat);
@@ -108,7 +139,7 @@ export default function App() {
     setTerminalHistory([
       {
         type: 'output',
-        text: `[+] Switched active curriculum to: ${pack.manifest.name} (v${pack.manifest.version})`,
+        text: `[+] Loaded pack: ${pack.manifest.name} (v${pack.manifest.version})`,
         isSuccess: true
       }
     ]);
@@ -128,8 +159,12 @@ export default function App() {
         const data = await fetchSession();
         if (data.success) {
           setSession({ handle: data.handle, isAdmin: data.isAdmin });
-          if (data.packId && data.packId !== activePackId) {
-            handleSelectPack(data.packId);
+          // The token still carries the pack the student registered with, but
+          // it is only a suggestion now: the server resolves each submission
+          // from its challenge id. A stored choice is the student's own.
+          const preferred = getStoredPackId() || data.packId;
+          if (preferred && preferred !== activePackId) {
+            handleSelectPack(preferred);
           }
 
           const solves = {};
@@ -138,7 +173,7 @@ export default function App() {
           });
           setSolvesMap(solves);
 
-          const manifestRes = await fetchManifest();
+          const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
           if (manifestRes.success) {
             setFlagMap(manifestRes.flags || {});
           }
@@ -160,7 +195,7 @@ export default function App() {
   // Practice Mode Login
   const handleStartPractice = () => {
     setIsPracticeMode(true);
-    setSession({ handle: 'guest_analyst', isAdmin: false });
+    setSession({ handle: 'guest', isAdmin: false });
     setViewState('app');
     sounds.playSuccess();
   };
@@ -175,7 +210,7 @@ export default function App() {
       .then(d => { if (d?.success) setSession({ handle: d.handle, isAdmin: !!d.isAdmin }); })
       .catch(() => { /* keep the non-admin view; the reload path will correct it */ });
     try {
-      const manifestRes = await fetchManifest();
+      const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
       if (manifestRes.success) {
         setFlagMap(manifestRes.flags || {});
       }
@@ -234,6 +269,7 @@ export default function App() {
     const prevCwd = cwd;
     const isWin = platform === 'windows';
     const res = runPipeline(trimmed, cwd, activeFs, isWin ? 'windows' : 'linux', {
+      env: shellEnv,
       installedPackages,
       packCommands: currentPack.commands,
       packHelp: currentPack.help,
@@ -241,6 +277,7 @@ export default function App() {
     });
 
     if (res.newCwd) setCwd(res.newCwd);
+    if (res.env) setShellEnv(res.env);
     if (res.fs) {
       if (isWin) setWindowsFs(res.fs);
       else setLinuxFs(res.fs);
@@ -320,7 +357,7 @@ export default function App() {
         ...prev,
         {
           type: 'output',
-          text: `[★] CHALLENGE COMPLETE (+${challenge.points} XP): ${challenge.title}\n${challenge.successMessage || ''}`,
+          text: `[★] SOLVED (+${challenge.points} XP): ${challenge.title}\n${[challenge.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`,
           isSuccess: true
         }
       ]);
@@ -328,7 +365,7 @@ export default function App() {
     }
 
     try {
-      const res = await submitFlagApi(challenge.id, null, unlockedHints[challenge.id] || 0, proofCommand, cwd);
+      const res = await submitFlagApi({ challengeId: challenge.id, commandText: proofCommand, cwd });
       if (res.success) {
         sounds.playSuccess();
         setSolvesMap(prev => ({
@@ -344,7 +381,7 @@ export default function App() {
           ...prev,
           {
             type: 'output',
-            text: `[★] CHALLENGE COMPLETE (+${res.points} XP): ${challenge.title}\n${res.successMessage || ''}`,
+            text: `[★] SOLVED (+${res.points} XP): ${challenge.title}\n${[res.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`,
             isSuccess: true
           }
         ]);
@@ -368,14 +405,14 @@ export default function App() {
         sounds.playSuccess();
         setTerminalHistory(prev => [
           ...prev,
-          { type: 'output', text: `[★] FLAG ACCEPTED (+${c.points} XP): ${c.title}`, isSuccess: true }
+          { type: 'output', text: `[★] FLAG ACCEPTED (+${c.points} XP): ${c.title}\n${nextSolveMessage()}`, isSuccess: true }
         ]);
       }
       return;
     }
 
     try {
-      const res = await submitFlagApi(selectedChallengeId, flagValue.trim(), unlockedHints[selectedChallengeId] || 0, '', cwd);
+      const res = await submitFlagApi({ challengeId: selectedChallengeId, flag: flagValue.trim(), cwd });
       if (res.success) {
         sounds.playSuccess();
         setSolvesMap(prev => ({
@@ -388,14 +425,14 @@ export default function App() {
         }));
         setTerminalHistory(prev => [
           ...prev,
-          { type: 'output', text: `[★] FLAG ACCEPTED (+${res.points} XP)\n${res.successMessage || ''}`, isSuccess: true }
+          { type: 'output', text: `[★] FLAG ACCEPTED (+${res.points} XP)\n${[res.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`, isSuccess: true }
         ]);
       }
     } catch (err) {
       sounds.playError();
       setTerminalHistory(prev => [
         ...prev,
-        { type: 'output', text: `[!] ${err.message || 'Incorrect flag.'}`, isError: true }
+        { type: 'output', text: `[!] ${err.message || 'That flag did not match.'}\n    ${nextWrongAnswerMessage()}`, isError: true }
       ]);
     }
   };
@@ -406,7 +443,7 @@ export default function App() {
 
   // Active view routing
   if (viewState === 'boot') {
-    return <Boot onComplete={() => setViewState(session ? 'app' : 'gate')} />;
+    return <Boot onComplete={() => setViewState(session ? 'app' : 'gate')} packName={currentPack.manifest.name} />;
   }
 
   if (viewState === 'gate') {
@@ -419,13 +456,14 @@ export default function App() {
             setViewState('app');
           }}
           existingHandle={session?.handle}
+          packName={currentPack.manifest.name}
         />
         <div className="text-center pb-6">
           <button
             onClick={handleStartPractice}
             className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
           >
-            Enter Practice Sandbox Mode (No Login Required)
+            Just looking? Practise here without a handle — nothing is scored.
           </button>
         </div>
       </div>
@@ -442,7 +480,7 @@ export default function App() {
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('terminal')}>
             <BrandMark size={22} />
             <span className="font-bold text-sm tracking-wider text-green-400 hidden md:inline">
-              THE GAUNTLET
+              SHELLGROUNDS
             </span>
           </div>
 
@@ -450,7 +488,7 @@ export default function App() {
           <button
             onClick={() => setShowPackModal(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition"
-            title="Switch Content Pack"
+            title="Switch challenge pack"
           >
             <Package size={13} className="text-emerald-400" />
             <span className="font-semibold">{currentPack.manifest.name}</span>
@@ -478,13 +516,13 @@ export default function App() {
                 : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <Trophy size={14} /> <span className="hidden sm:inline">RANKINGS</span>
+            <Trophy size={14} /> <span className="hidden sm:inline">LEADERBOARD</span>
           </button>
 
           <button
             onClick={() => setShowBoundaryModal(true)}
             className="px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-cyan-500/30"
-            title="Simulation Boundary & Command Reference"
+            title="What this terminal simulates, and every command in it"
           >
             <BookOpen size={14} /> <span className="hidden sm:inline">REFERENCE</span>
           </button>
@@ -508,7 +546,7 @@ export default function App() {
           <button
             onClick={() => setSoundEnabled(prev => !prev)}
             className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-term-gray transition-all cursor-pointer"
-            title={`Audio: ${soundEnabled ? 'ON' : 'OFF'}`}
+            title={soundEnabled ? 'Sound on' : 'Sound off'}
           >
             {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
@@ -553,7 +591,7 @@ export default function App() {
             platform={platform}
             onSwitchPlatform={handleSwitchPlatform}
             unlockedHints={unlockedHints}
-            setUnlockedHints={setUnlockedHints}
+            onOpenHint={handleOpenHint}
             isAdmin={!!session?.isAdmin}
           />
 
@@ -579,12 +617,22 @@ export default function App() {
         </div>
 
         {activeTab === 'leaderboard' && (
-          <Leaderboard currentHandle={session?.handle} />
+          <Leaderboard
+            currentHandle={session?.handle}
+            packId={activePackId}
+            packName={currentPack.manifest.name}
+          />
         )}
 
         {activeTab === 'map' && (
-          <WarrenMap
+          <SystemMap
+            fs={platform === 'windows' ? windowsFs : linuxFs}
             currentCwd={cwd}
+            home={platform === 'windows'
+              ? (currentPack.manifest.windows?.home || 'C:\\Users\\Student')
+              : (currentPack.manifest.linux?.home || '/home/student')}
+            platform={platform}
+            packName={currentPack.manifest.name}
             onNavigate={(newPath) => {
               setCwd(newPath);
               setActiveTab('terminal');
@@ -593,7 +641,7 @@ export default function App() {
         )}
 
         {activeTab === 'admin' && session?.isAdmin && (
-          <AdminOverview />
+          <AdminOverview packId={activePackId} />
         )}
       </main>
 

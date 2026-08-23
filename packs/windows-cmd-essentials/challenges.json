@@ -4,13 +4,22 @@
     "act": 1,
     "title": "Where Am I? (CD)",
     "points": 10,
-    "brief": "In Windows CMD, running `cd` with no arguments prints the current directory. Run `cd` to see where you stand.",
+    "brief": "The laptop is already open at a Command Prompt. In Windows CMD, running `cd` with no arguments prints the directory you are in — run it and see whose profile you have landed in.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^cd\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^(cd|chdir)\\s*$"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "C:\\Users\\Student"
+        }
+      ]
     },
     "hints": [
       {
@@ -18,11 +27,13 @@
         "text": "Type `cd` and press Enter."
       }
     ],
-    "successMessage": "In cmd.exe, `cd` alone displays the current drive and directory.",
+    "successMessage": "The profile folder is your first clue about the owner. `chdir` is the same command under a longer name.",
     "teaches": [
       "cd",
+      "chdir",
       "current-directory"
     ],
+    "solution": "cd",
     "acceptedVariants": [
       "cd",
       "chdir"
@@ -33,13 +44,22 @@
     "act": 1,
     "title": "Directory Listing (DIR)",
     "points": 10,
-    "brief": "Use `dir` to list files and subdirectories in the current folder.",
+    "brief": "Run `dir` to list the files and folders of the profile you have landed in.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^dir(\\s+\\.)?\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^dir(\\s+\\.)?\\s*$"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "Directory of C:\\Users\\Student"
+        }
+      ]
     },
     "hints": [
       {
@@ -47,10 +67,11 @@
         "text": "Type `dir`."
       }
     ],
-    "successMessage": "`dir` lists directory contents with creation dates, file sizes, and directory markers.",
+    "successMessage": "`dir` shows dates, sizes and a `<DIR>` marker for folders. Five folders here — and, as you will find out, not everything is on this list.",
     "teaches": [
       "dir"
     ],
+    "solution": "dir",
     "acceptedVariants": [
       "dir",
       "dir ."
@@ -61,33 +82,43 @@
     "act": 1,
     "title": "Show All Files (DIR /A)",
     "points": 15,
-    "brief": "Windows hides a file with an attribute letter (H for Hidden) rather than a leading dot. Make `dir` show every file, hidden ones included.",
+    "brief": "One file in this folder never turns up in a plain `dir`: Windows hides a file with an attribute letter (H for Hidden) rather than with a leading dot. Make `dir` show everything, hidden files included.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^dir\\s+/a.*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^dir\\s+/a"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "lostfound.tag"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`dir` takes switches that start with a forward slash. The one for attributes is `/a`."
+        "text": "`dir` switches start with a forward slash. The one for attributes is `/a`."
       },
       {
         "cost": 5,
         "text": "Run `dir /a`."
       }
     ],
-    "successMessage": "`/a` displays files with specified attributes (hidden, system, archive).",
+    "successMessage": "`lostfound.tag` was there the whole time. `/a` includes files with any attribute set, hidden ones among them.",
     "teaches": [
       "dir /a",
       "hidden-attributes"
     ],
+    "solution": "dir /a",
     "acceptedVariants": [
       "dir /a",
       "dir /a:h",
-      "dir /ah"
+      "dir /a /b"
     ]
   },
   {
@@ -100,8 +131,17 @@
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^dir\\s+/b.*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^dir\\s+/b"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "Documents\nDesktop\nDownloads\nProjects\nlogs"
+        }
+      ]
     },
     "hints": [
       {
@@ -113,12 +153,14 @@
         "text": "Run `dir /b`."
       }
     ],
-    "successMessage": "`dir /b` produces clean output ideal for batch processing and scripts.",
+    "successMessage": "Bare output is what you pipe into another command. Headers and totals only get in the way there.",
     "teaches": [
       "dir /b"
     ],
+    "solution": "dir /b",
     "acceptedVariants": [
-      "dir /b"
+      "dir /b",
+      "dir /b ."
     ]
   },
   {
@@ -126,29 +168,39 @@
     "act": 1,
     "title": "Recursive Search (DIR /S)",
     "points": 20,
-    "brief": "Search the `Documents` folder AND every folder inside it in one go. Use `dir`.",
+    "brief": "List `Documents` AND every folder inside it in one go. Use `dir`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^dir\\s+/s.*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^dir\\b.*/s"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "Directory of C:\\Users\\Student\\Documents"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The `dir` switch that recurses into subfolders is `/s`."
+        "text": "The `dir` switch that walks down into subfolders is `/s`."
       },
       {
         "cost": 5,
         "text": "Run `dir /s Documents`."
       }
     ],
-    "successMessage": "`dir /s` walks subdirectories recursively.",
+    "successMessage": "`/s` is how you search a machine you do not know. It is also how you accidentally print ten thousand lines, so aim it at a folder.",
     "teaches": [
       "dir /s",
       "recursive-search"
     ],
+    "solution": "dir /s Documents",
     "acceptedVariants": [
       "dir /s Documents",
       "dir /s",
@@ -160,7 +212,7 @@
     "act": 1,
     "title": "Enter Documents (CD)",
     "points": 15,
-    "brief": "Use `cd Documents` to move into the Documents directory.",
+    "brief": "The owner's paperwork is in `Documents`. Run `cd Documents` to move into it.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -174,11 +226,12 @@
         "text": "Type `cd Documents`."
       }
     ],
-    "successMessage": "You changed your working directory to `C:\\Users\\Student\\Documents`.",
+    "successMessage": "The prompt now shows `C:\\Users\\Student\\Documents`. In CMD the prompt is your position indicator.",
     "teaches": [
       "cd",
       "navigation"
     ],
+    "solution": "cd Documents",
     "acceptedVariants": [
       "cd Documents",
       "cd .\\Documents",
@@ -190,7 +243,7 @@
     "act": 1,
     "title": "Climb to Parent (CD ..)",
     "points": 15,
-    "brief": "Use `cd ..` from `Documents` to move back up to `C:\\Users\\Student`.",
+    "brief": "Run `cd ..` from `Documents` to climb back up to the profile folder.",
     "setup": {
       "cwd": "C:\\Users\\Student\\Documents"
     },
@@ -204,11 +257,12 @@
         "text": "Type `cd ..`."
       }
     ],
-    "successMessage": "`cd ..` navigates up to the parent directory.",
+    "successMessage": "`..` means the parent folder on Windows exactly as it does on Linux. The slashes differ; the idea does not.",
     "teaches": [
       "cd ..",
       "parent-directory"
     ],
+    "solution": "cd ..",
     "acceptedVariants": [
       "cd ..",
       "cd C:\\Users\\Student"
@@ -219,13 +273,13 @@
     "act": 1,
     "title": "Display File Content (TYPE)",
     "points": 15,
-    "brief": "Print the contents of `Documents\\notes.txt` to the prompt. Windows has no `cat`.",
+    "brief": "Print `Documents\\notes.txt` to the prompt and find out what domain this laptop belongs to. Windows has no `cat`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^type\\s+[\"']?(?:(?:C:\\\\Users\\\\Student\\\\)?Documents[\\\\/])?notes\\.txt[\"']?\\s*$"
+      "predicate": "outputEquals",
+      "text": "Project Status: Windows Rollout\nDomain: CORP.INTERNAL\nAdministrator: Student"
     },
     "hints": [
       {
@@ -237,10 +291,11 @@
         "text": "Run `type Documents\\notes.txt`."
       }
     ],
-    "successMessage": "`type` prints file contents to the screen (the Windows counterpart of `cat`).",
+    "successMessage": "CORP.INTERNAL, and an account called Student. Two more lines for the property form.",
     "teaches": [
       "type"
     ],
+    "solution": "type Documents\\notes.txt",
     "acceptedVariants": [
       "type Documents\\notes.txt",
       "type Documents/notes.txt"
@@ -251,28 +306,38 @@
     "act": 1,
     "title": "Directory Tree (TREE)",
     "points": 15,
-    "brief": "Display this directory and everything under it as a visual hierarchy rather than a flat list.",
+    "brief": "Show this folder and everything under it as a picture of the hierarchy rather than a flat list.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^tree(\\s+.*)?$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^tree\\b"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "+---Documents"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The command is `tree`. Adding `/f` also lists the files."
+        "text": "The command is `tree`. Adding `/f` lists the files as well as the folders."
       },
       {
         "cost": 5,
         "text": "Run `tree`."
       }
     ],
-    "successMessage": "`tree` renders directory graphs. Add `/f` to include file names as well.",
+    "successMessage": "`tree /f` is the fastest way to see the shape of an unfamiliar machine — including the hidden tag.",
     "teaches": [
       "tree"
     ],
+    "solution": "tree",
     "acceptedVariants": [
       "tree",
       "tree /f"
@@ -283,32 +348,79 @@
     "act": 1,
     "title": "Locate Binaries (WHERE)",
     "points": 15,
-    "brief": "Find out where on disk the Windows command interpreter itself lives — the file `cmd`.",
+    "brief": "Find out where on this disk the command interpreter itself lives — the program `cmd`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^where\\s+cmd(\\.exe)?\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^where\\b"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "C:\\Windows\\System32\\cmd.exe"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`where` searches the PATH for a named program, the way `which` does on Linux."
+        "text": "`where` searches the folders on PATH for a named program, the way `which` does on Linux."
       },
       {
         "cost": 5,
         "text": "Run `where cmd`."
       }
     ],
-    "successMessage": "`where` searches directories in PATH for matching executables.",
+    "successMessage": "Knowing which copy of a program you are actually running is how you settle \"but it works on my machine\".",
     "teaches": [
       "where",
       "path"
     ],
+    "solution": "where cmd",
     "acceptedVariants": [
       "where cmd",
       "where cmd.exe"
+    ]
+  },
+  {
+    "id": "w1-boss",
+    "act": 1,
+    "title": "BOSS: The Four Servers",
+    "points": 35,
+    "brief": "Somewhere under this profile is a file listing four servers and one recovery code. Nobody will tell you where it is: walk the disk until you find it, print it, and submit the recovery code — it was generated for you alone.",
+    "setup": {
+      "cwd": "C:\\Users\\Student"
+    },
+    "success": {
+      "kind": "flag",
+      "flagFile": "C:\\Users\\Student\\Documents\\servers.txt"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "A recursive listing shows every file on the machine at once. Both `dir` and `tree` can do that with the right switch."
+      },
+      {
+        "cost": 10,
+        "text": "The file is `Documents\\servers.txt`. Print it with `type`, then paste the FLAG{...} value into the box."
+      }
+    ],
+    "successMessage": "A domain controller, a file server, a database and a web server — and a recovery code that was yours alone. Search first, read second.",
+    "teaches": [
+      "dir /s",
+      "tree /f",
+      "type",
+      "discovery"
+    ],
+    "solution": "type Documents\\servers.txt",
+    "acceptedVariants": [
+      "type Documents\\servers.txt",
+      "type Documents/servers.txt",
+      "type C:\\Users\\Student\\Documents\\servers.txt"
     ]
   },
   {
@@ -316,30 +428,42 @@
     "act": 2,
     "title": "Copy Files (COPY)",
     "points": 20,
-    "brief": "Make a duplicate of `Documents\\notes.txt` called `Documents\\notes_backup.txt`.",
+    "brief": "Never edit the only copy of anything. Make a duplicate of `Documents\\notes.txt` called `Documents\\notes_backup.txt`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "fileExists",
-      "path": "C:\\Users\\Student\\Documents\\notes_backup.txt"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "C:\\Users\\Student\\Documents\\notes_backup.txt"
+        },
+        {
+          "predicate": "fileMatches",
+          "path": "C:\\Users\\Student\\Documents\\notes_backup.txt",
+          "pattern": "CORP.INTERNAL"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `copy`. It takes the source path first, then the destination."
+        "text": "The cmd.exe command is `copy`. Source path first, destination second."
       },
       {
         "cost": 10,
         "text": "Run `copy Documents\\notes.txt Documents\\notes_backup.txt`."
       }
     ],
-    "successMessage": "`copy` creates duplicates of files.",
+    "successMessage": "Both files now exist and hold the same text. `copy` never touches the original.",
     "teaches": [
       "copy"
     ],
+    "solution": "copy Documents\\notes.txt Documents\\notes_backup.txt",
     "acceptedVariants": [
-      "copy Documents\\notes.txt Documents\\notes_backup.txt"
+      "copy Documents\\notes.txt Documents\\notes_backup.txt",
+      "copy Documents/notes.txt Documents/notes_backup.txt"
     ]
   },
   {
@@ -347,30 +471,42 @@
     "act": 2,
     "title": "Move Files (MOVE)",
     "points": 20,
-    "brief": "Move `Desktop\\todo.txt` into the `Documents` folder, keeping the same filename.",
+    "brief": "The owner left a to-do list loose on the Desktop. Move `Desktop\\todo.txt` into the `Documents` folder, keeping the same filename.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "fileExists",
-      "path": "C:\\Users\\Student\\Documents\\todo.txt"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "C:\\Users\\Student\\Documents\\todo.txt"
+        },
+        {
+          "predicate": "fileMatches",
+          "path": "C:\\Users\\Student\\Documents\\todo.txt",
+          "pattern": "CertUtil"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `move`. Source first, destination second."
+        "text": "The cmd.exe command is `move`. Source first, destination second — the same shape as `copy`."
       },
       {
         "cost": 10,
         "text": "Run `move Desktop\\todo.txt Documents\\todo.txt`."
       }
     ],
-    "successMessage": "`move` relocates files to a new directory destination.",
+    "successMessage": "Unlike `copy`, `move` leaves nothing behind at the source. The file exists once, in the new place.",
     "teaches": [
       "move"
     ],
+    "solution": "move Desktop\\todo.txt Documents\\todo.txt",
     "acceptedVariants": [
-      "move Desktop\\todo.txt Documents\\todo.txt"
+      "move Desktop\\todo.txt Documents\\todo.txt",
+      "move Desktop\\todo.txt Documents"
     ]
   },
   {
@@ -396,11 +532,12 @@
         "text": "Run `ren Desktop\\Shortcut.lnk AppShortcut.lnk`."
       }
     ],
-    "successMessage": "`ren` (rename) changes file names.",
+    "successMessage": "A second path would be a `move`. `ren` only ever changes the name in place, which is why it takes a bare name.",
     "teaches": [
       "ren",
       "rename"
     ],
+    "solution": "ren Desktop\\Shortcut.lnk AppShortcut.lnk",
     "acceptedVariants": [
       "ren Desktop\\Shortcut.lnk AppShortcut.lnk",
       "rename Desktop\\Shortcut.lnk AppShortcut.lnk"
@@ -411,32 +548,42 @@
     "act": 2,
     "title": "Delete Files (DEL)",
     "points": 20,
-    "brief": "Delete the file `Downloads\\archive.zip`.",
+    "brief": "`Downloads\\archive.zip` is junk the owner will not want back. Delete it — and on the same line list `Downloads` again so you can see it has gone. In cmd.exe, `&` runs one command after another.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^del\\s+.*archive\\.zip\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "\\b(del|erase)\\b"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "setup.exe"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `del`. There is no Recycle Bin from the command prompt."
+        "text": "The cmd.exe command is `del`, and `erase` is the same command. There is no Recycle Bin at the command prompt, so check afterwards."
       },
       {
         "cost": 10,
-        "text": "Run `del Downloads\\archive.zip`."
+        "text": "Run `del Downloads\\archive.zip & dir /b Downloads`."
       }
     ],
-    "successMessage": "`del` deletes files from disk.",
+    "successMessage": "One file left, and you watched it happen rather than assuming. A deletion from CMD does not go to the Recycle Bin.",
     "teaches": [
       "del",
       "erase"
     ],
+    "solution": "del Downloads\\archive.zip & dir /b Downloads",
     "acceptedVariants": [
-      "del Downloads\\archive.zip",
-      "erase Downloads\\archive.zip"
+      "del Downloads\\archive.zip & dir /b Downloads",
+      "erase Downloads\\archive.zip & dir /b Downloads"
     ]
   },
   {
@@ -444,32 +591,33 @@
     "act": 2,
     "title": "Create Directories (MD / MKDIR)",
     "points": 20,
-    "brief": "Create a new folder called `Projects` inside `C:\\Users\\Student`.",
+    "brief": "Create a folder called `Backup` in the profile folder, to hold what you are about to put aside.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
       "predicate": "dirExists",
-      "path": "C:\\Users\\Student\\Projects"
+      "path": "C:\\Users\\Student\\Backup"
     },
     "hints": [
       {
         "cost": 0,
-        "text": "cmd.exe accepts either `md` or the longer `mkdir`."
+        "text": "cmd.exe accepts either `md` or the longer `mkdir`. They are the same command."
       },
       {
         "cost": 10,
-        "text": "Run `md Projects`."
+        "text": "Run `md Backup`."
       }
     ],
-    "successMessage": "`md` (Make Directory) creates folders in Windows.",
+    "successMessage": "Two names, one command. Old CMD habits kept the short forms alive.",
     "teaches": [
       "md",
       "mkdir"
     ],
+    "solution": "md Backup",
     "acceptedVariants": [
-      "md Projects",
-      "mkdir Projects"
+      "md Backup",
+      "mkdir Backup"
     ]
   },
   {
@@ -477,32 +625,42 @@
     "act": 2,
     "title": "Remove Directories (RD / RMDIR)",
     "points": 20,
-    "brief": "Remove the `Projects` folder you just created.",
+    "brief": "The owner left an empty `Projects` folder behind and it is not going back with the laptop. Remove it, and on the same line list the profile folder again so you can see it has gone.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^rd\\s+Projects\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "\\b(rd|rmdir)\\b"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "Documents\nDesktop\nDownloads\nlogs"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "cmd.exe accepts either `rd` or the longer `rmdir`. The folder must be empty."
+        "text": "cmd.exe accepts either `rd` or the longer `rmdir`, and the folder has to be empty before either will remove it."
       },
       {
         "cost": 10,
-        "text": "Run `rd Projects`."
+        "text": "Run `rd Projects & dir /b`."
       }
     ],
-    "successMessage": "`rd` (Remove Directory) deletes empty folders.",
+    "successMessage": "Four folders left. `rd` refuses a folder that still has anything in it, which is a safety feature, not an obstacle.",
     "teaches": [
       "rd",
       "rmdir"
     ],
+    "solution": "rd Projects & dir /b",
     "acceptedVariants": [
-      "rd Projects",
-      "rmdir Projects"
+      "rd Projects & dir /b",
+      "rmdir Projects & dir /b"
     ]
   },
   {
@@ -510,28 +668,38 @@
     "act": 2,
     "title": "Inspect File Attributes (ATTRIB)",
     "points": 25,
-    "brief": "`Documents\\hidden_config.ini` does not appear in a plain `dir`. Show which attributes are set on it.",
+    "brief": "`Documents\\hidden_config.ini` does not appear in a plain `dir` either. Show which attribute letters are set on it.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^attrib\\s+.*hidden_config\\.ini\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "hidden_config"
+        },
+        {
+          "predicate": "outputMatches",
+          "pattern": "H\\s+.*hidden_config\\.ini"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`attrib` reports a file's attribute letters. H is Hidden, R is Read-only, S is System."
+        "text": "`attrib` reports a file's attribute letters. H is Hidden, R is Read-only, S is System, A is Archive."
       },
       {
         "cost": 10,
         "text": "Run `attrib Documents\\hidden_config.ini`."
       }
     ],
-    "successMessage": "`attrib` displays R (Read-only), H (Hidden), A (Archive), and S (System) attributes.",
+    "successMessage": "A and H. Hidden on Windows is one bit of metadata, not a security boundary — anyone who asks can see the file.",
     "teaches": [
       "attrib"
     ],
+    "solution": "attrib Documents\\hidden_config.ini",
     "acceptedVariants": [
       "attrib Documents\\hidden_config.ini",
       "attrib Documents/hidden_config.ini"
@@ -542,31 +710,42 @@
     "act": 2,
     "title": "Environment Variables (%VAR%)",
     "points": 20,
-    "brief": "cmd.exe wraps an environment variable in percent signs, like `%NAME%`. Print the value of your `USERPROFILE` variable.",
+    "brief": "cmd.exe wraps an environment variable in percent signs, like `%NAME%`. Print the value that `USERPROFILE` holds on this machine.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^echo\\s+%USERPROFILE%\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "%USERPROFILE%"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "C:\\Users\\Student"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`echo` prints text, and the shell substitutes the variable before `echo` sees it."
+        "text": "`echo` prints text, and the shell substitutes the variable before `echo` ever sees it."
       },
       {
         "cost": 10,
         "text": "Run `echo %USERPROFILE%`."
       }
     ],
-    "successMessage": "`%USERPROFILE%` expands to `C:\\Users\\Student`.",
+    "successMessage": "The shell replaced `%USERPROFILE%` with C:\\Users\\Student before echo ran. Echo itself never knew there was a variable.",
     "teaches": [
       "%VAR%",
       "environment-variables"
     ],
+    "solution": "echo %USERPROFILE%",
     "acceptedVariants": [
-      "echo %USERPROFILE%"
+      "echo %USERPROFILE%",
+      "echo %userprofile%"
     ]
   },
   {
@@ -574,30 +753,42 @@
     "act": 2,
     "title": "Setting Variables (SET)",
     "points": 25,
-    "brief": "Create a new environment variable called `MY_VAR` and give it the value `123`.",
+    "brief": "Create an environment variable `MY_VAR` holding the value `123`, then print it back on the same line so you can see it took. `set` prints nothing when it works, and `&` joins two commands.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^set\\s+MY_VAR=123\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "MY_VAR=123"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "123"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `set`. Write the assignment with no spaces around the equals sign."
+        "text": "Write the assignment with no spaces around the equals sign, then echo the variable back inside percent signs."
       },
       {
         "cost": 10,
-        "text": "Run `set MY_VAR=123`."
+        "text": "Run `set MY_VAR=123 & echo %MY_VAR%`."
       }
     ],
-    "successMessage": "`set` creates and manages environment variables in CMD.",
+    "successMessage": "A silent command is not necessarily a command that worked. Printing the value back is how you find out.",
     "teaches": [
-      "set"
+      "set",
+      "environment-variables"
     ],
+    "solution": "set MY_VAR=123 & echo %MY_VAR%",
     "acceptedVariants": [
-      "set MY_VAR=123"
+      "set MY_VAR=123 & echo %MY_VAR%",
+      "set MY_VAR=123 && echo %MY_VAR%"
     ]
   },
   {
@@ -605,13 +796,22 @@
     "act": 2,
     "title": "Clear the Console (CLS)",
     "points": 10,
-    "brief": "The screen is cluttered. Clear it.",
+    "brief": "The screen is cluttered with everything you have run so far. Clear it.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^cls\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^cls\\s*$"
+        },
+        {
+          "predicate": "exitStatusIs",
+          "status": 0
+        }
+      ]
     },
     "hints": [
       {
@@ -623,12 +823,62 @@
         "text": "Run `cls`."
       }
     ],
-    "successMessage": "`cls` clears the terminal screen in Windows CMD.",
+    "successMessage": "Clearing the screen does not clear anything else: your variables, your folder and your history all survive.",
     "teaches": [
       "cls"
     ],
+    "solution": "cls",
     "acceptedVariants": [
       "cls"
+    ]
+  },
+  {
+    "id": "w2-boss",
+    "act": 2,
+    "title": "BOSS: Ready for Collection",
+    "points": 40,
+    "brief": "Put the paperwork together for the front desk. Make a folder called `Return`, copy `Documents\\notes.txt` into it, and list that folder to prove the copy landed — all on one line, joined with `&`.",
+    "setup": {
+      "cwd": "C:\\Users\\Student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "dirExists",
+          "path": "C:\\Users\\Student\\Return"
+        },
+        {
+          "predicate": "fileExists",
+          "path": "C:\\Users\\Student\\Return\\notes.txt"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "notes.txt"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Three commands in a row on one line: make the directory, copy the file into it, then list what is inside it."
+      },
+      {
+        "cost": 15,
+        "text": "Run `md Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return`."
+      }
+    ],
+    "successMessage": "Make, copy, verify. The listing at the end is the part that turns a hopeful command into a finished job.",
+    "teaches": [
+      "md",
+      "copy",
+      "dir /b",
+      "command-chaining"
+    ],
+    "solution": "md Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return",
+    "acceptedVariants": [
+      "md Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return",
+      "mkdir Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return"
     ]
   },
   {
@@ -636,31 +886,47 @@
     "act": 3,
     "title": "Pattern Search (FINDSTR)",
     "points": 25,
-    "brief": "Show every line in `logs\\eventlog.txt` that contains the phrase `EVENT ID`. Windows has no `grep`.",
+    "brief": "The property form asks what this machine was doing. Show every line in `logs\\eventlog.txt` about a new process being created. Windows has no `grep`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^findstr\\s+[\"']?EVENT\\s+ID[\"']?\\s+logs[\\\\/]eventlog\\.txt\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "eventlog"
+        },
+        {
+          "predicate": "outputLineCountIs",
+          "n": 2
+        },
+        {
+          "predicate": "outputContains",
+          "text": "certutil.exe"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe search command is `findstr`. Quote the phrase, because it contains a space."
+        "text": "The cmd.exe search command is `findstr`. Quote the phrase you are searching for, because it has spaces in it."
       },
       {
         "cost": 10,
-        "text": "Run `findstr \"EVENT ID\" logs\\eventlog.txt`."
+        "text": "Run `findstr \"A new process\" logs\\eventlog.txt`."
       }
     ],
-    "successMessage": "`findstr` is the Windows CMD counterpart of `grep`.",
+    "successMessage": "Two processes: a hashing tool and a directory listing. Somebody was already poking around this machine.",
     "teaches": [
-      "findstr"
+      "findstr",
+      "pattern-matching"
     ],
+    "solution": "findstr \"A new process\" logs\\eventlog.txt",
     "acceptedVariants": [
-      "findstr \"EVENT ID\" logs\\eventlog.txt",
-      "findstr 'EVENT ID' logs\\eventlog.txt"
+      "findstr \"A new process\" logs\\eventlog.txt",
+      "findstr /c:\"A new process\" logs\\eventlog.txt",
+      "type logs\\eventlog.txt | findstr \"A new process\""
     ]
   },
   {
@@ -668,13 +934,22 @@
     "act": 3,
     "title": "Case-Insensitive FINDSTR (/I)",
     "points": 25,
-    "brief": "Find every mention of `defender` in `logs\\eventlog.txt`, no matter how it is capitalised.",
+    "brief": "Find every mention of `defender` in `logs\\eventlog.txt`, whatever its capitalisation.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^findstr\\s+/i\\s+[\"']?defender[\"']?\\s+logs[\\\\/]eventlog\\.txt\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "/i\\b"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "[EVENT ID 7036] The Windows Defender Antivirus Service entered the running state."
+        }
+      ]
     },
     "hints": [
       {
@@ -683,16 +958,19 @@
       },
       {
         "cost": 10,
-        "text": "Run `findstr /i \"defender\" logs\\eventlog.txt`."
+        "text": "Run `findstr /i defender logs\\eventlog.txt`."
       }
     ],
-    "successMessage": "`/i` specifies case-insensitive matching in `findstr`.",
+    "successMessage": "The log says Defender with a capital D. Without `/i` a search for `defender` finds nothing at all.",
     "teaches": [
-      "findstr /i"
+      "findstr /i",
+      "case-insensitivity"
     ],
+    "solution": "findstr /i defender logs\\eventlog.txt",
     "acceptedVariants": [
       "findstr /i defender logs\\eventlog.txt",
-      "findstr /i \"defender\" logs\\eventlog.txt"
+      "findstr /i \"defender\" logs\\eventlog.txt",
+      "findstr /I defender logs\\eventlog.txt"
     ]
   },
   {
@@ -705,25 +983,35 @@
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^type\\s+logs[\\\\/]firewall\\.log\\s*\\|\\s*find\\s+/c\\s+/v\\s+[\"'][\"']\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "firewall\\.log"
+        },
+        {
+          "predicate": "outputMatches",
+          "pattern": "^\\s*5\\s*$"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`type` prints the file, `|` pipes it onward, and `find` counts with `/c`. Add `/v \"\"` so it counts the lines that do not match nothing — that is, all of them."
+        "text": "`type` prints the file, `|` pipes it onward, and `find` counts with `/c`. Adding `/v \"\"` counts the lines that fail to match nothing — that is, all of them."
       },
       {
         "cost": 10,
         "text": "Run `type logs\\firewall.log | find /c /v \"\"`."
       }
     ],
-    "successMessage": "`find /c /v \"\"` counts every non-empty line — the standard Windows CMD equivalent of `wc -l`.",
+    "successMessage": "Five lines, one of them the header. This double negative is genuinely the standard Windows way to count lines.",
     "teaches": [
       "find",
       "line-counting",
       "pipes"
     ],
+    "solution": "type logs\\firewall.log | find /c /v \"\"",
     "acceptedVariants": [
       "type logs\\firewall.log | find /c /v \"\""
     ]
@@ -733,13 +1021,22 @@
     "act": 3,
     "title": "Process List (TASKLIST)",
     "points": 25,
-    "brief": "Show every process running on this machine, with its memory use.",
+    "brief": "Record what is running on the machine before you shut it down. Show every process, with its memory use.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^tasklist(\\s+.*)?$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^tasklist\\b"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "svchost.exe"
+        }
+      ]
     },
     "hints": [
       {
@@ -751,11 +1048,12 @@
         "text": "Run `tasklist`."
       }
     ],
-    "successMessage": "`tasklist` displays running applications and system services.",
+    "successMessage": "Same information as Task Manager, in a form you can pipe into something else.",
     "teaches": [
       "tasklist",
       "processes"
     ],
+    "solution": "tasklist",
     "acceptedVariants": [
       "tasklist"
     ]
@@ -765,29 +1063,39 @@
     "act": 3,
     "title": "Network Configuration (IPCONFIG)",
     "points": 25,
-    "brief": "Show this machine's IP address and network adapter configuration.",
+    "brief": "The form has a line for the network the laptop was last on. Show this machine's IPv4 address and adapter configuration.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^ipconfig(\\s+/all)?\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^ipconfig\\b"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "192.168.1.105"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `ipconfig`. Adding `/all` shows much more detail."
+        "text": "The cmd.exe command is `ipconfig`. Adding `/all` shows a great deal more detail."
       },
       {
         "cost": 10,
         "text": "Run `ipconfig`."
       }
     ],
-    "successMessage": "`ipconfig` displays TCP/IP network parameters.",
+    "successMessage": "192.168.1.105, on the same 192.168.1.x network as the four servers you found in Act I.",
     "teaches": [
       "ipconfig",
       "network"
     ],
+    "solution": "ipconfig",
     "acceptedVariants": [
       "ipconfig",
       "ipconfig /all"
@@ -798,13 +1106,22 @@
     "act": 3,
     "title": "System Information (SYSTEMINFO)",
     "points": 25,
-    "brief": "Display the operating system build, installed memory and hardware summary for this machine.",
+    "brief": "The form wants the operating system build and the installed memory. Display the machine's system summary.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^systeminfo\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "^systeminfo\\b"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "Total Physical Memory"
+        }
+      ]
     },
     "hints": [
       {
@@ -816,10 +1133,11 @@
         "text": "Run `systeminfo`."
       }
     ],
-    "successMessage": "`systeminfo` outputs full system diagnostic metrics.",
+    "successMessage": "Windows 10 Pro, build 19045, 16 GB. Three more boxes on the form filled in from one command.",
     "teaches": [
       "systeminfo"
     ],
+    "solution": "systeminfo",
     "acceptedVariants": [
       "systeminfo"
     ]
@@ -829,32 +1147,78 @@
     "act": 3,
     "title": "Cryptographic Hash (CERTUTIL)",
     "points": 35,
-    "brief": "Compute the MD5 checksum of `Documents\\data.csv` for a chain-of-custody record. Windows has no `md5sum`; the built-in tool is `certutil`.",
+    "brief": "The form wants a checksum of `Documents\\data.csv`, so that nobody can alter it between now and collection without it showing. Compute its MD5. Windows has no `md5sum`; the built-in tool is `certutil`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
     "success": {
-      "predicate": "commandMatches",
-      "pattern": "^certutil\\s+-hashfile\\s+[\"']?(?:Documents[\\\\/])?data\\.csv[\"']?\\s+MD5\\s*$"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "data\\.csv"
+        },
+        {
+          "predicate": "outputContains",
+          "text": "a3685d730ec2bf65b53b53d8a576fe5f"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`certutil` needs the `-hashfile` switch, then the file path, then the algorithm name in capitals."
+        "text": "`certutil` needs a switch that names a file to hash, then the path, then the algorithm name in capitals."
       },
       {
         "cost": 10,
         "text": "Run `certutil -hashfile Documents\\data.csv MD5`."
       }
     ],
-    "successMessage": "Congratulations! You have completed Windows CMD Essentials and mastered the Windows command-line toolset.",
+    "successMessage": "Change one byte of that file and the hash changes completely. That is what makes it a receipt.",
     "teaches": [
       "certutil",
       "hashing"
     ],
+    "solution": "certutil -hashfile Documents\\data.csv MD5",
     "acceptedVariants": [
       "certutil -hashfile Documents\\data.csv MD5",
       "certutil -hashfile Documents/data.csv MD5"
+    ]
+  },
+  {
+    "id": "w3-boss",
+    "act": 3,
+    "title": "BOSS: Name on the Ticket",
+    "points": 45,
+    "brief": "The last line of the form is the one that matters: which account logged on to this machine successfully. Windows records that as event 4624 in `logs\\eventlog.txt`. Print exactly that one line, and nothing else.",
+    "setup": {
+      "cwd": "C:\\Users\\Student"
+    },
+    "success": {
+      "predicate": "outputEquals",
+      "text": "[EVENT ID 4624] An account was successfully logged on: TargetUserName: Student"
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Two ways in, and both work: search the log for the event number, or search it for the words that describe a successful logon."
+      },
+      {
+        "cost": 15,
+        "text": "Run `findstr 4624 logs\\eventlog.txt`."
+      }
+    ],
+    "successMessage": "TargetUserName: Student. The laptop goes back to that account's owner, and the form is complete. Finding the one line that answers the question is the whole job.",
+    "teaches": [
+      "findstr",
+      "log-analysis",
+      "discovery"
+    ],
+    "solution": "findstr 4624 logs\\eventlog.txt",
+    "acceptedVariants": [
+      "findstr 4624 logs\\eventlog.txt",
+      "findstr /c:\"EVENT ID 4624\" logs\\eventlog.txt",
+      "type logs\\eventlog.txt | findstr 4624"
     ]
   }
 ]

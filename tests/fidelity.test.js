@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Shell Fidelity & Differential Test Suite (Uplift §2 F1-F16)
 
 import { describe, it, expect } from 'vitest';
@@ -173,19 +173,19 @@ describe('Tab completion matches real shell whitespace rules', () => {
 
   it('bash: a completed FILE gets a trailing space', async () => {
     const { getCompletions, pack } = await load();
-    const r = getCompletions('cat wel', '/home/analyst', pack.createFs('linux'), false);
+    const r = getCompletions('cat wel', '/home/examiner', pack.createFs('linux'), false);
     expect(r.matches).toEqual(['welcome.txt ']);
   });
 
   it('bash: a completed DIRECTORY gets a trailing slash and no space', async () => {
     const { getCompletions, pack } = await load();
-    const r = getCompletions('cd Doc', '/home/analyst', pack.createFs('linux'), false);
+    const r = getCompletions('cd Doc', '/home/examiner', pack.createFs('linux'), false);
     expect(r.matches).toEqual(['Documents/']);
   });
 
   it('cmd.exe: no trailing separator and no trailing space', async () => {
     const { getCompletions, pack } = await load();
-    const r = getCompletions('cd Doc', 'C:\\Users\\Analyst', pack.createFs('windows'), true);
+    const r = getCompletions('cd Doc', 'C:\\Users\\Examiner', pack.createFs('windows'), true);
     expect(r.matches).toEqual(['Documents']);
   });
 
@@ -200,8 +200,8 @@ describe('Tab completion matches real shell whitespace rules', () => {
     const { getPack } = await import('../packs/index.js');
     const pack = getPack('forensics-cli-101');
     const cases = [
-      ['cat welcome.txt ', 'linux', '/home/analyst', 'analyst'],
-      ['cd Documents/', 'linux', '/home/analyst', 'analyst'],
+      ['cat welcome.txt ', 'linux', '/home/examiner', 'examiner'],
+      ['cd Documents/', 'linux', '/home/examiner', 'examiner'],
       ['cd "Program Files"', 'windows', 'C:', 'Analyst']
     ];
     for (const [cmd, plat, cwd, user] of cases) {

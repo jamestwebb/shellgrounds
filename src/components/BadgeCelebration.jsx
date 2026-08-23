@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Badge unlock celebration overlay with confetti burst
 
 import React, { useEffect } from 'react';
@@ -32,9 +32,9 @@ export const BadgeCelebration = ({ badge, onClose }) => {
         {/* Glowing Header Banner */}
         <div className="bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 p-6 text-term-black relative overflow-hidden">
           <div className="flex items-center justify-center gap-2 mb-1 text-xs font-bold uppercase tracking-wider">
-            <Trophy size={16} /> Achievement Unlocked <Trophy size={16} />
+            <Trophy size={16} /> Badge earned <Trophy size={16} />
           </div>
-          <h2 className="text-2xl font-black tracking-wide">BADGE EARNED!</h2>
+          <h2 className="text-2xl font-black tracking-wide">NICE WORK</h2>
         </div>
 
         {/* Badge Icon & Description Body */}
@@ -54,14 +54,14 @@ export const BadgeCelebration = ({ badge, onClose }) => {
           </div>
 
           <p className="text-[11px] text-neutral-500">
-            Your badge is recorded on the live leaderboard.
+            This badge now sits next to your handle on the leaderboard.
           </p>
 
           <button
             onClick={onClose}
             className="w-full py-3 rounded-xl bg-term-green hover:bg-green-400 text-term-black font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-pointer"
           >
-            CONTINUE INVESTIGATION <ChevronRight size={16} />
+            KEEP GOING <ChevronRight size={16} />
           </button>
         </div>
       </div>
