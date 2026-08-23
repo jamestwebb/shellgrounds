@@ -128,9 +128,13 @@ students compete across different material. A pack you switch off disappears fro
 switcher, and the site refuses to grade its challenges even for a student who saved the
 link from last term.
 
-**Changing it needs a redeploy** (**Deploys -> Trigger deploy**), because the pack menu is
-built into the page. Scores are not affected: switching a pack back on brings its
-leaderboard back exactly as it was.
+You do not have to use the variable at all. **Sign in as the instructor and open the
+Packs tab** — the same choice is there as a row of switches, it applies immediately, and it
+needs no redeploy. `ENABLED_PACKS` is only the starting point for a site nobody has
+configured yet; once you save from the screen, the screen wins.
+
+Scores are never affected. Switching a pack off hides it and stops the site grading its
+challenges; switching it back on brings every score, solve and hint back exactly as it was.
 
 **You can also write your own.** A pack is a folder of JSON, or one `.pack.json` file you
 can email to another teacher. See [`docs/PACK-FORMAT.md`](docs/PACK-FORMAT.md) to author

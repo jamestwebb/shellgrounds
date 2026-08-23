@@ -95,3 +95,8 @@
 1787490219	netlify/functions/register-handle.js
 1787490534	scripts/dev-functions.mjs
 1787490588	src/components/Gate.jsx
+1787491068	netlify/functions/claim-instructor.js
+1787491112	src/utils/api.js
+1787491130	src/components/AdminOverview.jsx
+1787491207	src/App.jsx
+1787491229	src/components/PackSelector.jsx

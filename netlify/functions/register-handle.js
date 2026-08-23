@@ -3,7 +3,7 @@
 
 import { checkSFW } from '../../packages/engine/sfw-filter.js';
 import { createSessionToken } from '../../packages/engine/crypto-utils.js';
-import { isPackEnabled, defaultPackId } from '../../packs/index.js';
+import { isPackEnabled, defaultPackId } from './utils/enabled.js';
 import { createPlayer } from './utils/store.js';
 import { isAdminHandle, setupCodeMatches, grantInstructor } from './utils/admin.js';
 
@@ -70,7 +70,7 @@ export default async (req) => {
       });
     }
 
-    const activePackId = isPackEnabled(packId) ? packId : defaultPackId();
+    const activePackId = (await isPackEnabled(packId)) ? packId : await defaultPackId();
 
     const { created } = await createPlayer(cleanHandle);
     if (!created) {

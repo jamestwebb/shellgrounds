@@ -11,9 +11,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Shield, Users, AlertTriangle, RefreshCw, Activity, CheckCircle2, Circle,
   Download, Search, ChevronRight, ChevronDown, ArrowLeft, KeyRound,
-  Lightbulb, LifeBuoy, Target, Info, User
+  Lightbulb, LifeBuoy, Target, Info, User, Layers
 } from 'lucide-react';
-import { fetchAdminOverview, fetchGradebookCsv, getStoredPackId } from '../utils/api';
+import { fetchAdminOverview, fetchGradebookCsv, getStoredPackId, fetchSiteConfig } from '../utils/api';
+import { PackSettings } from './PackSettings';
 import { PACKS, DEFAULT_PACK_ID } from '../../packs/index.js';
 
 const PACK_LIST = Object.values(PACKS).map(p => ({ id: p.id, name: p.manifest.name }));
@@ -100,7 +101,19 @@ const EmptyNote = ({ children }) => (
 
 export const AdminOverview = ({ packId: preferredPackId = null }) => {
   const [packId, setPackId] = useState(() => resolveInitialPack(preferredPackId));
-  const [view, setView] = useState('class');            // 'class' | 'answers'
+  const [view, setView] = useState('class');            // 'class' | 'answers' | 'packs'
+
+  // Deciding which courses the class can see comes before looking at how the
+  // class is doing, so an instructor who has never saved that choice lands on
+  // the pack screen. Once it is saved, this stops happening: opening the site
+  // in week six to see who is stuck should not reopen setup every time.
+  useEffect(() => {
+    let live = true;
+    fetchSiteConfig()
+      .then(cfg => { if (live && cfg && cfg.configured === false) setView('packs'); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
   const [openStudent, setOpenStudent] = useState(null); // handle, or null for the whole class
 
   const [overview, setOverview] = useState(null);
@@ -449,6 +462,16 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             >
               <KeyRound size={13} /> ANSWER KEY
             </button>
+            <button
+              onClick={() => setView('packs')}
+              className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
+                view === 'packs'
+                  ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Layers size={13} /> PACKS
+            </button>
           </div>
 
           {overviewError && overview && (
@@ -462,6 +485,11 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
           <div className="p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-300 text-xs">
             {csv.error} Use the gradebook button to try again.
           </div>
+        )}
+
+        {/* ================= PACKS ================= */}
+        {view === 'packs' && (
+          <PackSettings onSaved={() => refreshAll()} />
         )}
 
         {/* ================= ANSWER KEY ================= */}
