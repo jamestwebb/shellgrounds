@@ -35,6 +35,7 @@ import {
 import { replaceFlagTokens, injectFlagsIntoVFS } from './utils/vfs-injector';
 import { explainCommand } from '../packages/engine/coach.js';
 import { sounds } from './utils/audio';
+import { readStoredTheme, storeTheme } from './utils/terminalThemes.js';
 import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
 
 // Where a returning student's cursor belongs: the first thing they have not
@@ -111,6 +112,14 @@ export default function App() {
 
   // Settings
   const [scanlines, setScanlines] = useState(true);
+  // The student's terminal colour scheme. Read from this browser on first
+  // render rather than in an effect, so nobody sees the default flash past
+  // before their own choice is applied.
+  const [terminalTheme, setTerminalTheme] = useState(() => readStoredTheme());
+  const chooseTerminalTheme = useCallback((id) => {
+    setTerminalTheme(id);
+    storeTheme(id);
+  }, []);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [coachEnabled, setCoachEnabled] = useState(true);
 
@@ -761,6 +770,8 @@ export default function App() {
               onOpenMap={() => setActiveTab('map')}
               fs={activeFs}
               scanlines={scanlines}
+              themeId={terminalTheme}
+              onChangeTheme={chooseTerminalTheme}
               coachEnabled={coachEnabled}
               onToggleCoach={() => setCoachEnabled(prev => !prev)}
             />
