@@ -307,13 +307,20 @@ export const ChallengeSidebar = ({
             >
               <div className="flex items-center gap-2 truncate pr-2">
                 {solved ? (
-                  /* A tick that has gone quiet: solved, but a while ago. It is
-                     a suggestion, never a warning -- nothing is wrong with a
-                     challenge somebody finished a fortnight back. */
-                  <CheckCircle2
-                    size={14}
-                    className={stale ? 'text-term-amber/70 shrink-0' : 'text-term-green shrink-0'}
-                  />
+                  /* Solved, but a while ago. The GLYPH changes as well as the
+                     colour: an amber tick and a green tick differ only in hue,
+                     which is invisible to roughly one man in twelve and fails
+                     WCAG 1.4.1. The circular arrow says "come back to this" on
+                     its own, and the label says it in words. */
+                  stale ? (
+                    <RotateCcw
+                      size={14}
+                      className="text-term-amber shrink-0"
+                      aria-label="solved a while ago, worth revisiting"
+                    />
+                  ) : (
+                    <CheckCircle2 size={14} className="text-term-green shrink-0" aria-label="solved" />
+                  )
                 ) : (
                   <Circle size={14} className="text-neutral-500 shrink-0" />
                 )}

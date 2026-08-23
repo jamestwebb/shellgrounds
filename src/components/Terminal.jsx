@@ -3,9 +3,10 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
 import { FIND_TOKEN_PREFIX, FIND_TOKEN_OPEN } from '../../packages/engine/constants.js';
-import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin } from 'lucide-react';
+import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin, Palette } from 'lucide-react';
 import { getTabCompletions } from '../engine/complete';
 import { sounds } from '../utils/audio';
+import { themeVars, getTheme, TERMINAL_THEMES } from '../utils/terminalThemes.js';
 
 // Built from the one place the token prefix is defined, so renaming what a
 // student collects never leaves the terminal quietly failing to highlight it.
@@ -25,6 +26,10 @@ export const Terminal = ({
   onOpenMap,
   fs = {},
   scanlines = true,
+  // The student's colour scheme. Applied as CSS custom properties on the root
+  // below, so every line of output picks it up without prop-drilling colours.
+  themeId = 'green',
+  onChangeTheme = null,
   disabled = false,
   coachEnabled = true,
   onToggleCoach = () => {}
@@ -200,9 +205,10 @@ export const Terminal = ({
   return (
     <div
       onClick={focusInput}
-      className="flex-1 flex flex-col bg-term-black border border-term-border rounded-lg shadow-2xl overflow-hidden relative cursor-text font-mono select-text"
+      style={themeVars(themeId)}
+      className="flex-1 flex flex-col bg-[color:var(--sg-bg)] border border-[color:var(--sg-border)] rounded-lg shadow-2xl overflow-hidden relative cursor-text font-mono select-text"
       role="region"
-      aria-label="Interactive CLI Terminal"
+      aria-label={`Interactive CLI Terminal, ${getTheme(themeId).name} colour scheme`}
     >
       {/* Optional CRT Scanlines Effect */}
       {scanlines && (
@@ -210,7 +216,7 @@ export const Terminal = ({
       )}
 
       {/* Terminal Top Window Bar */}
-      <div className="bg-term-gray border-b border-term-border px-4 py-2 flex items-center justify-between z-10 select-none">
+      <div className="bg-[color:var(--sg-bar)] border-b border-[color:var(--sg-border)] px-4 py-2 flex items-center justify-between z-10 select-none">
         <div className="flex items-center space-x-2">
           <div className="flex space-x-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
@@ -224,6 +230,28 @@ export const Terminal = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Colour scheme. A real <select> rather than a custom menu: it is
+              keyboard-operable, screen-reader-labelled and touch-friendly for
+              free, and nothing here is worth reimplementing that badly. */}
+          {onChangeTheme && (
+            <label className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+              <Palette size={12} className="text-[color:var(--sg-punct)]" aria-hidden="true" />
+              <span className="sr-only">Terminal colour scheme</span>
+              <select
+                value={themeId}
+                onChange={(e) => onChangeTheme(e.target.value)}
+                className="text-[11px] font-bold bg-[color:var(--sg-bar)] text-[color:var(--sg-fg)]
+                           border border-[color:var(--sg-border)] rounded px-1.5 py-0.5 cursor-pointer
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1
+                           focus-visible:outline-[color:var(--sg-caret)]"
+              >
+                {Object.entries(TERMINAL_THEMES).map(([id, t]) => (
+                  <option key={id} value={id}>{t.name}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
           {onOpenMap && isLinux && (
             <button
               onClick={(e) => { e.stopPropagation(); onOpenMap(); }}
@@ -269,28 +297,28 @@ export const Terminal = ({
               <div className="flex items-start gap-2 text-xs md:text-sm font-semibold">
                 {isLinux ? (
                   <>
-                    <span className="text-green-400 shrink-0">{user}@{host}</span>
-                    <span className="text-neutral-400">:</span>
-                    <span className="text-cyan-400 shrink-0">{item.cwd || cwd}</span>
-                    <span className="text-neutral-400 shrink-0">$</span>
+                    <span className="text-[color:var(--sg-user)] shrink-0">{user}@{host}</span>
+                    <span className="text-[color:var(--sg-punct)]">:</span>
+                    <span className="text-[color:var(--sg-path)] shrink-0">{item.cwd || cwd}</span>
+                    <span className="text-[color:var(--sg-punct)] shrink-0">$</span>
                   </>
                 ) : (
-                  <span className="text-amber-400 shrink-0">{item.cwd || cwd}&gt;</span>
+                  <span className="text-[color:var(--sg-path)] shrink-0">{item.cwd || cwd}&gt;</span>
                 )}
-                <span className="text-white break-all">{item.text}</span>
+                <span className="text-[color:var(--sg-input)] break-all">{item.text}</span>
               </div>
             ) : (
               <div
                 className={`whitespace-pre-wrap pl-0 break-words text-xs md:text-sm ${
                   item.isCoach
-                    ? 'text-cyan-400/80 italic'
+                    ? 'text-[color:var(--sg-coach)] italic'
                     : item.isDim
-                      ? 'text-neutral-500 italic'
+                      ? 'text-[color:var(--sg-dim)] italic'
                       : item.isError
-                        ? 'text-red-400'
+                        ? 'text-[color:var(--sg-error)]'
                         : item.isSuccess
-                          ? 'text-term-green font-semibold'
-                          : 'text-neutral-300'
+                          ? 'text-[color:var(--sg-success)] font-semibold'
+                          : 'text-[color:var(--sg-fg)]'
                 }`}
               >
                 {item.isCoach ? `» ${item.text}` : renderOutputText(item.text)}
@@ -303,13 +331,13 @@ export const Terminal = ({
         <div className="flex items-center gap-2 text-xs md:text-sm font-semibold pt-1">
           {isLinux ? (
             <>
-              <span className="text-green-400 shrink-0">{user}@{host}</span>
-              <span className="text-neutral-400">:</span>
-              <span className="text-cyan-400 shrink-0">{cwd}</span>
-              <span className="text-neutral-400 shrink-0">$</span>
+              <span className="text-[color:var(--sg-user)] shrink-0">{user}@{host}</span>
+              <span className="text-[color:var(--sg-punct)]">:</span>
+              <span className="text-[color:var(--sg-path)] shrink-0">{cwd}</span>
+              <span className="text-[color:var(--sg-punct)] shrink-0">$</span>
             </>
           ) : (
-            <span className="text-amber-400 shrink-0">{cwd}&gt;</span>
+            <span className="text-[color:var(--sg-path)] shrink-0">{cwd}&gt;</span>
           )}
 
           <input
@@ -319,7 +347,7 @@ export const Terminal = ({
             onChange={(e) => setCurrentInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="flex-1 bg-transparent text-white outline-none border-none p-0 focus:ring-0 font-mono text-xs md:text-sm caret-term-green"
+            className="flex-1 bg-transparent text-[color:var(--sg-input)] caret-[color:var(--sg-caret)] border-none p-0 font-mono text-xs md:text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--sg-caret)] rounded-sm"
             autoFocus
             autoComplete="off"
             autoCapitalize="off"

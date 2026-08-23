@@ -63,3 +63,18 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Visible to a screen reader, not on screen. Tailwind ships this as a utility;
+   it is spelled out here because the project does not use @tailwind utilities
+   for it and a label that silently renders nothing is worse than no label. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
