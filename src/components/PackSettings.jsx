@@ -61,6 +61,8 @@ export const PackSettings = ({ onSaved }) => {
   const [catalogue, setCatalogue] = useState([]);
   const [enabled, setEnabled] = useState([]);
   const [saved, setSaved] = useState([]);      // what the server last confirmed
+  const [classView, setClassView] = useState('reveal');
+  const [savedView, setSavedView] = useState('reveal');
   const [configured, setConfigured] = useState(true);
   const [source, setSource] = useState('settings');
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,8 @@ export const PackSettings = ({ onSaved }) => {
       setCatalogue(data.packs || []);
       setEnabled(data.enabledPacks || []);
       setSaved(data.enabledPacks || []);
+      setClassView(data.classView || 'reveal');
+      setSavedView(data.classView || 'reveal');
       setConfigured(!!data.configured);
       setSource(data.source || 'settings');
     } catch (err) {
@@ -107,16 +111,20 @@ export const PackSettings = ({ onSaved }) => {
   };
 
   const dirty =
-    enabled.length !== saved.length || enabled.some((id, i) => id !== saved[i]);
+    classView !== savedView
+    || enabled.length !== saved.length
+    || enabled.some((id, i) => id !== saved[i]);
 
   const save = async () => {
     setBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const data = await saveSiteConfig(enabled);
+      const data = await saveSiteConfig(enabled, classView);
       setSaved(data.enabledPacks || []);
       setEnabled(data.enabledPacks || []);
+      setSavedView(data.classView || 'reveal');
+      setClassView(data.classView || 'reveal');
       setConfigured(true);
       setSource('settings');
       setNotice('Saved. Students see this the next time they load the page.');
@@ -187,6 +195,59 @@ export const PackSettings = ({ onSaved }) => {
           <AlertTriangle size={13} className="mt-0.5 shrink-0" /> <span>{error}</span>
         </div>
       )}
+
+      {/* ── How the class sees itself ──────────────────────────────────── */}
+      <div className="p-4 rounded-lg bg-term-black border border-term-border">
+        <h3 className="text-xs font-bold text-neutral-200">What your class sees</h3>
+        <p className="text-[11px] text-neutral-400 mt-1 max-w-2xl leading-relaxed">
+          You know your students; this is your call. Either way you keep the full ranking and the
+          gradebook here in the instructor console — this only decides what the class is shown.
+        </p>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[
+            {
+              id: 'reveal',
+              title: 'A shared picture',
+              body: 'Every find by anyone turns over one square of an image. Names appear, nothing '
+                  + 'is ranked, and the picture finishes well before the last student does.',
+              note: 'Better for a class that is new to the terminal.'
+            },
+            {
+              id: 'leaderboard',
+              title: 'A leaderboard',
+              body: 'The familiar ranked board, by points. Students see where they stand against '
+                  + 'each other.',
+              note: 'Some cohorts genuinely want this. You will know if yours does.'
+            }
+          ].map(opt => {
+            const on = classView === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => { setClassView(opt.id); setNotice(null); setError(null); }}
+                className={`text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                  on
+                    ? 'bg-term-gray border-term-green/60 ring-1 ring-term-green/30'
+                    : 'bg-term-void border-term-border hover:border-neutral-600'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <span className={`w-3.5 h-3.5 rounded-full border shrink-0 ${
+                    on ? 'bg-term-green border-term-green' : 'border-neutral-600'
+                  }`} />
+                  <span className={`text-xs font-bold ${on ? 'text-green-200' : 'text-neutral-300'}`}>
+                    {opt.title}
+                  </span>
+                </span>
+                <span className="block text-[11px] text-neutral-400 mt-1.5 leading-relaxed">{opt.body}</span>
+                <span className="block text-[11px] text-neutral-500 mt-1 italic">{opt.note}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="space-y-2">
         {catalogue.map(pack => {

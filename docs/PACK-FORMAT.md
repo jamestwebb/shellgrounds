@@ -114,6 +114,7 @@ sits next to the field.
 | `description` | string | no, but write one | — | The paragraph a student reads when choosing between courses. 600 characters at most. §3.1. |
 | `icon` | string | no, but write one | `📦` | One or two emoji. How your course is recognised in a list. §3.1. |
 | `cover` | string | no | — | An image, embedded. Raster data URI only — never SVG, never a web address. §3.2. |
+| `reveal` | string | no | — | The picture a class uncovers together, one square per find. Same image rules as `cover`. §3.2. |
 | `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |
 | `linux` | object | if used | — | `{ home, user, host, shell }` — see below. |
 | `windows` | object | if used | — | `{ home, user, shell }` — see below. |
@@ -153,9 +154,17 @@ them and the validator only warns, but a course with none of them is a name in a
 A student sees the briefing **once per pack**. It is not a reference page, and anything a
 student needs twice belongs in a challenge brief or a hint instead.
 
-### 3.2 `cover` — the one field that is not text
+### 3.2 `cover` and `reveal` — the fields that are not text
 
-A pack may carry an image. It has to be embedded, as a base64 `data:` URI:
+A pack may carry two images, under the same rules.
+
+`cover` is the small card in a list of courses. `reveal` is the picture the class uncovers
+together when the teacher has chosen the cooperative view — one square turns over per find,
+on a 12 x 8 grid, so a **3:2 image** fits it exactly. A pack with no `reveal` falls back to
+its `cover`, and a pack with neither still works: the class uncovers a wash of the pack's
+own accent colour instead.
+
+Both have to be embedded, as a base64 `data:` URI:
 
 ```json
 "cover": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg…"
@@ -168,8 +177,12 @@ A pack may carry an image. It has to be embedded, as a base64 `data:` URI:
 | **Never a web address** | A remote image makes a student's browser call somebody else's server. That tells a third party who is studying and from where, breaks a site used offline or behind a school proxy, and lets the picture be swapped for something else after a teacher approved the pack. A reviewed pack must stay the pack that was reviewed. |
 | 128 KB at most | A pack file is something teachers email each other. |
 
-If you have no image, use `icon` instead. An emoji costs nothing, works everywhere, and is
-what all three shipped packs use.
+If you have no image, use `icon` instead. An emoji costs nothing and works everywhere.
+
+**On staying under the cap.** WebP at quality 80 fits a 1200-pixel-wide flat illustration
+into about 20 KB, which is what the three shipped packs do. A photograph will not compress
+nearly as well; flat art is both cheaper and better suited to being uncovered a square at
+a time.
 
 ### `linux` / `windows`
 

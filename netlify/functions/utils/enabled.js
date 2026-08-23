@@ -35,15 +35,25 @@ export async function readEnabledPacks() {
     console.error('Could not read site settings; using ENABLED_PACKS:', err);
   }
 
+  const classView = CLASS_VIEWS.includes(saved?.classView) ? saved.classView : DEFAULT_CLASS_VIEW;
+
+  // `configured` answers one question: has an instructor been through setup?
+  // It is what sends them to the pack screen at first login. Choosing the
+  // framing is going through setup, so saving either field settles it --
+  // otherwise a teacher who picked a leaderboard and nothing else would be
+  // returned to the setup screen every time they signed in.
+  const configured = !!saved && (saved.enabledPacks !== undefined || saved.classView !== undefined);
+
   const listed = Array.isArray(saved?.enabledPacks) ? saved.enabledPacks.filter(hasPack) : [];
   if (listed.length > 0) {
-    return { enabledPacks: listed, configured: true, source: 'settings' };
+    return { enabledPacks: listed, classView, configured, source: 'settings' };
   }
 
   return {
     enabledPacks: enabledFromEnvironment(),
-    configured: false,
-    source: 'environment'
+    classView,
+    configured,
+    source: configured ? 'settings' : 'environment'
   };
 }
 
@@ -93,6 +103,29 @@ export function validateEnabledPacks(value) {
   }
 
   return { ok: true, ids };
+}
+
+// ── How the class sees itself ───────────────────────────────────────────────
+// Two framings, and the teacher decides which one their class gets.
+//
+// The reveal is the default on purpose. A public ranking pushes students
+// toward performance goals -- look competent -- and away from mastery goals --
+// become competent. For a confident student that is harmless. For a first-year
+// who is already frightened of the terminal, being shown as 23rd of 24
+// confirms the thing they were afraid of, and those are exactly the students
+// the free first hint and the no-timers rule exist to protect.
+//
+// The leaderboard stays available because a teacher knows their own class and
+// some cohorts genuinely want it. Ranking is never removed from the INSTRUCTOR
+// console either way: marks have to come from somewhere.
+export const CLASS_VIEWS = ['reveal', 'leaderboard'];
+export const DEFAULT_CLASS_VIEW = 'reveal';
+
+export function validateClassView(value) {
+  if (typeof value !== 'string' || !CLASS_VIEWS.includes(value)) {
+    return { ok: false, error: `classView must be one of: ${CLASS_VIEWS.join(', ')}.` };
+  }
+  return { ok: true, value };
 }
 
 /** Everything the instructor screen needs to draw the list. */

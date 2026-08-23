@@ -99,11 +99,11 @@ export async function fetchSiteConfig() {
 }
 
 /** Instructors only. Returns the saved config, or throws with the server's reason. */
-export async function saveSiteConfig(enabledPacks) {
+export async function saveSiteConfig(enabledPacks, classView) {
   const res = await fetch(`${API_BASE}/config`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ enabledPacks })
+    body: JSON.stringify({ enabledPacks, classView })
   });
   const data = await parseJsonSafe(res);
   if (!res.ok) throw new Error(data.error || 'Could not save which packs are switched on.');
@@ -130,6 +130,16 @@ export async function markScreenSeen(what, packId = null) {
   } catch {
     return null;
   }
+}
+
+/** The class's shared picture. Carries no scores and no ordering, on purpose. */
+export async function fetchReveal(packId) {
+  if (!getAuthToken()) return null;
+  const qs = packId ? `?packId=${encodeURIComponent(packId)}` : '';
+  const res = await fetch(`${API_BASE}/reveal${qs}`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  const data = await parseJsonSafe(res);
+  return data?.success ? data : null;
 }
 
 export async function fetchManifest(packId) {

@@ -17,7 +17,9 @@
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import { resolveIsInstructor } from './utils/admin.js';
 import { updateSettings } from './utils/store.js';
-import { readEnabledPacks, validateEnabledPacks, packCatalogue } from './utils/enabled.js';
+import {
+  readEnabledPacks, validateEnabledPacks, packCatalogue, validateClassView, CLASS_VIEWS
+} from './utils/enabled.js';
 
 const json = (status, obj) =>
   new Response(JSON.stringify(obj), {
@@ -38,10 +40,12 @@ export default async (req) => {
 
   try {
     if (req.method === 'GET') {
-      const { enabledPacks, configured, source } = await readEnabledPacks();
+      const { enabledPacks, classView, configured, source } = await readEnabledPacks();
       return json(200, {
         success: true,
         enabledPacks,
+        classView,
+        classViews: CLASS_VIEWS,
         // False until an instructor saves. The instructor view uses this to
         // open on the pack screen at first login rather than the class view.
         configured,
@@ -57,16 +61,39 @@ export default async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const checked = validateEnabledPacks(body?.enabledPacks);
-    if (!checked.ok) return json(400, { error: checked.error });
+    const fields = {};
 
-    const saved = await updateSettings({ enabledPacks: checked.ids }, verified.handle);
+    // Both fields are optional, so the screen can save one without restating
+    // the other -- but a request that changes nothing is a mistake worth
+    // reporting rather than a no-op that looks like success.
+    if (body?.enabledPacks !== undefined) {
+      const checked = validateEnabledPacks(body.enabledPacks);
+      if (!checked.ok) return json(400, { error: checked.error });
+      fields.enabledPacks = checked.ids;
+    }
+    if (body?.classView !== undefined) {
+      const checked = validateClassView(body.classView);
+      if (!checked.ok) return json(400, { error: checked.error });
+      fields.classView = checked.value;
+    }
+    if (Object.keys(fields).length === 0) {
+      return json(400, { error: 'Nothing to save. Send enabledPacks, classView, or both.' });
+    }
+
+    const saved = await updateSettings(fields, verified.handle);
+
+    // Read back through the same resolver the GET uses, rather than echoing the
+    // record. Saving only the view leaves enabledPacks unset in the record, and
+    // echoing it would answer `undefined` for a site that is offering all three.
+    const current = await readEnabledPacks();
 
     return json(200, {
       success: true,
-      enabledPacks: saved.enabledPacks,
-      configured: true,
-      source: 'settings',
+      enabledPacks: current.enabledPacks,
+      classView: current.classView,
+      classViews: CLASS_VIEWS,
+      configured: current.configured,
+      source: current.source,
       updatedAt: saved.updatedAt,
       updatedBy: saved.updatedBy,
       packs: packCatalogue()

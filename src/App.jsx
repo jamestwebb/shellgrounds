@@ -4,7 +4,8 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Terminal as TerminalIcon, Trophy, MapPin, Shield, LogOut,
-  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen, Package, Layers
+  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen, Package, Layers,
+  Sparkles
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
 import { Boot } from './components/Boot';
@@ -13,6 +14,7 @@ import { Gate } from './components/Gate';
 import { Terminal } from './components/Terminal';
 import { ChallengeSidebar } from './components/ChallengeSidebar';
 import { Leaderboard } from './components/Leaderboard';
+import { Reveal } from './components/Reveal';
 import { SystemMap } from './components/SystemMap';
 import { AdminOverview } from './components/AdminOverview';
 import { CommandReference } from './components/CommandReference';
@@ -54,6 +56,11 @@ export default function App() {
   // null means "do not filter": a student mid-course must not lose their pack
   // switcher because one request was slow or failed.
   const [enabledPackIds, setEnabledPackIds] = useState(null);
+  // 'reveal' (a shared picture) or 'leaderboard' (a ranked board). The teacher
+  // chooses; the reveal is the default. Until the server answers, assume the
+  // default rather than flashing a ranking at a class that was not meant to
+  // see one -- the wrong guess in that direction is the harmful one.
+  const [classView, setClassView] = useState('reveal');
   // Which introduction screens this student has already read, from the server.
   const [seenScreens, setSeenScreens] = useState({});
   // Set when a student picks a course on the chooser, so that choosing takes
@@ -193,7 +200,10 @@ export default function App() {
           // The instructor screen writes this, so it can change between two
           // logins with no redeploy in between.
           fetchSiteConfig()
-            .then(cfg => { if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks); })
+            .then(cfg => {
+              if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks);
+              if (cfg?.classView) setClassView(cfg.classView);
+            })
             .catch(() => {});
 
           setViewState('app');
@@ -233,7 +243,10 @@ export default function App() {
       })
       .catch(() => { /* keep the non-admin view; the reload path will correct it */ });
     fetchSiteConfig()
-      .then(cfg => { if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks); })
+      .then(cfg => {
+        if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks);
+        if (cfg?.classView) setClassView(cfg.classView);
+      })
       .catch(() => {});
     try {
       const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
@@ -609,7 +622,9 @@ export default function App() {
                 : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <Trophy size={14} /> <span className="hidden sm:inline">Leaderboard</span>
+            {classView === 'leaderboard'
+              ? <><Trophy size={14} /> <span className="hidden sm:inline">Leaderboard</span></>
+              : <><Sparkles size={14} /> <span className="hidden sm:inline">The shore</span></>}
           </button>
 
           <button
@@ -710,11 +725,15 @@ export default function App() {
         </div>
 
         {activeTab === 'leaderboard' && (
-          <Leaderboard
-            currentHandle={session?.handle}
-            packId={activePackId}
-            packName={currentPack.manifest.name}
-          />
+          classView === 'leaderboard' ? (
+            <Leaderboard
+              currentHandle={session?.handle}
+              packId={activePackId}
+              packName={currentPack.manifest.name}
+            />
+          ) : (
+            <Reveal packId={activePackId} handle={session?.handle} />
+          )
         )}
 
         {activeTab === 'map' && (
