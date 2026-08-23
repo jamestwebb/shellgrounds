@@ -17,6 +17,7 @@
 
 import { md5, sha256Sync } from '../crypto-utils.js';
 import { normalizePath } from '../vfs/path.js';
+import { validatePresentation } from './presentation.js';
 
 /** Bump when a change would stop an older loader reading a newer file. */
 export const PACK_FORMAT_VERSION = 1;
@@ -542,6 +543,12 @@ export function validatePackFileStructure(raw) {
   }
   if (!manifest.name) push('manifest.name is missing. That is the title a student sees.');
   if (!manifest.version) warnings.push('manifest.version is missing; use "1.0.0".');
+
+  // How the pack introduces itself: the card, the emoji, the optional cover
+  // image, and the briefing a student reads before their first command.
+  const presentation = validatePresentation(manifest);
+  for (const e of presentation.errors) push(e);
+  warnings.push(...presentation.warnings);
 
   const platforms = manifest.platforms;
   if (!Array.isArray(platforms) || platforms.length === 0) {

@@ -2,7 +2,23 @@
   "id": "linux-fundamentals",
   "name": "Linux Fundamentals: The Night Shift",
   "version": "1.1.0",
-  "platforms": ["linux"],
+  "platforms": [
+    "linux"
+  ],
+  "icon": "🔭",
+  "description": "You are the overnight operator at the Meridian Observatory. The day crew left the dome in a state, the night log needs reading, and nobody is coming to help until dawn. Starts at \"where am I?\" and ends with you writing a pipeline. No prior experience assumed.",
+  "briefing": {
+    "heading": "The Night Shift",
+    "body": "It is 21:40 and the dome is yours until sunrise.\n\nThe day crew went home in a hurry. The night log is half-written, files are in the wrong folders, and the handover note for the morning shift does not exist yet. Everything you need is on this machine, and the only way to reach any of it is the terminal in front of you.\n\nNothing here can break. Try a command, read what comes back, and try another. When you are stuck, the first hint on every challenge is free and costs you nothing.",
+    "youWillLearn": [
+      "Move around a filesystem and always know where you are",
+      "Read, create, copy, move and delete files without fear",
+      "Search text with grep, and count what you find",
+      "Join commands together with pipes",
+      "Read and change file permissions",
+      "Chain commands that depend on each other succeeding"
+    ]
+  },
   "linux": {
     "home": "/home/student",
     "user": "student",

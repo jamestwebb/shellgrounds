@@ -242,6 +242,34 @@ export async function setInstructorFlag(handle, value = true) {
   return true;
 }
 
+/**
+ * Records that this student has seen an introduction screen.
+ *
+ * Kept against the account, not the browser. A student on a shared lab machine
+ * gets a different browser most weeks, and localStorage would welcome them to
+ * Shellgrounds every single time.
+ *
+ * Compare-and-swap for the same reason as every other write here: two tabs
+ * finishing onboarding together must not drop one of the records.
+ */
+export async function markSeen(handle, key) {
+  const s = store();
+  const playerId = playerKey(handle);
+
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    const { data, etag } = await readWithEtag(s, playerId);
+    if (!data) return null;
+    if (data.seen?.[key]) return data.seen;
+
+    const seen = { ...(data.seen || {}), [key]: new Date().toISOString() };
+    const opts = etag ? { onlyIfMatch: etag } : {};
+    const res = await s.setJSON(playerId, { ...data, seen }, opts);
+    if (!res || res.modified !== false) return seen;
+    await backoff(attempt);
+  }
+  throw new Error('Could not record onboarding progress: too many simultaneous writes.');
+}
+
 export async function touchPlayer(handle) {
   const s = store();
   const player = await s.get(playerKey(handle), { type: 'json' });

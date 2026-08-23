@@ -100,3 +100,5 @@
 1787491130	src/components/AdminOverview.jsx
 1787491207	src/App.jsx
 1787491229	src/components/PackSelector.jsx
+1787491470	src/components/Boot.jsx
+1787491580	packages/engine/validate/packValidator.js

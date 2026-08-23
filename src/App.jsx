@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
 import { Boot } from './components/Boot';
+import { Welcome, ChoosePack, PackBriefing } from './components/Onboarding';
 import { Gate } from './components/Gate';
 import { Terminal } from './components/Terminal';
 import { ChallengeSidebar } from './components/ChallengeSidebar';
@@ -21,7 +22,7 @@ import SimulationBoundary from './components/SimulationBoundary';
 import PackSelector from './components/PackSelector';
 
 import { getPack, DEFAULT_PACK_ID, listPacks } from '../packs/index.js';
-import { fetchSiteConfig } from './utils/api';
+import { fetchSiteConfig, markScreenSeen } from './utils/api';
 import { runPipeline } from '../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../packages/engine/constants.js';
@@ -53,6 +54,11 @@ export default function App() {
   // null means "do not filter": a student mid-course must not lose their pack
   // switcher because one request was slow or failed.
   const [enabledPackIds, setEnabledPackIds] = useState(null);
+  // Which introduction screens this student has already read, from the server.
+  const [seenScreens, setSeenScreens] = useState({});
+  // Set when a student picks a course on the chooser, so that choosing takes
+  // them forward to its briefing instead of straight back to the chooser.
+  const [chosePackThisVisit, setChosePackThisVisit] = useState(false);
   const currentPack = useMemo(() => getPack(activePackId), [activePackId]);
 
   // Terminal & Filesystem State
@@ -164,6 +170,7 @@ export default function App() {
         const data = await fetchSession();
         if (data.success) {
           setSession({ handle: data.handle, isAdmin: data.isAdmin });
+          setSeenScreens(data.seen || {});
           // The token still carries the pack the student registered with, but
           // it is only a suggestion now: the server resolves each submission
           // from its challenge id. A stored choice is the student's own.
@@ -218,8 +225,16 @@ export default function App() {
     // Only the server knows who is an instructor (ADMIN_HANDLES). Without this
     // an instructor who logs in fresh stays gated until they reload the page.
     fetchSession()
-      .then(d => { if (d?.success) setSession({ handle: d.handle, isAdmin: !!d.isAdmin }); })
+      .then(d => {
+        if (d?.success) {
+          setSession({ handle: d.handle, isAdmin: !!d.isAdmin });
+          setSeenScreens(d.seen || {});
+        }
+      })
       .catch(() => { /* keep the non-admin view; the reload path will correct it */ });
+    fetchSiteConfig()
+      .then(cfg => { if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks); })
+      .catch(() => {});
     try {
       const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
       if (manifestRes.success) {
@@ -451,6 +466,73 @@ export default function App() {
   const handleClearHistory = () => {
     setTerminalHistory([]);
   };
+
+  // ── Onboarding routing ────────────────────────────────────────────────────
+  // Between signing in and the terminal, a student may see up to three
+  // screens, and each one is skipped once it has served its purpose:
+  //
+  //   Welcome    what Shellgrounds is. Once per student, ever.
+  //   Choose     which course. Only when more than one is on offer — with a
+  //              single pack there is no choice to make, and asking is a click
+  //              that teaches nothing.
+  //   Briefing   the scenario and what the course teaches. Once per pack.
+  //
+  // Practice mode skips all of it: there is no account to remember against,
+  // and somebody clicking "try it" wants the terminal, not the tour.
+  const offeredPacks = useMemo(() => {
+    const all = listPacks().map(p => getPack(p.id));
+    return Array.isArray(enabledPackIds)
+      ? all.filter(p => enabledPackIds.includes(p.id))
+      : all;
+  }, [enabledPackIds]);
+
+  const recordSeen = useCallback((what, packId = null) => {
+    const key = what === 'welcome' ? 'welcome' : `briefing:${packId}`;
+    // Optimistic: the screen closes now, and the server catches up. A failed
+    // write costs a student one repeated screen, never a blocked start.
+    setSeenScreens(prev => ({ ...prev, [key]: new Date().toISOString() }));
+    markScreenSeen(what, packId);
+  }, []);
+
+  const onboarding = (() => {
+    if (viewState !== 'app' || !session || isPracticeMode) return null;
+    if (!seenScreens.welcome) return 'welcome';
+    if (offeredPacks.length > 1 && !chosePackThisVisit && !seenScreens[`briefing:${activePackId}`]) {
+      return 'choose';
+    }
+    if (!seenScreens[`briefing:${activePackId}`]) return 'briefing';
+    return null;
+  })();
+
+  if (onboarding === 'welcome') {
+    return (
+      <Welcome
+        handle={session.handle}
+        onContinue={() => recordSeen('welcome')}
+        continueLabel={offeredPacks.length > 1 ? 'Choose your course' : 'Read the briefing'}
+      />
+    );
+  }
+
+  if (onboarding === 'choose') {
+    return (
+      <ChoosePack
+        packs={offeredPacks}
+        currentPackId={activePackId}
+        onChoose={(id) => { handleSelectPack(id); setChosePackThisVisit(true); }}
+      />
+    );
+  }
+
+  if (onboarding === 'briefing') {
+    return (
+      <PackBriefing
+        pack={getPack(activePackId)}
+        onStart={() => recordSeen('briefing', activePackId)}
+        onBack={offeredPacks.length > 1 ? () => setChosePackThisVisit(false) : null}
+      />
+    );
+  }
 
   // Active view routing
   if (viewState === 'boot') {

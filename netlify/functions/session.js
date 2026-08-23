@@ -79,6 +79,9 @@ export default async (req) => {
       totalScore,
       scoreByPack,
       availablePacks: Object.values(PACKS).map(p => ({ id: p.id, name: p.manifest.name })),
+      // Which introduction screens this student has already read. Kept on the
+      // account so a shared lab machine does not re-welcome them every week.
+      seen: player?.seen || {},
       token: createSessionToken(sessionSecret, handle, packId)
     }, { 'Cache-Control': 'no-store' });
   } catch (err) {
