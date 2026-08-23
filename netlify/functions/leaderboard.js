@@ -3,7 +3,7 @@
 //
 // Each pack is its own board. Omit packId for the combined board.
 
-import { listPlayers, getSolves, normalizeSolve, splitSolveKey } from './utils/store.js';
+import { listPlayers, getSolves, normalizeSolve, splitSolveKey, readAllSolves} from './utils/store.js';
 import { PACKS } from '../../packs/index.js';
 import { isPackEnabled } from './utils/enabled.js';
 
@@ -48,8 +48,10 @@ export default async (req) => {
     const players = await listPlayers();
     const rows = [];
 
-    for (const p of players) {
-      const solvesObj = await getSolves(p.handle);
+    // Read every student's solves in parallel. One at a time is four hundred
+    // sequential round trips for a class of two hundred, against a ten-second
+    // function timeout.
+    for (const { player: p, solves: solvesObj } of await readAllSolves(players)) {
       let score = 0;
       let solveCount = 0;
       const solvedIds = [];

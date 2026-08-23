@@ -13,7 +13,7 @@
 
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import {
-  listPlayers, getSolves, splitSolveKey, normalizeSolve,
+  listPlayers, readAllSolves, splitSolveKey, normalizeSolve,
   getRevealProgress, raiseRevealProgress
 } from './utils/store.js';
 import { PACKS, getPack } from '../../packs/index.js';
@@ -48,8 +48,7 @@ export default async (req) => {
     const players = await listPlayers();
     const solves = [];
 
-    for (const p of players) {
-      const solvesObj = await getSolves(p.handle);
+    for (const { player: p, solves: solvesObj } of await readAllSolves(players)) {
       for (const [key, raw] of Object.entries(solvesObj)) {
         const { packId: owner, challengeId, legacy } = splitSolveKey(key);
         // A record written before packs were scoped still belongs to exactly
@@ -98,9 +97,12 @@ export default async (req) => {
       success: true,
       packId,
       packName: pack.manifest.name,
-      // The picture itself: whatever art the pack carries, or nothing, in
-      // which case the client draws the pack's own theme colour instead.
-      image: pack.manifest.reveal || pack.manifest.cover || null,
+      // The picture itself is NOT sent. The browser already has every shipped
+      // pack in its bundle, and a 20 KB base64 image on a poll that runs every
+      // minute, for every student, is a lot of bytes to re-send something the
+      // client is already holding. It reads the art from its own copy of the
+      // pack; only the state has to come from here.
+      hasImage: !!(pack.manifest.reveal || pack.manifest.cover),
       accent: pack.manifest.theme?.accent || null,
       columns: state.columns,
       rows: state.rows,

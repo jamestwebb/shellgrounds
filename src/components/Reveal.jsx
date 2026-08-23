@@ -18,6 +18,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Users, Sparkles, Clock } from 'lucide-react';
 import { fetchReveal } from '../utils/api';
+import { getPack } from '../../packs/index.js';
 
 const ago = (iso) => {
   const ms = Date.now() - Date.parse(iso);
@@ -36,6 +37,13 @@ export const Reveal = ({ packId, handle }) => {
   const [loading, setLoading] = useState(true);
   const [hovered, setHovered] = useState(null);
 
+  // How often the picture catches up with the class, in milliseconds. It is a
+  // shared thing being worked on by other people, so it has to move on its own
+  // — but each poll costs the server a read per student, so this is minutes
+  // rather than seconds, and it stops entirely when the tab is not being
+  // looked at.
+  const POLL_MS = 60_000;
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -51,6 +59,18 @@ export const Reveal = ({ packId, handle }) => {
   }, [packId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const tick = () => { if (document.visibilityState === 'visible') load(); };
+    const timer = setInterval(tick, POLL_MS);
+    // Catch up immediately on coming back, rather than making somebody wait out
+    // the rest of an interval that ran while the tab was hidden.
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [load]);
 
   // index -> who uncovered it
   const byIndex = useMemo(() => {
@@ -72,9 +92,14 @@ export const Reveal = ({ packId, handle }) => {
   }
 
   const {
-    columns, rows, total, uncovered, complete, contributors, yours, image, accent,
+    columns, rows, total, uncovered, complete, contributors, yours, accent,
     target, finds
   } = data;
+  // The art comes from this browser's own copy of the pack, not down the wire
+  // on every poll.
+  const image = data.hasImage
+    ? (getPack(data.packId)?.manifest?.reveal || getPack(data.packId)?.manifest?.cover || null)
+    : null;
   // Progress is a share of the picture, not a count of squares. The squares are
   // only how it is drawn, and the grid gets finer as the class gets bigger.
   const pct = Math.round((data.fraction ?? (total ? uncovered / total : 0)) * 100);

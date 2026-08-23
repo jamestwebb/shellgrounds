@@ -220,10 +220,17 @@ describe('the endpoint sends nothing that could be ranked', () => {
     expect(body.tiles.every(t => t.handle === 'ada')).toBe(true);
   });
 
-  it('carries the pack’s own picture', async () => {
+  it('says there is a picture without re-sending it every poll', async () => {
     const token = await withSolves();
     const { body } = await call(rev, get(`/api/reveal?packId=${DEFAULT_PACK_ID}`, token));
-    expect(body.image, 'the shipped packs have art').toMatch(/^data:image\//);
+
+    expect(body.hasImage, 'the shipped packs have art').toBe(true);
+    expect(PACKS[DEFAULT_PACK_ID].manifest.reveal, 'and the browser already holds it')
+      .toMatch(/^data:image\//);
+
+    // A poll runs every minute for every student. Twenty kilobytes of base64
+    // the client is already holding has no business being in that response.
+    expect(JSON.stringify(body)).not.toContain('data:image/');
     expect(body.columns * body.rows).toBe(body.total);
     expect(body.target, 'sized to the roster').toBeGreaterThan(0);
     expect(body.finds).toBe(3);
@@ -303,5 +310,45 @@ describe('the instructor chooses the framing', () => {
     const { status, body } = await call(cfg, post('/api/config', {}, token));
     expect(status).toBe(400);
     expect(body.error).toMatch(/Nothing to save/);
+  });
+});
+
+// A class of 200 is 400 blob reads for one leaderboard load. Serially, at
+// 20-40ms each, that is 8-16 seconds against a function timeout of ten — so
+// the page would fail for exactly the class that most needs it to work. These
+// pin the concurrency rather than the wall-clock, which would be flaky.
+describe('reading a big class does not run one student at a time', () => {
+  it('bounds how many reads are in flight, and keeps the order', async () => {
+    const { mapLimit, READ_CONCURRENCY } = await import('../netlify/functions/utils/store.js');
+    let inFlight = 0;
+    let peak = 0;
+    const items = Array.from({ length: 200 }, (_, i) => i);
+
+    const out = await mapLimit(items, READ_CONCURRENCY, async (n) => {
+      peak = Math.max(peak, ++inFlight);
+      await new Promise(r => setTimeout(r, 1));
+      inFlight--;
+      return n * 2;
+    });
+
+    expect(out).toEqual(items.map(n => n * 2));
+    expect(peak, 'must actually run in parallel').toBeGreaterThan(1);
+    expect(peak, 'but must not fire all 200 at once and trade a timeout for a rate limit')
+      .toBeLessThanOrEqual(READ_CONCURRENCY);
+  });
+
+  it('handles an empty class without hanging', async () => {
+    const { mapLimit } = await import('../netlify/functions/utils/store.js');
+    await expect(mapLimit([], 8, async () => 1)).resolves.toEqual([]);
+  });
+
+  it('is what the class-wide endpoints actually use', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const f of ['leaderboard.js', 'reveal.js', 'admin-overview.js']) {
+      const src = readFileSync(new URL(`../netlify/functions/${f}`, import.meta.url), 'utf8');
+      expect(src, `${f} should read the class in parallel`).toMatch(/readAll(Solves|Progress)/);
+      expect(src, `${f} should not await a read inside a per-student loop`)
+        .not.toMatch(/for \(const p of players\) \{\s*\n\s*const \w+ = await get/);
+    }
   });
 });
