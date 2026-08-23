@@ -1355,19 +1355,50 @@ export const awkCmd = {
             continue;
           }
 
-          const terms = expr.split(',').map(t => t.trim());
-          const renderedTerms = terms.map(term => {
+          // Split the argument list on commas that are NOT inside a quoted
+          // string. Splitting on every comma broke `print $2 "," $4`, which is
+          // the ordinary way to build a CSV line: the quoted comma tore the
+          // expression in half and `$4` was printed literally.
+          const args = [];
+          let buf = '';
+          let quote = null;
+          for (const ch of expr) {
+            if (quote) {
+              buf += ch;
+              if (ch === quote) quote = null;
+            } else if (ch === '"' || ch === "'") {
+              quote = ch;
+              buf += ch;
+            } else if (ch === ',') {
+              args.push(buf.trim());
+              buf = '';
+            } else {
+              buf += ch;
+            }
+          }
+          if (buf.trim() !== '') args.push(buf.trim());
+
+          // Within one argument, awk CONCATENATES juxtaposed terms with no
+          // separator: `$1 "-" $2` is one string.
+          const renderTerm = (term) => {
             if (term === 'NR') return String(nr);
             if (term === 'NF') return String(nf);
             if (term === '$0') return line;
-            if (term.startsWith('$')) {
+            if (/^\$\d+$/.test(term)) {
               const fNum = parseInt(term.slice(1), 10);
               return (fNum >= 1 && fNum <= fields.length) ? fields[fNum - 1] : '';
             }
-            return term.replace(/^["']|["']$/g, '');
-          });
+            if (/^".*"$|^'.*'$/.test(term)) return term.slice(1, -1);
+            return term;
+          };
 
-          stdout += `${renderedTerms.join(' ')}\n`;
+          const renderArg = (arg) => {
+            // Terms are quoted strings, $N, NR, NF, or bare words, in sequence.
+            const parts = arg.match(/"[^"]*"|'[^']*'|\$\d+|\$0|NR|NF|[^\s]+/g) || [];
+            return parts.map(renderTerm).join('');
+          };
+
+          stdout += `${args.map(renderArg).join(' ')}\n`;
         }
       }
     }

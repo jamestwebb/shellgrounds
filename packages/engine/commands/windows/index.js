@@ -694,7 +694,10 @@ export const whereWinCmd = {
     if (operands.length === 0) return { stdout: '', stderr: 'ERROR: Invalid syntax.\r\n', status: 2 };
     let stdout = '';
     for (const op of operands) {
-      stdout += `C:\\Windows\\System32\\${op}.exe\r\n`;
+      // `where cmd.exe` printed cmd.exe.exe. Only add the extension when the
+      // operand does not already carry one, the way PATHEXT resolution works.
+      const named = /\.[a-z0-9]+$/i.test(op) ? op : `${op}.exe`;
+      stdout += `C:\\Windows\\System32\\${named}\r\n`;
     }
     return { stdout, stderr: '', status: 0 };
   }
