@@ -14,8 +14,10 @@
 
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import { getPack, PACKS, hasPack, DEFAULT_PACK_ID } from '../../packs/index.js';
-import { listPlayers, getSolves, getHintsUsed, normalizeSolve, splitSolveKey, hintCountFor }
-  from './utils/store.js';
+import {
+  listPlayers, getSolves, getHintsUsed, normalizeSolve, splitSolveKey, hintCountFor,
+  readAllProgress
+} from './utils/store.js';
 import { resolveIsInstructor } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
@@ -116,9 +118,9 @@ export default async (req) => {
     // on every pack switch, for the panel the teacher looks at first.
     if (view === 'triage') {
       const rows = [];
-      for (const p of players) {
-        const solvesObj = await getSolves(p.handle);
-        const hintsObj = await getHintsUsed(p.handle);
+      // Two reads per student, in parallel. Serially this was the slowest panel
+      // in the console for exactly the class that most needs it: a big one.
+      for (const { player: p, solves: solvesObj, hints: hintsObj } of await readAllProgress(players)) {
         const solved = new Set();
         for (const key of Object.keys(solvesObj)) {
           const o = ownerOf(key);
@@ -215,9 +217,7 @@ export default async (req) => {
     // of the class has not opened yet. Count who actually started this one.
     let participants = 0;
 
-    for (const p of players) {
-      const solvesObj = await getSolves(p.handle);
-      const hintsObj = await getHintsUsed(p.handle);
+    for (const { player: p, solves: solvesObj, hints: hintsObj } of await readAllProgress(players)) {
       let playerPoints = 0;
       let solveCount = 0;
       let lastActive = null;

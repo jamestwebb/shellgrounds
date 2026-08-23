@@ -389,15 +389,63 @@ export function normalizeSolve(record) {
   };
 }
 
+/**
+ * Runs `fn` over every item with a ceiling on how many are in flight.
+ *
+ * The reads below used to be a plain `for … await`, which is one network round
+ * trip per student, one after another. At twenty students that is invisible.
+ * At two hundred it is four hundred sequential round trips for a single
+ * leaderboard load, which at 20-40ms each is 8-16 seconds against a function
+ * timeout of ten. The class that most needs the page to work is the one it
+ * would fail for.
+ *
+ * Bounded rather than unbounded, because firing four hundred requests at once
+ * trades a timeout for a rate limit.
+ */
+export async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+/** How many blob reads may be in flight at once. */
+export const READ_CONCURRENCY = 24;
+
 export async function listPlayers() {
   const s = store();
   const { blobs } = await s.list({ prefix: 'players/' });
-  const players = [];
-  for (const b of blobs) {
-    const p = await s.get(b.key, { type: 'json' });
-    if (p) players.push(p);
-  }
-  return players;
+  // The SDK collects every page internally when `paginate` is not set, so a
+  // class larger than one page is not silently truncated here.
+  const records = await mapLimit(blobs, READ_CONCURRENCY, (b) => s.get(b.key, { type: 'json' }));
+  return records.filter(Boolean);
+}
+
+/**
+ * Every student's solves, read in parallel.
+ * @returns {Promise<Array<{handle: string, solves: object}>>}
+ */
+export async function readAllSolves(players) {
+  return mapLimit(players, READ_CONCURRENCY, async (p) => ({
+    handle: p.handle,
+    player: p,
+    solves: await getSolves(p.handle)
+  }));
+}
+
+/** Every student's solves and hints together, for the instructor views. */
+export async function readAllProgress(players) {
+  return mapLimit(players, READ_CONCURRENCY, async (p) => {
+    const [solves, hints] = await Promise.all([getSolves(p.handle), getHintsUsed(p.handle)]);
+    return { handle: p.handle, player: p, solves, hints };
+  });
 }
 
 // ---------------------------------------------------------------------------
