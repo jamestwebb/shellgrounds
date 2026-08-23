@@ -108,6 +108,29 @@ describe('no shipped challenge refuses a correct answer', () => {
   });
 });
 
+describe('the check knows what it cannot check', () => {
+  // The fuzzer can only rewrite an answer the pack already accepts, so a
+  // commandMatches with no acceptedVariants is invisible to it -- and is the
+  // likeliest of all to be too tight, having never been tried any other way by
+  // anything. Silence about a blind spot reads as a clean bill of health.
+  it('every shipped commandMatches has something to rewrite', () => {
+    const blind = [];
+    for (const pack of Object.values(PACKS)) {
+      for (const c of pack.challenges) {
+        const { text } = splitPredicate(c.success);
+        if (text && !(c.acceptedVariants || []).length) blind.push(`${pack.id}/${c.id}`);
+      }
+    }
+    expect(blind, blind.join('\n')).toEqual([]);
+  });
+
+  it('a challenge with no text check needs no accepted answer to be fair', () => {
+    // Nothing to be unfair with: any command producing the outcome passes.
+    const { text } = splitPredicate({ predicate: 'outputEquals', text: 'x' });
+    expect(text).toBeNull();
+  });
+});
+
 describe('a real option is never called invalid', () => {
   const fsFor = (id, plat) => PACKS[id].createFs(plat);
   const out = (cmd) => (runPipeline(cmd, '/home/student', fsFor('linux-fundamentals', 'linux'), 'linux', {}).output || '');

@@ -14,7 +14,7 @@ import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
 import { validatePresentation } from './presentation.js';
-import { auditChallenge } from './solutionSpace.js';
+import { auditChallenge, splitPredicate } from './solutionSpace.js';
 import { compileSafe, probePattern, PROBE_BUDGET_MS } from './safe-regex.js';
 
 const TEST_SECRET = 'pack-validator-secret';
@@ -143,6 +143,7 @@ export async function validatePack(packObj, options = {}) {
     variantFailures: [],
     outputBlind: [],
     unfairRejections: [],
+    uncheckablePatterns: [],
     checks: {
       packFormat: { pass: true, checked: false, formatVersion: packObj.formatVersion ?? null },
       vfsPaths: { pass: true, tested: 0 },
@@ -552,6 +553,20 @@ export async function validatePack(packObj, options = {}) {
   // quoting, ./ and absolute paths, split and long flags -- and reports any
   // that produce the required result and are refused anyway.
   for (const challenge of challenges) {
+    // A commandMatches with nothing to rewrite is the blind spot in the check
+    // above, and it is exactly the shape most likely to be too tight: a
+    // hand-written pattern that no machine has ever tried to satisfy any other
+    // way. One accepted answer is all it takes to make it checkable.
+    const { text: textCheck } = splitPredicate(challenge.success);
+    if (textCheck && !(challenge.acceptedVariants || []).length) {
+      results.uncheckablePatterns.push({
+        id: challenge.id,
+        act: challenge.act,
+        title: challenge.title,
+        pattern: textCheck.predicate === 'commandMatches' ? textCheck.pattern : textCheck.predicate
+      });
+    }
+
     try {
       const audit = auditChallenge(packObj, challenge, {
         runPipeline,

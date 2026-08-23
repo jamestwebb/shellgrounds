@@ -119,6 +119,7 @@ async function cmdValidate(args) {
 
   let totalBlind = 0;
   let totalUnfair = 0;
+  let totalUncheckable = 0;
   let totalBadVariants = 0;
 
   for (const rep of reports) {
@@ -185,6 +186,23 @@ async function cmdValidate(args) {
       }
     }
 
+    // ── Patterns nothing can check ────────────────────────────────────────
+    // The check above can only rewrite an answer the pack already accepts. A
+    // commandMatches with no acceptedVariants is therefore invisible to it --
+    // and is the likeliest of all to be too tight, having never been tried any
+    // other way by anything.
+    const blind = rep.uncheckablePatterns || [];
+    totalUncheckable += blind.length;
+    if (blind.length > 0) {
+      console.log(`\nPATTERNS NOTHING CAN CHECK: ${blind.length} commandMatches with no acceptedVariants`);
+      console.log('  Add one working answer to each and the check above can try the other spellings.');
+      const shown = verbose ? blind : blind.slice(0, 8);
+      for (const b of shown) console.log(`  · ${b.id} (act ${b.act}) — ${b.pattern}`);
+      if (!verbose && blind.length > shown.length) {
+        console.log(`  · …and ${blind.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
     if (rep.warnings.length > 0) {
       console.log('\nWarnings:');
       for (const warn of rep.warnings) console.log(`  ⚠️ ${warn}`);
@@ -196,6 +214,7 @@ async function cmdValidate(args) {
     console.log('Across all packs checked:');
     console.log(`  broken accepted variants: ${totalBadVariants}`);
     console.log(`  correct answers refused:   ${totalUnfair}`);
+    console.log(`  uncheckable patterns:     ${totalUncheckable}`);
     console.log(`  keystroke-only challenges: ${totalBlind}`);
     console.log(`${THIN}\n`);
   }

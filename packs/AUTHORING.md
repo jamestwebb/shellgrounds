@@ -368,6 +368,17 @@ forensics-cli-101/act1-pwd   ^pwd\s*$      pwd -P  REJECTED
 
 Same output, same understanding, opposite verdicts. Nobody chose that.
 
+### PATTERNS NOTHING CAN CHECK
+
+The check above can only rewrite an answer your pack already accepts. A
+`commandMatches` with an empty `acceptedVariants` is therefore invisible to it
+— and is the likeliest of all to be too tight, having never been tried any
+other way by anything. `validate` names those separately, because silence about
+a blind spot reads as a clean bill of health.
+
+**One working answer is all it takes.** Add it and the rewriting check covers
+that challenge from then on.
+
 **Writing patterns that survive it:** anchor the verb, not the whole line.
 `^find\b` says "use find" and allows every way of using it. `^find .*-name.*$`
 says "use find with -name" and still allows the rest. `^find \. -name "*.log"$`
