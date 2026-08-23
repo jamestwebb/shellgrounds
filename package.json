@@ -10,7 +10,9 @@
     "test": "vitest run",
     "validate": "node bin/gauntlet.js validate",
     "dev:functions": "node scripts/dev-functions.mjs",
-    "dev:local": "./scripts/start-dev.sh"
+    "dev:local": "./scripts/start-dev.sh",
+    "registry": "node scripts/build-registry.mjs",
+    "prebuild": "node scripts/build-registry.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.13",

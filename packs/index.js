@@ -1,47 +1,15 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Content pack registry and loader.
 
-import forensicsPackJson from './forensics-cli-101/pack.json' with { type: 'json' };
-import forensicsChallenges from './forensics-cli-101/challenges.json' with { type: 'json' };
-import forensicsHelp from './forensics-cli-101/help.json' with { type: 'json' };
-import { createLinuxFilesystem } from './forensics-cli-101/fs.linux.js';
-import { createWindowsFilesystem } from './forensics-cli-101/fs.windows.js';
-import { FORENSICS_PACK_COMMANDS } from './forensics-cli-101/commands.js';
+import { GENERATED_PACKS } from './registry.gen.js';
 
-import linuxFundPackJson from './linux-fundamentals/pack.json' with { type: 'json' };
-import linuxFundChallenges from './linux-fundamentals/challenges.json' with { type: 'json' };
-import { createLinuxFundamentalsFilesystem } from './linux-fundamentals/fs.linux.js';
-
-import winCmdPackJson from './windows-cmd-essentials/pack.json' with { type: 'json' };
-import winCmdChallenges from './windows-cmd-essentials/challenges.json' with { type: 'json' };
-import { createWindowsEssentialsFilesystem } from './windows-cmd-essentials/fs.windows.js';
-
-export const PACKS = {
-  'forensics-cli-101': {
-    id: 'forensics-cli-101',
-    manifest: forensicsPackJson,
-    challenges: forensicsChallenges,
-    help: forensicsHelp,
-    commands: FORENSICS_PACK_COMMANDS,
-    createFs: (platform) => platform === 'windows' ? createWindowsFilesystem() : createLinuxFilesystem()
-  },
-  'linux-fundamentals': {
-    id: 'linux-fundamentals',
-    manifest: linuxFundPackJson,
-    challenges: linuxFundChallenges,
-    help: {},
-    commands: {},
-    createFs: () => createLinuxFundamentalsFilesystem()
-  },
-  'windows-cmd-essentials': {
-    id: 'windows-cmd-essentials',
-    manifest: winCmdPackJson,
-    challenges: winCmdChallenges,
-    help: {},
-    commands: {},
-    createFs: () => createWindowsEssentialsFilesystem()
-  }
-};
+// The registry is generated from the packs/ directory by
+// scripts/build-registry.mjs, so adding or importing a pack no longer means
+// hand-editing this file. Both the browser bundle and the Netlify functions
+// import it, and Vite's import.meta.glob only solves the browser half — hence a
+// generated file of plain static imports, committed so deploying needs no
+// extra step. Regenerate with:  node scripts/build-registry.mjs
+export const PACKS = GENERATED_PACKS;
 
 export const DEFAULT_PACK_ID = 'forensics-cli-101';
 
