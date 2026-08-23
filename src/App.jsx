@@ -12,7 +12,7 @@ import { Gate } from './components/Gate';
 import { Terminal } from './components/Terminal';
 import { ChallengeSidebar } from './components/ChallengeSidebar';
 import { Leaderboard } from './components/Leaderboard';
-import { WarrenMap } from './components/WarrenMap';
+import { SystemMap } from './components/SystemMap';
 import { AdminOverview } from './components/AdminOverview';
 import { CommandReference } from './components/CommandReference';
 import { BadgeCelebration } from './components/BadgeCelebration';
@@ -625,8 +625,13 @@ export default function App() {
         )}
 
         {activeTab === 'map' && (
-          <WarrenMap
+          <SystemMap
+            fs={platform === 'windows' ? windowsFs : linuxFs}
             currentCwd={cwd}
+            home={platform === 'windows'
+              ? (currentPack.manifest.windows?.home || 'C:\\Users\\Student')
+              : (currentPack.manifest.linux?.home || '/home/student')}
+            platform={platform}
             packName={currentPack.manifest.name}
             onNavigate={(newPath) => {
               setCwd(newPath);

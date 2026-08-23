@@ -3,10 +3,10 @@ import { tokenizeCommandLine } from '../src/engine/tokenizer.js';
 
 describe('Tokenizer', () => {
   it('parses simple commands into single stage', () => {
-    const res = tokenizeCommandLine('ls -la /home/analyst');
+    const res = tokenizeCommandLine('ls -la /home/examiner');
     expect(res.error).toBeUndefined();
     expect(res.pipeline).toHaveLength(1);
-    expect(res.pipeline[0].argv).toEqual(['ls', '-la', '/home/analyst']);
+    expect(res.pipeline[0].argv).toEqual(['ls', '-la', '/home/examiner']);
   });
 
   it('handles double and single quoting with spaces', () => {
