@@ -149,4 +149,3 @@ export function registryPacks() {
 }
 
 export { readJson, exists };
-export async function listDir(dir) { return readdir(dir); }

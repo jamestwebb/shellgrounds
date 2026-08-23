@@ -15,7 +15,12 @@ const FIND_EXACT = new RegExp(`^${FIND_TOKEN_PREFIX}\\{[A-Z2-7]{12}\\}$`);
 
 export const Terminal = ({
   platform = 'linux',
-  cwd = '/home/analyst',
+  // Deliberately not a path. The previous default was '/home/analyst', which
+  // exists in no pack: if the prop ever went missing, the prompt named a real-
+  // looking directory that was not there, and every relative command failed
+  // with nothing on screen to explain it. `~` is what a shell shows and claims
+  // no location that could be wrong. App always supplies the real value.
+  cwd = '~',
   user = 'student',
   host = 'sandbox',
   terminalHistory = [],

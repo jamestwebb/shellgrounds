@@ -238,9 +238,3 @@ export function buildReveal(solves, seed, opts = {}) {
     yours
   };
 }
-
-/** Grid position of a tile, for drawing. */
-export const tilePosition = (index, columns) => ({
-  col: index % columns,
-  row: Math.floor(index / columns)
-});
