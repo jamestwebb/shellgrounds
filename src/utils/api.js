@@ -86,6 +86,30 @@ export async function fetchSession() {
   return data;
 }
 
+// ── Which packs this site offers ────────────────────────────────────────────
+// The list lives in a settings record on the server, not in this bundle, so a
+// teacher can switch a pack on or off without a redeploy. The build-time
+// ENABLED_PACKS is only the seed for a site nobody has configured yet.
+export async function fetchSiteConfig() {
+  if (!getAuthToken()) return null;
+  const res = await fetch(`${API_BASE}/config`, { headers: authHeaders() });
+  if (!res.ok) return null;
+  const data = await parseJsonSafe(res);
+  return data?.success ? data : null;
+}
+
+/** Instructors only. Returns the saved config, or throws with the server's reason. */
+export async function saveSiteConfig(enabledPacks) {
+  const res = await fetch(`${API_BASE}/config`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ enabledPacks })
+  });
+  const data = await parseJsonSafe(res);
+  if (!res.ok) throw new Error(data.error || 'Could not save which packs are switched on.');
+  return data;
+}
+
 export async function fetchManifest(packId) {
   if (!getAuthToken()) return { flags: {} };
   const qs = packId ? `?packId=${encodeURIComponent(packId)}` : '';

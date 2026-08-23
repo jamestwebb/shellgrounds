@@ -11,7 +11,8 @@ import { runPipeline } from '../../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../../packages/engine/constants.js';
 import { stat } from '../../packages/engine/vfs/ops.js';
-import { getPack, getPackForChallenge, PACKS, isPackEnabled, defaultPackId } from '../../packs/index.js';
+import { getPack, getPackForChallenge, PACKS } from '../../packs/index.js';
+import { isPackEnabled } from './utils/enabled.js';
 import {
   getSolves, addSolve, readSolveEntry, splitSolveKey, normalizeSolve,
   getHintsUsed, hintCountFor, touchPlayer
@@ -166,7 +167,7 @@ export default async (req) => {
       pack = getPackForChallenge(challengeId);
       // A challenge inside a pack the teacher switched off is not reachable,
       // even by a client that remembers its id from a previous term.
-      if (pack && !isPackEnabled(pack.id)) pack = null;
+      if (pack && !(await isPackEnabled(pack.id))) pack = null;
       challenge = pack ? pack.challenges.find(c => c.id === challengeId) : null;
       if (!challenge) {
         return json(404, { error: `Unknown challenge '${challengeId}'` });

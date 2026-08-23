@@ -21,6 +21,7 @@ import SimulationBoundary from './components/SimulationBoundary';
 import PackSelector from './components/PackSelector';
 
 import { getPack, DEFAULT_PACK_ID, listPacks } from '../packs/index.js';
+import { fetchSiteConfig } from './utils/api';
 import { runPipeline } from '../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 import { ERROR_MARKERS } from '../packages/engine/constants.js';
@@ -48,6 +49,10 @@ export default function App() {
 
   // Active Pack Configuration
   const [activePackId, setActivePackId] = useState(DEFAULT_PACK_ID);
+  // Which packs this site currently offers. null until the server answers, and
+  // null means "do not filter": a student mid-course must not lose their pack
+  // switcher because one request was slow or failed.
+  const [enabledPackIds, setEnabledPackIds] = useState(null);
   const currentPack = useMemo(() => getPack(activePackId), [activePackId]);
 
   // Terminal & Filesystem State
@@ -177,6 +182,12 @@ export default function App() {
           if (manifestRes.success) {
             setFlagMap(manifestRes.flags || {});
           }
+
+          // The instructor screen writes this, so it can change between two
+          // logins with no redeploy in between.
+          fetchSiteConfig()
+            .then(cfg => { if (Array.isArray(cfg?.enabledPacks)) setEnabledPackIds(cfg.enabledPacks); })
+            .catch(() => {});
 
           setViewState('app');
         } else {
@@ -658,6 +669,7 @@ export default function App() {
         onClose={() => setShowPackModal(false)}
         currentPackId={activePackId}
         onSelectPack={handleSelectPack}
+        enabledPackIds={enabledPackIds}
       />
     </div>
   );

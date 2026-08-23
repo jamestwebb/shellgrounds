@@ -4,7 +4,8 @@
 // Each pack is its own board. Omit packId for the combined board.
 
 import { listPlayers, getSolves, normalizeSolve, splitSolveKey } from './utils/store.js';
-import { PACKS, isPackEnabled } from '../../packs/index.js';
+import { PACKS } from '../../packs/index.js';
+import { isPackEnabled } from './utils/enabled.js';
 
 // Badges come from whichever pack owns the solved challenge. Reading them from
 // a single hardcoded module meant only one pack could ever award a badge, and
@@ -37,7 +38,7 @@ export default async (req) => {
   const requestedPack = params.get('packId');
   // A pack the teacher switched off answers exactly like one that was never
   // written. Two different messages would tell a student which is which.
-  if (requestedPack && !isPackEnabled(requestedPack)) {
+  if (requestedPack && !(await isPackEnabled(requestedPack))) {
     return json(404, { error: `Unknown pack '${requestedPack}'` });
   }
   const isWeekly = queryWindow === 'week';

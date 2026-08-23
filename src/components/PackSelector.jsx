@@ -4,10 +4,20 @@
 import React from 'react';
 import { listPacks } from '../../packs/index.js';
 
-export default function PackSelector({ isOpen, onClose, currentPackId, onSelectPack }) {
+export default function PackSelector({ isOpen, onClose, currentPackId, onSelectPack, enabledPackIds = null }) {
   if (!isOpen) return null;
 
-  const packs = listPacks();
+  // enabledPackIds comes from the server, where an instructor can change it
+  // without a redeploy. Null means the answer has not arrived (or did not
+  // arrive at all), and the bundled list stands — a student mid-course must
+  // not lose the switcher because one request was slow.
+  //
+  // The pack they are currently in always stays listed. Being unable to see
+  // the name of the course you are looking at reads as a broken page, and the
+  // server is the thing that actually refuses a switched-off pack anyway.
+  const packs = Array.isArray(enabledPackIds)
+    ? listPacks().filter(p => enabledPackIds.includes(p.id) || p.id === currentPackId)
+    : listPacks();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="pack-select-title">

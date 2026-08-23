@@ -171,6 +171,44 @@ async function readWithEtag(s, key) {
   return { data: await s.get(key, { type: 'json' }), etag: null };
 }
 
+// ── Site settings ───────────────────────────────────────────────────────────
+// One record holds the choices a teacher makes from the instructor screen, so
+// changing them takes a click rather than a redeploy. It is deliberately
+// absent until somebody saves: "no record" is how the site knows an instructor
+// has not been through setup yet, and is what sends them to the pack screen on
+// their first login.
+const SETTINGS_KEY = 'config/settings';
+
+/** The saved settings, or null when nobody has saved any yet. */
+export async function getSettings() {
+  return await store().get(SETTINGS_KEY, { type: 'json' });
+}
+
+/**
+ * Merges fields into the settings record, atomically.
+ *
+ * Two instructors on two laptops can be on this screen at once. Without the
+ * compare-and-swap, the second save would silently erase the first, and the
+ * teacher who lost would have no way to tell.
+ */
+export async function updateSettings(fields, updatedBy = null) {
+  const s = store();
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    const { data, etag } = await readWithEtag(s, SETTINGS_KEY);
+    const next = {
+      ...(data || {}),
+      ...fields,
+      updatedAt: new Date().toISOString(),
+      updatedBy: updatedBy || data?.updatedBy || null
+    };
+    const opts = etag ? { onlyIfMatch: etag } : { onlyIfNew: !data };
+    const res = await s.setJSON(SETTINGS_KEY, next, opts);
+    if (!res || res.modified !== false) return next;
+    await backoff(attempt);
+  }
+  throw new Error('Could not save the settings: too many simultaneous changes.');
+}
+
 export async function getPlayer(handle) {
   return await store().get(playerKey(handle), { type: 'json' });
 }
