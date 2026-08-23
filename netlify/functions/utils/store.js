@@ -209,6 +209,44 @@ export async function updateSettings(fields, updatedBy = null) {
   throw new Error('Could not save the settings: too many simultaneous changes.');
 }
 
+// ── The reveal's high-water mark ────────────────────────────────────────────
+// How far the class picture has ever got, as a fraction, per pack.
+//
+// It exists because the target scales with the roster: a second section
+// registering in week five raises the denominator, which would shrink the
+// fraction and make the picture RE-COVER. A class watching its shared work
+// disappear because more people joined would be a bizarre thing to ship.
+//
+// Kept in its own record rather than in config/settings, so a student's read
+// never stamps "settings changed" on something the instructor owns.
+const revealKey = (packId) => `reveal/${packId}`;
+
+export async function getRevealProgress(packId) {
+  const rec = await store().get(revealKey(packId), { type: 'json' });
+  const f = Number(rec?.fraction);
+  return Number.isFinite(f) ? Math.max(0, Math.min(1, f)) : 0;
+}
+
+/** Raises the mark, never lowers it. Returns the value now in force. */
+export async function raiseRevealProgress(packId, fraction) {
+  const value = Math.max(0, Math.min(1, Number(fraction) || 0));
+  const s = store();
+  const key = revealKey(packId);
+
+  for (let attempt = 0; attempt < RETRIES; attempt++) {
+    const { data, etag } = await readWithEtag(s, key);
+    const current = Number(data?.fraction) || 0;
+    if (value <= current) return current;
+
+    const opts = etag ? { onlyIfMatch: etag } : { onlyIfNew: !data };
+    const res = await s.setJSON(key, { fraction: value, at: new Date().toISOString() }, opts);
+    if (!res || res.modified !== false) return value;
+    await backoff(attempt);
+  }
+  // Losing this race costs nothing: the next reader raises it instead.
+  return value;
+}
+
 export async function getPlayer(handle) {
   return await store().get(playerKey(handle), { type: 'json' });
 }
