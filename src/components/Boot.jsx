@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// BIOS-style boot loader for The Gauntlet
+// Boot screen for Shellgrounds. The checks are engine-neutral on purpose:
+// this screen runs for every pack, so it must not speak one pack's fiction.
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -9,18 +10,18 @@ import {
 import { BrandMark } from './BrandMark';
 import { sounds } from '../utils/audio';
 
-const WARREN_CHECKS = [
-  { id: 'bios', label: 'GAUNTLET_BIOS v4.8 Integrity Check', icon: Cpu, duration: 250 },
-  { id: 'shaft', label: 'Preparing Analyst Workstation', icon: ArrowDownCircle, duration: 300 },
-  { id: 'vfs', label: 'Mounting Virtual Filesystem', icon: HardDrive, duration: 280 },
-  { id: 'crossing', label: 'Linking WSL Bridge (/mnt/c)', icon: Wifi, duration: 320 },
-  { id: 'crypto', label: 'Deriving HMAC Challenge Salts', icon: Key, duration: 240 },
-  { id: 'vault', label: 'Forensic Vault Evidence Integrity Verified', icon: Database, duration: 260 },
-  { id: 'sensors', label: 'Calibrating Sensor Suite', icon: Activity, duration: 280 },
-  { id: 'auth', label: 'Analyst Terminal Clearance Initialized', icon: Shield, duration: 200 },
+const BOOT_CHECKS = [
+  { id: 'integrity', label: 'Checking system integrity', icon: Cpu, duration: 250 },
+  { id: 'workstation', label: 'Preparing your workstation', icon: ArrowDownCircle, duration: 300 },
+  { id: 'vfs', label: 'Mounting the practice filesystem', icon: HardDrive, duration: 280 },
+  { id: 'pack', label: 'Loading challenge pack', icon: Database, duration: 320 },
+  { id: 'flags', label: 'Generating your personal flags', icon: Key, duration: 240 },
+  { id: 'verify', label: 'Verifying challenge integrity', icon: Shield, duration: 260 },
+  { id: 'board', label: 'Connecting the leaderboard', icon: Wifi, duration: 280 },
+  { id: 'ready', label: 'Terminal ready', icon: Activity, duration: 200 },
 ];
 
-export const Boot = ({ onBootComplete, userHandle }) => {
+export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
   const [completedChecks, setCompletedChecks] = useState([]);
   const [currentCheck, setCurrentCheck] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -33,10 +34,10 @@ export const Boot = ({ onBootComplete, userHandle }) => {
 
     timers.push(setTimeout(() => setCanSkip(true), 800));
 
-    WARREN_CHECKS.forEach((check, index) => {
+    BOOT_CHECKS.forEach((check, index) => {
       timers.push(setTimeout(() => {
         setCurrentCheck(check.id);
-        setProgress(Math.round((index / WARREN_CHECKS.length) * 100));
+        setProgress(Math.round((index / BOOT_CHECKS.length) * 100));
         sounds.playKeypress();
       }, totalDuration));
 
@@ -44,8 +45,8 @@ export const Boot = ({ onBootComplete, userHandle }) => {
 
       timers.push(setTimeout(() => {
         setCompletedChecks((prev) => [...prev, check.id]);
-        setProgress(Math.round(((index + 1) / WARREN_CHECKS.length) * 100));
-        if (index === WARREN_CHECKS.length - 1) {
+        setProgress(Math.round(((index + 1) / BOOT_CHECKS.length) * 100));
+        if (index === BOOT_CHECKS.length - 1) {
           setCurrentCheck(null);
           setIsReady(true);
           sounds.playSuccess();
@@ -56,10 +57,16 @@ export const Boot = ({ onBootComplete, userHandle }) => {
     return () => timers.forEach((id) => clearTimeout(id));
   }, []);
 
+  // App.jsx has passed this prop under both names at different times. Accept
+  // either, and never throw on the button that is the only way out of here.
+  // One name for one thing. This accepted `onBootComplete` too, while the
+  // only caller passed `onComplete` — so the boot screen's single exit threw.
+  const finish = onComplete;
+
   const handleFinish = useCallback(() => {
     sounds.playSuccess();
-    onBootComplete();
-  }, [onBootComplete]);
+    if (typeof finish === 'function') finish();
+  }, [finish]);
 
   // Enter/Space key skip
   useEffect(() => {
@@ -86,8 +93,8 @@ export const Boot = ({ onBootComplete, userHandle }) => {
           <div className="flex items-center gap-3">
             <BrandMark size={28} />
             <div>
-              <div className="text-lg font-bold tracking-wider text-green-400">THE GAUNTLET // BIOS v4.8</div>
-              <div className="text-xs text-neutral-400">Forensics CLI 101 Training Network</div>
+              <div className="text-lg font-bold tracking-wider text-green-400">SHELLGROUNDS // BOOT</div>
+              <div className="text-xs text-neutral-400">{packName}</div>
             </div>
           </div>
           <div className="text-right">
@@ -101,11 +108,11 @@ export const Boot = ({ onBootComplete, userHandle }) => {
         {/* System initialization checks */}
         <div className="space-y-2 mb-6">
           <div className="text-xs font-bold uppercase tracking-widest text-neutral-300 mb-3 flex items-center gap-2">
-            <Terminal size={14} className="text-term-green" /> Systems Diagnostic
+            <Terminal size={14} className="text-term-green" /> Startup checks
           </div>
 
           <div className="grid grid-cols-1 gap-2 bg-term-gray/60 p-3 rounded border border-term-border">
-            {WARREN_CHECKS.map((check) => {
+            {BOOT_CHECKS.map((check) => {
               const Icon = check.icon;
               const isCompleted = completedChecks.includes(check.id);
               const isCurrent = currentCheck === check.id;
@@ -141,7 +148,7 @@ export const Boot = ({ onBootComplete, userHandle }) => {
         {/* Progress Bar */}
         <div className="mb-6">
           <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-neutral-300">Boot Progress</span>
+            <span className="text-neutral-300">Starting up</span>
             <span className="text-term-green font-bold">{progress}%</span>
           </div>
           <div className="h-2 bg-neutral-900 rounded-full overflow-hidden border border-term-border">
@@ -157,12 +164,12 @@ export const Boot = ({ onBootComplete, userHandle }) => {
           <div className="text-xs text-neutral-300">
             {isReady ? (
               <span className="text-term-green font-medium flex items-center gap-1">
-                ✓ All checks passed. Ready to enter.
+                ✓ All checks passed. Press ENTER when you are ready.
               </span>
             ) : canSkip ? (
-              <span className="text-neutral-400">Press ENTER or SPACE to skip...</span>
+              <span className="text-neutral-400">Press ENTER or SPACE to skip ahead.</span>
             ) : (
-              <span className="text-neutral-400">Preparing workstation...</span>
+              <span className="text-neutral-400">Preparing your workstation...</span>
             )}
           </div>
 
@@ -176,7 +183,7 @@ export const Boot = ({ onBootComplete, userHandle }) => {
             }`}
           >
             <Play size={12} fill="currentColor" />
-            {isReady ? 'ENTER THE GAUNTLET' : 'SKIP'}
+            {isReady ? 'START' : 'SKIP'}
           </button>
         </div>
       </div>

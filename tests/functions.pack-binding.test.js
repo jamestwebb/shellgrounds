@@ -257,3 +257,52 @@ describe('the instructor can see answers and who is stuck', () => {
     expect(body.frontier).toBeTruthy();
   });
 });
+
+describe('triage: who needs help, in one request', () => {
+  it('names the students stuck on a challenge, without a request per student', async () => {
+    const prof = await register(registerHandler, 'profsmith', { setupCode: SETUP_CODE });
+    const stu = await register(registerHandler, 'student12');
+
+    // Open every hint on one challenge without solving it — that is what
+    // "stuck" means here, and it is the signal a teacher actually wants.
+    const { getPackForChallenge } = await import('../packs/index.js');
+    const pack = getPackForChallenge('l2-grep');
+    const total = (pack.challenges.find(c => c.id === 'l2-grep')?.hints || []).length;
+    for (let i = 0; i < total; i++) {
+      await call(hintHandler, post('/api/hint', { challengeId: 'l2-grep', index: i }, stu.token));
+    }
+
+    const { status, body } = await call(
+      adminHandler,
+      get('/api/admin-overview?packId=linux-fundamentals&view=triage', prof.body.token)
+    );
+    expect(status).toBe(200);
+    const row = body.students.find(s => s.handle === 'student12');
+    expect(row).toBeTruthy();
+    if (total > 0) {
+      expect(row.struggling.map(c => c.id)).toContain('l2-grep');
+    }
+    expect(body).toHaveProperty('participants');
+    expect(body).toHaveProperty('registered');
+  });
+
+  it('counts participants in this module, not everyone on the server', async () => {
+    const prof = await register(registerHandler, 'profsmith', { setupCode: SETUP_CODE });
+    await register(registerHandler, 'idle1');
+    const active = await register(registerHandler, 'active1');
+    await call(submitHandler, post('/api/submit-flag', { challengeId: 'l1-pwd', commandText: 'pwd' }, active.token));
+
+    const { body } = await call(
+      adminHandler,
+      get('/api/admin-overview?packId=linux-fundamentals&view=triage', prof.body.token)
+    );
+    expect(body.registered).toBeGreaterThan(body.participants);
+    expect(body.participants).toBe(1);
+  });
+
+  it('refuses triage to a student', async () => {
+    const { token } = await register(registerHandler, 'student13');
+    const { status } = await call(adminHandler, get('/api/admin-overview?view=triage', token));
+    expect(status).toBe(403);
+  });
+});

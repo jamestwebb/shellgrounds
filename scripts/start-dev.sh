@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Local dev stack for The Gauntlet.
+# Local dev stack for Shellgrounds.
 #   9999 = node scripts/dev-functions.mjs (the Netlify v2 functions)
 #   3000 = vite with hot reload, proxying /api -> 9999
-cd /home/remnant/Projects/Work/Class/warren
+# Resolve the repo from this script's own location. A hardcoded absolute path
+# worked for exactly one machine, and this is a repository other people clone.
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 1
 SP="${GAUNTLET_LOG_DIR:-/tmp/gauntlet-dev}"; mkdir -p "$SP"
 pkill -f '[d]ev-functions.mjs' 2>/dev/null
 pkill -f '[b]in/vite' 2>/dev/null
 pkill -f '[n]etlify-cli' 2>/dev/null
 sleep 2
-set -a; . ./.env; set +a
+if [ -f ./.env ]; then set -a; . ./.env; set +a; else
+  echo "No .env found. Copy .env.example to .env and fill it in." >&2
+fi
 NETLIFY_DEV=true setsid nohup env NETLIFY_DEV=true node scripts/dev-functions.mjs 9999 > "$SP/functions.log" 2>&1 < /dev/null &
 setsid nohup env VITE_API_BASE=http://127.0.0.1:9999/api node_modules/.bin/vite > "$SP/vite.log" 2>&1 < /dev/null &
 # Probe both loopback families explicitly and accept either. Each server binds

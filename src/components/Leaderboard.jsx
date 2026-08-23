@@ -7,9 +7,17 @@ import {
   TrendingUp, Shield, Clock, Zap, CheckCircle2, User
 } from 'lucide-react';
 import { fetchLeaderboard } from '../utils/api';
-import { BADGE_DEFINITIONS } from '../data/challenges';
+import { PACKS } from '../../packs/index.js';
+import { EMPTY_STATES } from '../copy';
 
-export const Leaderboard = ({ currentHandle }) => {
+// Badges are per pack. Reading them from one hardcoded module meant only the
+// forensics pack could ever award one, and students in the other two modules
+// earned nothing at all.
+const badgesForPack = (packId) =>
+  Object.values(PACKS).find(p => p.id === packId)?.manifest.badges
+  || Object.values(PACKS).flatMap(p => p.manifest.badges || []);
+
+export const Leaderboard = ({ currentHandle, packId = null, packName = null }) => {
   const [windowFilter, setWindowFilter] = useState('all'); // 'all' | 'week'
   const [leaderboard, setLeaderboard] = useState([]);
   const [totalPlayers, setTotalPlayers] = useState(0);
@@ -21,11 +29,11 @@ export const Leaderboard = ({ currentHandle }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchLeaderboard(filter);
+      const res = await fetchLeaderboard(filter, packId);
       setLeaderboard(res.leaderboard || []);
       setTotalPlayers(res.totalPlayers || 0);
     } catch (err) {
-      setError('Failed to refresh leaderboard. Check connection.');
+      setError('Could not load the board. That is usually the network, not you.');
     } finally {
       setLoading(false);
     }
@@ -33,7 +41,7 @@ export const Leaderboard = ({ currentHandle }) => {
 
   useEffect(() => {
     loadData(windowFilter);
-  }, [windowFilter]);
+  }, [windowFilter, packId]);
 
   const filteredBoard = leaderboard.filter(entry =>
     entry.handle.toLowerCase().includes(search.trim().toLowerCase())
@@ -55,10 +63,10 @@ export const Leaderboard = ({ currentHandle }) => {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-green-400 tracking-wide">
-                  THE GAUNTLET // LEADERBOARD
+                  LEADERBOARD
                 </h1>
                 <p className="text-xs text-neutral-400 mt-0.5">
-                  Live Forensic Standings
+                  {packName ? `${packName} · live standings` : 'Live standings'}
                 </p>
               </div>
             </div>
@@ -93,7 +101,7 @@ export const Leaderboard = ({ currentHandle }) => {
               onClick={() => loadData(windowFilter)}
               disabled={loading}
               className="p-2 rounded-lg bg-term-gray border border-term-border hover:bg-neutral-800 text-neutral-400 hover:text-white transition-all cursor-pointer"
-              title="Refresh Standings"
+              title="Refresh the board"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
             </button>
@@ -108,7 +116,7 @@ export const Leaderboard = ({ currentHandle }) => {
                 #{userEntry.rank}
               </div>
               <div>
-                <div className="text-xs text-term-green font-bold uppercase tracking-wider">Your Standing</div>
+                <div className="text-xs text-term-green font-bold uppercase tracking-wider">Your standing</div>
                 <div className="text-base font-bold text-white">@{userEntry.handle}</div>
               </div>
             </div>
@@ -132,7 +140,7 @@ export const Leaderboard = ({ currentHandle }) => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search analyst handles..."
+            placeholder="Search handles..."
             className="w-full bg-term-black border border-term-border rounded-lg pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-term-green"
           />
         </div>
@@ -140,7 +148,7 @@ export const Leaderboard = ({ currentHandle }) => {
         {/* Fetch failure must be visible — an empty table reads as "nobody is playing" */}
         {error && (
           <div className="p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-300 text-xs">
-            {error} Use the refresh button to retry.
+            {error} Press the refresh button to try again.
           </div>
         )}
 
@@ -148,7 +156,7 @@ export const Leaderboard = ({ currentHandle }) => {
         <div className="bg-term-black border border-term-border rounded-xl overflow-hidden shadow-xl">
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-term-panel border-b border-term-border text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
             <div className="col-span-2 md:col-span-1 text-center">Rank</div>
-            <div className="col-span-5 md:col-span-4">Analyst</div>
+            <div className="col-span-5 md:col-span-4">Handle</div>
             <div className="hidden md:block md:col-span-4">Badges</div>
             <div className="col-span-2 md:col-span-1 text-center">Solves</div>
             <div className="col-span-3 md:col-span-2 text-right">XP Score</div>
@@ -157,7 +165,11 @@ export const Leaderboard = ({ currentHandle }) => {
           <div className="divide-y divide-term-border/50">
             {filteredBoard.length === 0 ? (
               <div className="p-8 text-center text-xs text-neutral-500">
-                {loading ? 'Retrieving standings...' : 'No analyst records matched your search.'}
+                {loading
+                  ? EMPTY_STATES.boardLoading
+                  : search.trim()
+                    ? EMPTY_STATES.boardNoSearchMatch
+                    : EMPTY_STATES.boardEmpty}
               </div>
             ) : (
               filteredBoard.map((entry) => {
@@ -210,7 +222,7 @@ export const Leaderboard = ({ currentHandle }) => {
                     <div className="hidden md:flex md:col-span-4 items-center gap-1.5 flex-wrap">
                       {entry.badges && entry.badges.length > 0 ? (
                         entry.badges.map(bId => {
-                          const badge = BADGE_DEFINITIONS.find(b => b.id === bId);
+                          const badge = badgesForPack(packId).find(b => b.id === bId);
                           if (!badge) return null;
                           return (
                             <span
@@ -244,10 +256,17 @@ export const Leaderboard = ({ currentHandle }) => {
           </div>
         </div>
 
+        {/* A board with exactly one name reads as broken. Say what it is. */}
+        {!loading && !search.trim() && leaderboard.length === 1 && (
+          <div className="p-3 rounded-lg bg-term-gray border border-term-border text-neutral-400 text-xs">
+            {EMPTY_STATES.boardSolo}
+          </div>
+        )}
+
         {/* Scoring policy footer notice */}
         <div className="p-4 rounded-lg bg-term-gray border border-term-border text-neutral-400 text-xs space-y-1">
           <div className="font-bold text-neutral-300 flex items-center gap-1.5">
-            <Shield size={14} className="text-term-green" /> Scoring & Anti-Cheat Architecture
+            <Shield size={14} className="text-term-green" /> How scoring works
           </div>
           <div>
             Every student gets different flags, so copying a classmate's flag will not work.

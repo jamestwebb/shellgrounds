@@ -1,8 +1,8 @@
-name: The Gauntlet CI & Pack Validator
+name: Shellgrounds CI & Pack Validator
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, shellgrounds ]
   pull_request:
     branches: [ master, main ]
 
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Vitest test suite (Unit, De-branding Lint, Fidelity)
+      - name: Run Vitest test suite (unit, API handlers, de-branding, fidelity)
         run: npm test
 
       - name: Validate all content packs (Machine Solvability Verification)
