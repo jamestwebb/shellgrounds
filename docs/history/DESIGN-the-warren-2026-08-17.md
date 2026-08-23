@@ -1,3 +1,18 @@
+> **Superseded — kept as the project's origin record.**
+>
+> This is the original build plan, written on 2026-08-17 for one course
+> (CIS 4400/5544) under the working title *The Warren*. Almost none of it
+> describes the software today: the warren fiction was retired, the product
+> became Shellgrounds, one hard-coded curriculum became three portable packs,
+> and the Neon database it plans for was never built — storage is Netlify
+> Blobs. Read it for why the project exists and which teaching decisions were
+> deliberate, not for how anything works.
+>
+> Current documents: [`README.md`](../../README.md) to deploy,
+> [`docs/PACK-FORMAT.md`](../PACK-FORMAT.md) to author a course.
+
+---
+
 # The Warren — CLI Challenge Site for CIS 4400/5544
 
 **A standalone Netlify site. Students create a handle with a class password, then play a story-driven command-line challenge game with a live leaderboard.**
