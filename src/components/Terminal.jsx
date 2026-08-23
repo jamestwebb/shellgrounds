@@ -206,7 +206,7 @@ export const Terminal = ({
     <div
       onClick={focusInput}
       style={themeVars(themeId)}
-      className="flex-1 flex flex-col bg-[color:var(--sg-bg)] border border-[color:var(--sg-border)] rounded-lg shadow-2xl overflow-hidden relative cursor-text font-mono select-text"
+      className="flex-1 flex flex-col bg-[color:var(--sg-bg)] border border-[color:var(--sg-border)] rounded-lg shadow-2xl overflow-hidden relative cursor-text font-mono select-text focus-within:border-[color:var(--sg-caret)] focus-within:ring-1 focus-within:ring-[color:var(--sg-caret)] transition-colors"
       role="region"
       aria-label={`Interactive CLI Terminal, ${getTheme(themeId).name} colour scheme`}
     >
@@ -347,7 +347,7 @@ export const Terminal = ({
             onChange={(e) => setCurrentInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={disabled}
-            className="flex-1 bg-transparent text-[color:var(--sg-input)] caret-[color:var(--sg-caret)] border-none p-0 font-mono text-xs md:text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--sg-caret)] rounded-sm"
+            className="flex-1 bg-transparent text-[color:var(--sg-input)] caret-[color:var(--sg-caret)] border-none p-0 font-mono text-xs md:text-sm outline-none"
             autoFocus
             autoComplete="off"
             autoCapitalize="off"
