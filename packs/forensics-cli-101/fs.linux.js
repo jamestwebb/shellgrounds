@@ -1,22 +1,29 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Virtual Filesystem Definition for Forensics CLI 101 (Linux Warren Environment)
+// Virtual filesystem for Forensics CLI 101 — the Fieldlab examination workstation.
+//
+// Fiction lives here, in the pack, and nowhere in packages/engine. See README.md
+// for the one-paragraph case summary a teacher needs before running the module.
 
 import { buildFS, file } from '../../packages/engine/vfs/builder.js';
 
-export function createWarrenFilesystem() {
+export function createLinuxFilesystem() {
   const built = buildFS({
-    home: '/home/analyst',
+    home: '/home/examiner',
     isWindows: false,
     tree: {
-      'home/analyst': {
-        '.bashrc': file('# Analyst bash profile\nexport PS1="analyst@lab:\\w\\$ "\nalias ll="ls -la"\n'),
-        '.stash': file('You found the hidden file. Files that start with a dot are invisible to a plain ls.\nFlag: [[FLAG:act1-hidden]]\n', { hidden: true }),
+      'home/examiner': {
+        '.bashrc': file('# Fieldlab examiner profile\nexport PS1="examiner@fieldlab:\\w\\$ "\nalias ll="ls -la"\n'),
+        '.stash': file('You found the hidden file. A name that starts with a dot is invisible to a plain ls.\nFlag: [[FLAG:act1-hidden]]\n', { hidden: true }),
         'welcome.txt': file(
 `================================================================================
-                      THE GAUNTLET — FORENSICS CLI 101 PROVING GROUND
+              FIELDLAB — DIGITAL FORENSICS EXAMINATION WORKSTATION
 ================================================================================
-Welcome, Analyst. This is a safe practice terminal: you cannot break anything,
-so experiment freely. Solve challenges, capture flags, climb the leaderboard.
+Welcome to the bench. You are the junior examiner on CASE 1042.
+
+Aurora Robotics reports that prototype design files left the building on
+somebody's personal drive. They sent us one laptop and one disk image. Nothing
+here is dangerous and nothing here is real: this is a safe practice terminal,
+you cannot break it, so try things.
 
 Essential commands:
   pwd          - Show where you are
@@ -26,7 +33,7 @@ Essential commands:
   map          - Show a map of this whole filesystem
   submit <flag>- Send a captured FLAG{...} flag in for points
 
-Start with Act I in the left panel. Good hunting.
+Start with Act I in the left panel. Work carefully.
 `),
         'training': {
           'level_1': {
@@ -41,113 +48,118 @@ Start with Act I in the left panel. Good hunting.
           },
           'archive': {
             '2025': {
-              'old_case_index.txt': file('Archived case list (2025):\nCF-2025-011 closed\nCF-2025-047 closed\nCF-2025-090 transferred\n')
+              'closed_cases.txt': file('Cases closed by this bench in 2025:\n1017 returned to client\n1023 returned to client\n1031 transferred to another lab\n')
             }
           }
         },
         'Documents': {
-          'case_notes.txt': file(
-`CASE FILE: #CF-2026-088
-TITLE: Unauthorized Access — Practice Scenario
-ANALYST: (you)
-STATUS: TRAINING
+          'case_1042.txt': file(
+`CASE 1042 — AURORA ROBOTICS
+OPENED: 2026-03-18
+EXAMINER: (you)
+STATUS: OPEN
 
-SUMMARY
-An unidentified actor reached the Windows side of this machine through the
-WSL mount at /mnt/c. The evidence is scattered across this workstation:
+WHAT THE CLIENT SAYS
+Aurora Robotics designs floor-cleaning robots. Three days after an engineer
+resigned, the prototype folder on the file server showed a bulk read at 02:15
+in the morning. Aurora wants to know what left the building, and when.
 
-  Documents/access.log ......... the access timeline
-  Documents/logs.txt ........... application errors
-  evidence/ .................... seized files to identify and hash
+WHAT THE CLIENT SENT US
+  Documents/access.log ............ workstation timeline from the seized laptop
+  Documents/logs.txt .............. application errors from the same machine
+  evidence/ ....................... files to identify, hash, and record
 
-You do NOT need to act on any of this yet. The next challenges will walk you
-through each piece, one command at a time. For now, reading this file with
-'cat' was the whole job — and you just did it.
+HOUSE RULES
+Hash before you touch. Identify a file by its contents, never by its name.
+Write down every number you find; later steps ask for them again.
+
+Reading this file was the whole job for now. The panel on the left takes you
+through the rest, one command at a time.
 `),
           'access.log': file(
-`2026-08-17 01:12:04 - DAEMON: System initialized on tty1
-2026-08-17 01:15:30 - AUTH: User 'analyst' logged in from 10.0.4.12
-2026-08-17 02:00:11 - KERNEL: Storage device sdb1 mounted at /mnt/c
-2026-08-17 02:14:55 - SENSOR: Checkpoint marker registered in training buffer
-2026-08-17 03:22:18 - SSH: Accepted publickey for analyst from 10.0.4.12 port 52140
-2026-08-17 03:45:00 - CRON: Log rotation completed cleanly
-2026-08-17 04:10:22 - ALERT: Unrecognized binary signature in ~/evidence
-2026-08-17 05:01:09 - AUDIT: Session checkpoint saved for training review
-2026-08-17 05:30:44 - SYSTEM: Background telemetry synchronized to central host
-2026-08-17 06:12:00 - DAEMON: Heartbeat ping OK - 0 dropped packets
-2026-08-17 06:45:12 - AUTH: Re-authentication challenge issued to analyst
-2026-08-17 07:00:01 - CRON: Hourly checksum verification passed (12 targets)
-2026-08-17 07:15:29 - SENSOR: Level 2 checkpoint reached by session analyst
-2026-08-17 07:44:10 - LOG: End of access log segment #088
-2026-08-17 07:59:59 - NOTICE: Trailing record intact. [[FLAG:act2-tail]]
+`2026-03-14 08:02:11 - SESSION: workstation unlocked by badge 4417, day shift
+2026-03-14 08:04:56 - SHARE: mounted //aurora-fs/prototypes read-only
+2026-03-14 17:40:03 - SESSION: workstation locked, badge 4417 signed out
+2026-03-15 02:14:39 - SESSION: workstation unlocked by badge 4417, OUT OF HOURS
+2026-03-15 02:15:02 - SHARE: remounted //aurora-fs/prototypes read-write
+2026-03-15 02:16:44 - USB: removable volume PRIVATE attached on port 3
+2026-03-15 02:18:10 - COPY: 412 files queued from //aurora-fs/prototypes
+2026-03-15 02:31:57 - COPY: queue drained, 412 files written to volume PRIVATE
+2026-03-15 02:33:20 - USB: removable volume PRIVATE detached
+2026-03-15 02:34:02 - SHARE: unmounted //aurora-fs/prototypes
+2026-03-15 02:36:15 - SESSION: workstation locked
+2026-03-16 09:00:00 - CRON: nightly integrity sweep completed, 0 differences
+2026-03-17 11:22:41 - ADMIN: account for badge 4417 disabled on request
+2026-03-18 08:15:00 - IMAGE: laptop acquired by Fieldlab, write blocker in line
+2026-03-18 08:15:31 - NOTICE: last record on this timeline. [[FLAG:act2-tail]]
 `),
           'logs.txt': file(
-`[2026-08-17 00:01:12] INFO: System audit log initialized
-[2026-08-17 01:14:02] DEBUG: Loading kernel modules: ext4, overlay, vfat
-[2026-08-17 02:15:44] ERROR: Failed to bind port 8080 - address already in use
-[2026-08-17 02:15:45] WARN: Falling back to secondary listener on port 8081
-[2026-08-17 03:00:00] INFO: Daily health check completed - 0 anomalies
-[2026-08-17 03:22:11] error: Database connection timeout on replica-02
-[2026-08-17 03:22:15] INFO: Reconnected to replica-02 after 4000ms
-[2026-08-17 04:10:05] ERROR: Authentication failed for user 'guest' from 192.168.1.105
-[2026-08-17 04:10:06] WARN: Repeated login failures detected (threshold: 3)
-[2026-08-17 04:10:08] ERROR: IP 192.168.1.105 temporarily blacklisted (15m)
-[2026-08-17 05:00:00] INFO: Hourly sync to upstream master completed
-[2026-08-17 05:30:21] error: Certificate expiration warning: cert expires in 12 days
-[2026-08-17 05:30:22] WARN: Automatic renewal job scheduled for 2026-08-20
-[2026-08-17 06:00:00] INFO: Backup archive created: /var/backups/daily-20260817.tar.gz
-[2026-08-17 06:15:33] ERROR: Disk space on /var/log exceeded 85% threshold
-[2026-08-17 06:15:34] INFO: Purged 3 archived log files (recovered 420MB)
-[2026-08-17 07:00:00] INFO: Routine health check completed - 0 critical issues
-[2026-08-17 07:22:19] ERROR: Failed to parse input stream at offset 0x4A20: [[FLAG:act3-grepi]]
-[2026-08-17 07:22:20] INFO: Recovery handler executed cleanly
+`[2026-03-15 00:01:12] INFO: sync agent started
+[2026-03-15 01:14:02] DEBUG: loading modules: ext4, overlay, vfat
+[2026-03-15 02:15:44] ERROR: failed to bind port 8080 - address already in use
+[2026-03-15 02:15:45] WARN: falling back to secondary listener on port 8081
+[2026-03-15 02:16:00] INFO: daily health check completed - 0 anomalies
+[2026-03-15 02:16:48] error: quota exceeded on volume PRIVATE, retrying
+[2026-03-15 02:17:03] INFO: retry succeeded after 4000ms
+[2026-03-15 02:19:05] ERROR: read denied for user guest on //aurora-fs/prototypes
+[2026-03-15 02:19:06] WARN: repeated access failures detected, threshold 3
+[2026-03-15 02:19:08] ERROR: workstation 10.0.4.12 rate limited for 15m
+[2026-03-15 03:00:00] INFO: hourly sync to file server completed
+[2026-03-15 03:30:21] error: certificate expires in 12 days
+[2026-03-15 03:30:22] WARN: renewal job scheduled for 2026-03-25
+[2026-03-15 04:00:00] INFO: backup archive created: /var/backups/daily.tar.gz
+[2026-03-15 06:15:33] ERROR: disk space on /var/log above 85 percent
+[2026-03-15 06:15:34] INFO: purged 3 archived log files, recovered 420MB
+[2026-03-15 07:00:00] INFO: routine health check completed - 0 critical issues
+[2026-03-15 07:22:19] ERROR: could not parse record at offset 0x4A20: [[FLAG:act3-grepi]]
+[2026-03-15 07:22:20] INFO: recovery handler executed cleanly
 `),
           'secrets.txt': file(
-`# Internal System Credentials (DO NOT DISTRIBUTE)
+`# Credentials recovered from the seized laptop. Handle as evidence.
 database_host=10.0.4.50
-database_user=svc_analyst
+database_user=svc_backup
 database_pass=k7#mP9$xL2vQ
 vault_passcode=FLAG: [[FLAG:act3-grep]]
-api_endpoint=https://api.internal.lab/v1
+api_endpoint=https://api.aurora-robotics.example/v1
 api_key=ak_live_8fbc2390a1e4d678
-ssh_bastion=bastion.internal.lab:2222
+ssh_jump_host=jump.aurora-robotics.example:2222
 backup_encryption_key=0x9f4a12c8e3b701d5
 `),
           'network_stream.log': file(
-`2026-08-17 01:00:01 TCP ALLOW 10.0.4.12:52140 -> 10.0.4.50:5432
-2026-08-17 01:00:02 TCP ALLOW 10.0.4.12:52142 -> 10.0.4.50:5432
-2026-08-17 01:02:15 TCP DENY  192.168.1.105:44120 -> 10.0.4.50:22
-2026-08-17 01:02:16 TCP DENY  192.168.1.105:44122 -> 10.0.4.50:22
-2026-08-17 01:02:17 TCP DENY  192.168.1.105:44124 -> 10.0.4.50:22
-2026-08-17 01:05:00 TCP ALLOW 10.0.4.12:52144 -> 10.0.4.50:5432
-2026-08-17 01:10:22 UDP DROP  10.0.4.99:5353 -> 224.0.0.251:5353
-2026-08-17 01:15:30 TCP ALLOW 10.0.4.12:52146 -> 10.0.4.50:80
-2026-08-17 01:20:00 TCP DENY  172.16.0.44:33890 -> 10.0.4.50:3389
-2026-08-17 01:25:00 TCP ALLOW 10.0.4.12:52148 -> 10.0.4.50:5432
-2026-08-17 01:30:00 TCP DENY  192.168.1.200:50110 -> 10.0.4.50:445
-2026-08-17 01:35:00 TCP ALLOW 10.0.4.12:52150 -> 10.0.4.50:5432
-2026-08-17 01:40:00 TCP DROP  10.0.4.254:67 -> 255.255.255.255:68
-2026-08-17 01:45:00 TCP ALLOW 10.0.4.12:52152 -> 10.0.4.50:80
-2026-08-17 01:50:00 TCP DENY  10.0.4.77:8080 -> 10.0.4.50:8080
-2026-08-17 01:55:42 TCP CRITICAL_DATA_LEAK 10.0.4.50:60122 -> 203.0.113.77:443 payload=[[FLAG:act4-grep-v]]
-2026-08-17 01:55:00 TCP ALLOW 10.0.4.12:52154 -> 10.0.4.50:5432
+`2026-03-15 01:00:01 TCP ALLOW 10.0.4.12:52140 -> 10.0.4.50:5432
+2026-03-15 01:00:02 TCP ALLOW 10.0.4.12:52142 -> 10.0.4.50:5432
+2026-03-15 01:02:15 TCP DENY  192.168.1.105:44120 -> 10.0.4.50:22
+2026-03-15 01:02:16 TCP DENY  192.168.1.105:44122 -> 10.0.4.50:22
+2026-03-15 01:02:17 TCP DENY  192.168.1.105:44124 -> 10.0.4.50:22
+2026-03-15 01:05:00 TCP ALLOW 10.0.4.12:52144 -> 10.0.4.50:5432
+2026-03-15 01:10:22 UDP DROP  10.0.4.99:5353 -> 224.0.0.251:5353
+2026-03-15 01:15:30 TCP ALLOW 10.0.4.12:52146 -> 10.0.4.50:80
+2026-03-15 01:20:00 TCP DENY  172.16.0.44:33890 -> 10.0.4.50:3389
+2026-03-15 01:25:00 TCP ALLOW 10.0.4.12:52148 -> 10.0.4.50:5432
+2026-03-15 01:30:00 TCP DENY  192.168.1.200:50110 -> 10.0.4.50:445
+2026-03-15 01:35:00 TCP ALLOW 10.0.4.12:52150 -> 10.0.4.50:5432
+2026-03-15 01:40:00 TCP DROP  10.0.4.254:67 -> 255.255.255.255:68
+2026-03-15 01:45:00 TCP ALLOW 10.0.4.12:52152 -> 10.0.4.50:80
+2026-03-15 01:50:00 TCP DENY  10.0.4.77:8080 -> 10.0.4.50:8080
+2026-03-15 02:31:57 TCP CRITICAL_DATA_LEAK 10.0.4.50:60122 -> 203.0.113.77:443 payload=[[FLAG:act4-grep-v]]
+2026-03-15 02:55:00 TCP ALLOW 10.0.4.12:52154 -> 10.0.4.50:5432
 `),
           'security_events.csv': file(
 `timestamp,event_id,source_ip,destination_ip,action,flag_token
-2026-08-17T01:00:00Z,1001,10.0.4.12,10.0.4.50,ALLOW,NONE
-2026-08-17T01:15:00Z,1002,10.0.4.12,10.0.4.50,ALLOW,NONE
-2026-08-17T02:00:00Z,4624,192.168.1.105,10.0.4.50,DENY,NONE
-2026-08-17T02:30:00Z,4625,192.168.1.105,10.0.4.50,DENY,NONE
-2026-08-17T03:00:00Z,9999,10.0.4.12,10.0.4.50,FLAG_EMIT,[[FLAG:act4-pipe-csv]]
-2026-08-17T03:30:00Z,1001,10.0.4.12,10.0.4.50,ALLOW,NONE
-2026-08-17T04:00:00Z,1002,10.0.4.12,10.0.4.50,ALLOW,NONE
+2026-03-15T01:00:00Z,1001,10.0.4.12,10.0.4.50,ALLOW,NONE
+2026-03-15T01:15:00Z,1002,10.0.4.12,10.0.4.50,ALLOW,NONE
+2026-03-15T02:00:00Z,4624,192.168.1.105,10.0.4.50,DENY,NONE
+2026-03-15T02:30:00Z,4625,192.168.1.105,10.0.4.50,DENY,NONE
+2026-03-15T03:00:00Z,9999,10.0.4.12,10.0.4.50,FLAG_EMIT,[[FLAG:act4-pipe-csv]]
+2026-03-15T03:30:00Z,1001,10.0.4.12,10.0.4.50,ALLOW,NONE
+2026-03-15T04:00:00Z,1002,10.0.4.12,10.0.4.50,ALLOW,NONE
 `)
         },
         'evidence': {
           'mystery_file': file(
 `\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\x00\x00\x00\x01\x00\x08\x06\x00\x00\x00\x5c\x72\xa8\x66
-[PNG Image Data — Seized Artifact #088-A]
-Resolution: 256x256 | Color depth: 32-bit RGBA | Created: 2026-08-17
+[Exhibit 1042-A — recovered from the laptop Pictures folder, extension removed]
+Resolution: 256x256 | Color depth: 32-bit RGBA | Created: 2026-03-15
 Flag: [[FLAG:act2-file]]
 `, { fileType: 'PNG image data, 256 x 256, 8-bit/color RGBA, non-interlaced' }),
           'binary_data': file(
@@ -161,65 +173,65 @@ GLIBC_2.2.5
 __gmon_start__
 AWAVAUATUSH
 []A\\A]A^A_
-Seized binary payload extracted from memory capture.
-Target signature: 0xDEADBEEF
+Exhibit 1042-B: copy helper found in the laptop temp folder.
+Build signature: 0xDEADBEEF
 Hidden recovery token: [[FLAG:act2-strings]]
 End of printable strings section.
 \x00\x00\x00\x00\x00\x00\x00\x00
 `, { fileType: 'ELF 64-bit LSB executable, x86-64, version 1 (SYSV)' }),
           'evidence.img': file(
-`[FORENSIC DISK IMAGE CONTAINER - CASE #CF-2026-088]
+`[FORENSIC DISK IMAGE CONTAINER — CASE 1042, EXHIBIT C]
 Disk geometry: 2048 cylinders, 64 heads, 32 sectors/track
 Image format: Raw (dd) / Sector size: 512 bytes
 Acquisition hash: [[FLAG:act2-md5]]
-Integrity verified: SHA-256 matches chain of custody manifest.
+Integrity verified: SHA-256 matches the chain of custody sheet.
 `, { fileType: 'DOS/MBR boot sector' }),
-          'suspect_drive.raw': file(
-`[RAW DISK IMAGE: suspect_drive.raw - 512MB]
+          'seized_drive.raw': file(
+`[RAW DISK IMAGE: seized_drive.raw — 512MB, volume label PRIVATE]
 Partition Table Scheme: MBR / DOS
 Partition 1: Type 0x83 (Linux native) / Start sector: 2048 / Length: 204800
 Partition 2: Type 0x83 (Linux native) / Start sector: 206848 / Length: 841728
-[Partition 2 contains encrypted forensic artifact container]
+[Partition 2 holds an encrypted container. The prototype files are inside it.]
 `, { fileType: 'DOS/MBR boot sector, code offset 0x58+2, OEM-ID "MSDOS5.0"' })
         }
       },
       'var/log': {
-        'sensor_audit.log': file(
-`2026-08-17 00:00:01 Sensor audit daemon started
-2026-08-17 01:00:00 Sensor #1 heartbeat OK
-2026-08-17 02:00:00 Sensor #2 heartbeat OK
-2026-08-17 03:00:00 Sensor #3 checkpoint recorded: [[FLAG:act3-find]]
-2026-08-17 04:00:00 Sensor audit routine completed cleanly
+        'badge_audit.log': file(
+`2026-03-15 00:00:01 Badge reader daemon started
+2026-03-15 01:00:00 Reader 1, main entrance, heartbeat OK
+2026-03-15 02:00:00 Reader 2, lab corridor, heartbeat OK
+2026-03-15 02:14:38 Reader 3, engineering floor, badge 4417 accepted: [[FLAG:act3-find]]
+2026-03-15 04:00:00 Badge audit routine completed cleanly
 `)
       },
       'mnt/c': {
         'Users': {
-          'analyst': {
+          'Examiner': {
             'Desktop': {
               'CASE_FILES': {
                 'intake.txt': file(
-`CASE INTAKE FORM — TOP-SIDE EXAMINATION
-Case: CF-2026-088
-Location: /mnt/c/Users/analyst/Desktop/CASE_FILES/intake.txt
-Bridged Access Verification: [[FLAG:act3-crossing]]
-Notes: Windows filesystem accessed via Linux WSL mount.
+`EVIDENCE INTAKE SHEET — CASE 1042
+Exhibit: Aurora Robotics laptop, one unit, powered off on arrival
+Location of this sheet: /mnt/c/Users/Examiner/Desktop/CASE_FILES/intake.txt
+Bridged access verification: [[FLAG:act3-crossing]]
+Note: this Windows filesystem is reachable from Linux through the WSL mount.
 `)
               }
             },
             'Documents': {
-              'surface_notes.txt': file(
-`SURFACE WORKSTATION EXAMINATION NOTES
-Analyst workstation (Windows C:\\ mount at /mnt/c in WSL).
+              'handover_notes.txt': file(
+`HANDOVER NOTES — CASE 1042, WINDOWS SIDE
+Written by the examiner who imaged the laptop before you took the bench.
 Bridge token: [[FLAG:act3-crossing-solo]]
-Cross-filesystem navigation confirmed.
+Cross-filesystem navigation confirmed. The Windows exhibits are in evidence\\.
 `)
             }
           }
         }
       },
       'etc': {
-        'passwd': file('root:x:0:0:root:/root:/bin/bash\nanalyst:x:1000:1000:analyst,,,:/home/analyst:/bin/bash\n'),
-        'shadow': file('root:!$6$rounds=656000$saltsalt:19500:0:99999:7:::\nanalyst:!$6$rounds=656000$analyst:19500:0:99999:7:::\n', {
+        'passwd': file('root:x:0:0:root:/root:/bin/bash\nexaminer:x:1000:1000:examiner,,,:/home/examiner:/bin/bash\n'),
+        'shadow': file('root:!$6$rounds=656000$saltsalt:19500:0:99999:7:::\nexaminer:!$6$rounds=656000$examiner:19500:0:99999:7:::\n', {
           mode: 0o400,
           owner: 'root',
           group: 'root'
@@ -231,3 +243,6 @@ Cross-filesystem navigation confirmed.
 
   return built.fs;
 }
+
+// packs/index.js still imports the pre-Shellgrounds name. Kept as a shim so the
+// registry keeps booting; drop it once that import is updated.

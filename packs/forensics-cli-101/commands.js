@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Pack-supplied virtual forensic tools and dynamic map generator for Forensics CLI 101
+// Pack-supplied bench tools and the filesystem map for Forensics CLI 101 (Case 1042).
 
 import { resolvePath, findVfsKey, basename } from '../../packages/engine/vfs/path.js';
 import { stat } from '../../packages/engine/vfs/ops.js';
 
-// Dynamic VFS Map Generator for Warren
+// Dynamic filesystem map for the examination workstation.
 export const mapCmd = {
   name: 'map',
   platforms: ['linux'],
@@ -20,10 +20,10 @@ export const mapCmd = {
   run({ cwd, fs }) {
     let out = `
 ================================================================================
-                      THE WARREN — VIRTUAL FILESYSTEM TOPOGRAPHY
+                 FIELDLAB — EXAMINATION WORKSTATION FILESYSTEM MAP
 ================================================================================
 `;
-    const home = '/home/analyst';
+    const home = '/home/examiner';
     const renderTree = (dirPath, prefix = '') => {
       const node = fs[dirPath];
       if (!node || node.type !== 'dir') return '';
@@ -47,46 +47,46 @@ export const mapCmd = {
       return s;
     };
 
-    out += `/home/analyst/\n${renderTree(home, '  ')}`;
-    out += `\nSpecial Mounts:\n  /mnt/c/          -> Windows Topside Filesystem (WSL Mount)\n  /var/log/        -> System & Sensor Logs\n`;
+    out += `/home/examiner/\n${renderTree(home, '  ')}`;
+    out += `\nSpecial Mounts:\n  /mnt/c/          -> Windows side of the seized laptop (WSL mount)\n  /var/log/        -> System and badge reader logs\n`;
     return { stdout: out, stderr: '', status: 0 };
   }
 };
 
-// Sleuth Kit Tracker Tool
-export const trackerCmd = {
-  name: 'tracker',
+// Bench tool: replays recorded activity from the exhibits. Installed with apt-get.
+export const evtraceCmd = {
+  name: 'evtrace',
   platforms: ['linux'],
   flags: {
     a: { type: 'bool', status: 'implemented' },
     v: { type: 'bool', status: 'implemented' }
   },
-  usage: 'tracker [OPTION]... [FILE]...',
+  usage: 'evtrace [OPTION]... [FILE]...',
   man: {
-    name: 'tracker - Sleuth Kit forensic activity tracker',
-    synopsis: 'tracker [options]',
-    description: 'Forensic utility for tracking sensor activities and evidence checkpoints.',
-    options: ['-a, --all   list all sensor traces', '-v          verbose diagnostic logging'],
-    examples: ['tracker', 'tracker -a']
+    name: 'evtrace - replay recorded evidence activity',
+    synopsis: 'evtrace [options]',
+    description: 'Bench utility that replays recorded activity from the exhibits on this workstation.',
+    options: ['-a, --all   replay every recorded source', '-v          verbose diagnostic logging'],
+    examples: ['evtrace', 'evtrace -a']
   },
   run({ context }) {
-    const installed = context.installedPackages?.has('tracker') || true;
+    const installed = context.installedPackages?.has('evtrace') || true;
     if (!installed) {
-      return { stdout: '', stderr: 'tracker: command not found (install via sudo apt-get install tracker)\n', status: 127 };
+      return { stdout: '', stderr: 'evtrace: command not found (install via sudo apt-get install evtrace)\n', status: 127 };
     }
     const out = `
-[+] SleuthKit Activity Tracker v4.12.0 initialized
-[+] Active Sensors: 3
-    Sensor 1: Network Ingress (Active)
-    Sensor 2: Storage I/O Monitor (Active)
-    Sensor 3: Checkpoint Listener: [[FLAG:act3-apt]]
-[+] Tracking database synchronized.
+[+] evtrace 4.12.0 initialised on CASE 1042
+[+] Recorded sources: 3
+    Source 1: Network capture (replayed)
+    Source 2: Storage I/O journal (replayed)
+    Source 3: Badge reader stream: [[FLAG:act3-apt]]
+[+] Replay database synchronised.
 `;
     return { stdout: out, stderr: '', status: 0 };
   }
 };
 
-// Partition Scan Tool
+// Bench tool: reads a raw image's partition table.
 export const scanCmd = {
   name: 'scan',
   platforms: ['linux'],
@@ -97,7 +97,7 @@ export const scanCmd = {
     synopsis: 'scan <disk_image>',
     description: 'Inspect partition geometry and identify sector start offsets.',
     options: [],
-    examples: ['scan evidence/suspect_drive.raw']
+    examples: ['scan evidence/seized_drive.raw']
   },
   run({ operands, cwd, fs }) {
     if (operands.length === 0) {
@@ -118,15 +118,15 @@ Sector size (logical/physical): 512 bytes / 512 bytes
 Slot      Start        End          Sectors      Size     Type
 000:      0000000000   0000002047   0000002048   1.0M     Primary (MBR/GPT Table)
 001:      0000002048   0000206847   0000204800   100M     Linux (System Root)
-002:      0000206848   0001048575   0000841728   411M     Linux (Evidence Vault)
+002:      0000206848   0001048575   0000841728   411M     Linux (Encrypted Container)
 
-[!] Partition 2 contains encrypted container. Start Sector Offset: 206848
+[!] Partition 2 holds the encrypted container. Start Sector Offset: 206848
 `;
     return { stdout: out, stderr: '', status: 0 };
   }
 };
 
-// Forensic Carver Tool
+// Bench tool: carves a partition out of a raw image, given the right offset.
 export const extractCmd = {
   name: 'extract',
   platforms: ['linux'],
@@ -135,11 +135,11 @@ export const extractCmd = {
   },
   usage: 'extract -o <offset> <disk_image>',
   man: {
-    name: 'extract - carve evidence partitions from disk images',
+    name: 'extract - carve partitions out of disk images',
     synopsis: 'extract -o <offset> <disk_image>',
     description: 'Extract and decrypt partition data using specified sector offset.',
     options: ['-o OFFSET   starting sector offset of partition'],
-    examples: ['extract -o 206848 evidence/suspect_drive.raw']
+    examples: ['extract -o 206848 evidence/seized_drive.raw']
   },
   run({ flags, operands, cwd, fs }) {
     if (!flags.o) {
@@ -151,7 +151,7 @@ export const extractCmd = {
       return { stdout: '', stderr: `extract: invalid partition offset ${offset}: no valid filesystem header found.\n`, status: 1 };
     }
 
-    const imageArg = operands[0] || 'evidence/suspect_drive.raw';
+    const imageArg = operands[0] || 'evidence/seized_drive.raw';
     const resolved = resolvePath(cwd, imageArg, false);
     const realKey = findVfsKey(fs, resolved, false);
     if (!realKey || !fs[realKey]) {
@@ -159,16 +159,16 @@ export const extractCmd = {
     }
 
     const out = `
-[+] Analyzing raw image at sector offset 206848...
-[+] Ext4 filesystem super-block found (UUID: 8a4f-9e2c)
+[+] Reading raw image at sector offset 206848...
+[+] Ext4 superblock found (UUID: 8a4f-9e2c)
 [+] Mounting virtual inode tree...
-[+] Carving master evidence artifact:
+[+] Carving the container:
 --------------------------------------------------------------------------------
-RECOVERED EVIDENCE CONTAINER:
-Master Capstone Flag: [[FLAG:act5-capstone]]
+RECOVERED CONTAINER — CASE 1042
+Case Flag: [[FLAG:act5-capstone]]
 Integrity SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 --------------------------------------------------------------------------------
-[+] Extraction complete: 1 artifact recovered successfully.
+[+] Extraction complete: 1 exhibit recovered. Case 1042 can be closed.
 `;
     return { stdout: out, stderr: '', status: 0 };
   }
@@ -176,7 +176,7 @@ Integrity SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b
 
 export const FORENSICS_PACK_COMMANDS = {
   map: mapCmd,
-  tracker: trackerCmd,
+  evtrace: evtraceCmd,
   scan: scanCmd,
   extract: extractCmd
 };

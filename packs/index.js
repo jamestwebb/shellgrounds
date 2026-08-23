@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Content Pack Registry and Loader for The Gauntlet
+// Content pack registry and loader.
 
 import forensicsPackJson from './forensics-cli-101/pack.json' with { type: 'json' };
 import forensicsChallenges from './forensics-cli-101/challenges.json' with { type: 'json' };
 import forensicsHelp from './forensics-cli-101/help.json' with { type: 'json' };
-import { createWarrenFilesystem } from './forensics-cli-101/fs.linux.js';
-import { createTopsideFilesystem } from './forensics-cli-101/fs.windows.js';
+import { createLinuxFilesystem } from './forensics-cli-101/fs.linux.js';
+import { createWindowsFilesystem } from './forensics-cli-101/fs.windows.js';
 import { FORENSICS_PACK_COMMANDS } from './forensics-cli-101/commands.js';
 
 import linuxFundPackJson from './linux-fundamentals/pack.json' with { type: 'json' };
@@ -23,7 +23,7 @@ export const PACKS = {
     challenges: forensicsChallenges,
     help: forensicsHelp,
     commands: FORENSICS_PACK_COMMANDS,
-    createFs: (platform) => platform === 'windows' ? createTopsideFilesystem() : createWarrenFilesystem()
+    createFs: (platform) => platform === 'windows' ? createWindowsFilesystem() : createLinuxFilesystem()
   },
   'linux-fundamentals': {
     id: 'linux-fundamentals',

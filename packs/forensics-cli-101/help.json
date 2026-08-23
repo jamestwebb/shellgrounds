@@ -6,30 +6,30 @@
     "options": [],
     "examples": ["map"]
   },
-  "tracker": {
-    "name": "tracker - Sleuth Kit forensic activity tracker",
-    "synopsis": "tracker [options]",
-    "description": "Forensic utility for tracking sensor activities and evidence checkpoints.\n\nOverride keycode: [[FLAG:act3-man]]\n\nUse this keycode when recovering manual checkpoint configurations.",
+  "evtrace": {
+    "name": "evtrace - replay recorded evidence activity",
+    "synopsis": "evtrace [options]",
+    "description": "Bench utility that replays recorded activity from the exhibits on this workstation.\n\nManual override code: [[FLAG:act3-man]]\n\nQuote this code on the worksheet when you replay a source by hand.",
     "options": [
-      "-a, --all   list all sensor traces",
+      "-a, --all   replay every recorded source",
       "-v          verbose diagnostic logging"
     ],
-    "examples": ["tracker", "tracker -a"]
+    "examples": ["evtrace", "evtrace -a"]
   },
   "scan": {
     "name": "scan - forensic partition geometry analyzer",
     "synopsis": "scan <disk_image>",
     "description": "Inspect partition geometry and identify sector start offsets.",
     "options": [],
-    "examples": ["scan evidence/suspect_drive.raw"]
+    "examples": ["scan evidence/seized_drive.raw"]
   },
   "extract": {
-    "name": "extract - carve evidence partitions from disk images",
+    "name": "extract - carve partitions out of disk images",
     "synopsis": "extract -o <offset> <disk_image>",
     "description": "Extract and decrypt partition data using specified sector offset.",
     "options": [
       "-o OFFSET   starting sector offset of partition"
     ],
-    "examples": ["extract -o 206848 evidence/suspect_drive.raw"]
+    "examples": ["extract -o 206848 evidence/seized_drive.raw"]
   }
 }
