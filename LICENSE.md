@@ -1,7 +1,7 @@
 # PolyForm Noncommercial License 1.0.0
 
 Required Notice: Copyright (c) 2026 Rational Mystic LLC
-(https://github.com/jamestwebb/the-gauntlet)
+(https://github.com/jamestwebb/shellgrounds)
 
 ---
 
