@@ -37,9 +37,23 @@ import { explainCommand } from '../packages/engine/coach.js';
 import { sounds } from './utils/audio';
 import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
 
-const resumeSelection = (challenges, solves) => {
+// Where a returning student's cursor belongs: the first thing they have not
+// done yet. Linux challenges are preferred over the Windows parity act, which
+// is a bonus track rather than the next step.
+//
+// This function existed and was not called for several commits, so every
+// student who signed in landed on challenge one -- "Where Am I?" -- however
+// much of the course they had already finished. Nothing looked broken, because
+// the first screen of a course is a perfectly plausible first screen.
+export const resumeSelection = (challenges, solves) => {
   const linux = challenges.find(c => (c.platform || 'linux') === 'linux' && !solves[c.id]);
-  return linux || challenges.find(c => !solves[c.id]) || challenges[0];
+  if (linux) return linux;
+  const any = challenges.find(c => !solves[c.id]);
+  if (any) return any;
+  // Everything is done. Land on the end of the course rather than the start of
+  // it: a student who has finished and come back should not be asked "Where Am
+  // I?" again, which is the same wrong answer the missing call produced.
+  return challenges[challenges.length - 1] || challenges[0];
 };
 
 export default function App() {
@@ -191,6 +205,16 @@ export default function App() {
             solves[s.challengeId] = s;
           });
           setSolvesMap(solves);
+
+          // Put the cursor back where they stopped. The pack is resolved here
+          // rather than read from `currentPack`, because handleSelectPack above
+          // has not re-rendered yet and state still holds the previous pack.
+          const landing = getPack(preferred || activePackId);
+          const resume = resumeSelection(landing.challenges, solves);
+          if (resume) {
+            setSelectedChallengeId(resume.id);
+            setActiveActId(resume.act || 1);
+          }
 
           const manifestRes = await fetchManifest(getStoredPackId() || activePackId);
           if (manifestRes.success) {
@@ -379,7 +403,26 @@ export default function App() {
   };
 
   const handleChallengeSuccess = async (challenge, proofCommand = '') => {
-    if (solvesMap[challenge.id]) return;
+    // Redoing something already solved used to return here in silence. A
+    // student typed the right answer and the terminal said nothing back, which
+    // reads as a broken site rather than as "you already have this one".
+    //
+    // Practice is answered, and not paid for. Retrieval is how the command
+    // sticks, so repeating a challenge is worth encouraging; paying twice for
+    // it would turn a score into a count of how long somebody held down Enter,
+    // and the class picture is built from the same solves.
+    if (solvesMap[challenge.id]) {
+      setTerminalHistory(prev => [
+        ...prev,
+        {
+          type: 'output',
+          text: `[✓] Still right: ${challenge.title}. You already have this one, so there are `
+            + 'no points this time — practise it as often as you like.',
+          isSuccess: true
+        }
+      ]);
+      return;
+    }
 
     if (isPracticeMode) {
       setSolvesMap(prev => ({
