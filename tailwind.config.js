@@ -25,6 +25,10 @@ export default {
         'term-shell-bar': '#101c30',
         'term-shell-border': '#1e3a5f',
         'term-border-bright': '#3a3a3a',
+        // Warm tones for the brand mark and anything that should read as calm
+        // rather than as a console. The shell is sand; the terminal stays green.
+        'sand': '#e0c58c',
+        'sand-deep': '#c9a86a',
         'term-green': '#22c55e',
         'term-green-dim': '#15803d',
         'term-green-faint': 'rgba(34, 197, 94, 0.15)',

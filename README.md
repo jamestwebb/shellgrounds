@@ -1,3 +1,5 @@
+<img src="docs/images/shellgrounds-logo-256.png" alt="" width="96" align="right" />
+
 # Shellgrounds
 
 > **Learn the command line by capturing flags.**
