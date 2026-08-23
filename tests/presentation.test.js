@@ -118,6 +118,26 @@ describe('the fields a pack introduces itself with', () => {
     expect(validatePresentation(blank).errors.length).toBe(1);
   });
 
+  // Every image field runs the same gate. A new one added to the manifest and
+  // not to that list would accept an SVG, which is the whole hole this file
+  // exists to keep shut -- so the test names the fields rather than trusting it.
+  it('puts every image field through the same rules', () => {
+    for (const field of ['cover', 'scene', 'reveal']) {
+      const svg = validatePresentation({ ...base, [field]: `data:image/svg+xml;base64,${payload(64)}` });
+      expect(svg.errors.join(' '), `${field} must refuse SVG`).toMatch(/svg/i);
+      expect(svg.errors.join(' '), `${field} must be named in its own error`).toMatch(field);
+
+      const remote = validatePresentation({ ...base, [field]: 'https://example.test/x.png' });
+      expect(remote.errors.join(' '), `${field} must refuse a web address`).toMatch(/web address|remote/i);
+
+      const big = validatePresentation({ ...base, [field]: `data:image/png;base64,${payload(MAX_COVER_BYTES + 8192)}` });
+      expect(big.errors.join(' '), `${field} must be capped`).toMatch(/limit is/);
+
+      expect(validatePresentation({ ...base, [field]: PNG, revealCaption: 'x' }).errors)
+        .toEqual([]);
+    }
+  });
+
   it('refuses a reveal caption that is not text', () => {
     expect(validatePresentation({ ...base, revealCaption: 42 }).errors.join(' '))
       .toMatch(/must be a non-empty string/);
@@ -170,6 +190,16 @@ describe('every shipped pack introduces itself', () => {
       // promises six things and has one act is selling something else.
       it('has at least as many acts as it takes to deliver the promise', () => {
         expect((m.acts || []).length).toBeGreaterThan(0);
+      });
+
+      it('opens on a place, not on a heading', () => {
+        expect(m.scene).toBeTruthy();
+      });
+
+      // Shipping one picture twice would waste the pairing and double the
+      // bundle for nothing. They are the same place, not the same image.
+      it('does not use the same picture to open and to end', () => {
+        expect(m.scene).not.toBe(m.reveal);
       });
 
       it('says what the class uncovered, not just that they uncovered it', () => {

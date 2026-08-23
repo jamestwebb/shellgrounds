@@ -114,6 +114,7 @@ sits next to the field.
 | `description` | string | no, but write one | — | The paragraph a student reads when choosing between courses. 600 characters at most. §3.1. |
 | `icon` | string | no, but write one | `📦` | One or two emoji. How your course is recognised in a list. §3.1. |
 | `cover` | string | no | — | An image, embedded. Raster data URI only — never SVG, never a web address. §3.2. |
+| `scene` | string | no | — | The wide establishing shot across the top of the briefing. Same image rules as `cover`. §3.2. |
 | `reveal` | string | no | — | The picture a class uncovers together, one square per find. Same image rules as `cover`. §3.2. |
 | `revealCaption` | string | no | — | The one line printed under `reveal` when the last square turns over. Names what the class uncovered. Must not contain an answer. §3.2. |
 | `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |
@@ -155,15 +156,27 @@ them and the validator only warns, but a course with none of them is a name in a
 A student sees the briefing **once per pack**. It is not a reference page, and anything a
 student needs twice belongs in a challenge brief or a hint instead.
 
-### 3.2 `cover` and `reveal` — the fields that are not text
+### 3.2 `cover`, `scene` and `reveal` — the fields that are not text
 
-A pack may carry two images, under the same rules.
+A pack may carry three images, under one set of rules. They are shown at different moments
+and cropped to different shapes, so a pack that repeats one picture across all three wastes
+two of them.
 
-`cover` is the small card in a list of courses. `reveal` is the picture the class uncovers
-together when the teacher has chosen the cooperative view — one square turns over per find,
-on a 12 x 8 grid, so a **3:2 image** fits it exactly. A pack with no `reveal` falls back to
-its `cover`, and a pack with neither still works: the class uncovers a wash of the pack's
-own accent colour instead.
+| Field | Where it appears | Shape it is cropped to |
+|---|---|---|
+| `cover` | a 56-pixel square beside the pack's name in a list of courses | square, tiny — detail turns to mud, so `icon` is usually better |
+| `scene` | a wide banner across the top of the briefing, read once before the first command | wide banner; a 3:2 source is cropped top and bottom |
+| `reveal` | the picture the class uncovers together, one square per find | **3:2 exactly** — the grid is 12 x 8 |
+
+`scene` is the establishing shot: the place the story opens. `reveal` is the place it ends,
+and `revealCaption` says what it turned out to be. Drawing them as **the same place, before
+and after** is the intended use, and all three shipped packs do it — the same bench with the
+case unopened and then with the recovered drawings on it, the same hills at 21:40 and then at
+sunrise, the same desk after hours and then in daylight with the form filled in.
+
+All three are optional. A pack with no `scene` opens its briefing on the heading. A pack with
+no `reveal` falls back to its `cover`, and a pack with neither still works: the class uncovers
+a wash of the pack's own accent colour instead.
 
 Both have to be embedded, as a base64 `data:` URI:
 

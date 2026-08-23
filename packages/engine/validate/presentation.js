@@ -24,6 +24,30 @@
 // to formats that are pixels rather than documents. No remote fetch, no script,
 // and what was reviewed is what ships.
 //
+// ── Three pictures, three jobs ──────────────────────────────────────────────
+//
+// A pack may carry three images, and they are not interchangeable. Each one is
+// shown at a different moment and cropped to a different shape, so a pack that
+// puts the same picture in all three wastes two of them.
+//
+//   cover   a 56-pixel square beside the pack's name in a list of courses.
+//           Anything with detail in it is mud at that size; `icon`, an emoji,
+//           is usually the better answer and costs nothing.
+//
+//   scene   a wide banner across the top of the briefing, read once, before
+//           the student's first command. This is the establishing shot: the
+//           place the story opens, drawn so the briefing has somewhere to be.
+//
+//   reveal  the picture the whole class uncovers, one square per find. This is
+//           the place the story ENDS, and `revealCaption` says what it was.
+//
+// The pairing of the last two is worth using on purpose. Shipped packs draw
+// `scene` and `reveal` as the same place before and after: the same bench with
+// the case unopened and then the recovered drawings on it, the same hills at
+// 21:40 and then at sunrise, the same desk after hours and then in daylight
+// with the form filled in. A class that spends a term turning over squares
+// arrives back where it started and can see what changed.
+
 // ── revealCaption, and why the picture is never a secret ────────────────────
 //
 // `reveal` is the picture a class uncovers together. `revealCaption` is the one
@@ -156,10 +180,11 @@ export function validatePresentation(manifest = {}) {
     warnings.push('manifest.icon is missing. One emoji makes the pack recognisable in a list.');
   }
 
-  // Two image fields, one set of rules. `cover` is the small card in a list;
-  // `reveal` is the picture a class uncovers together. Neither may be an SVG
-  // and neither may be a web address -- see checkCoverImage for why.
-  for (const field of ['cover', 'reveal']) {
+  // Three image fields, one set of rules. `cover` is the thumbnail in a list;
+  // `scene` is the wide establishing shot on the briefing; `reveal` is the
+  // picture a class uncovers together. None may be an SVG and none may be a
+  // web address -- see checkCoverImage for why.
+  for (const field of ['cover', 'scene', 'reveal']) {
     if (manifest[field] === undefined) continue;
     const checked = checkCoverImage(manifest[field]);
     if (!checked.ok) errors.push(checked.error.replace('manifest.cover', `manifest.${field}`));

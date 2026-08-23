@@ -207,6 +207,19 @@ export const PackBriefing = ({ pack, onStart, onBack = null }) => {
 
   return (
     <Shell>
+      {/* The establishing shot, above the words, because a scenario lands
+          better as a place than as a paragraph. Optional: a pack without one
+          starts at its own heading, exactly as before. Cropped to a banner
+          rather than shown whole — the art is drawn 3:2 for the reveal grid,
+          and 3:2 at this width would push the briefing itself off the screen. */}
+      {m.scene && (
+        <img
+          src={m.scene}
+          alt=""
+          className="w-full h-32 sm:h-44 object-cover border-b border-term-border"
+        />
+      )}
+
       <div className="p-6 sm:p-8 border-b border-term-border flex gap-4 items-start">
         {m.cover ? (
           <img src={m.cover} alt="" className="w-14 h-14 rounded object-cover shrink-0 border border-term-border" />

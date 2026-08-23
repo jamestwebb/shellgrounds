@@ -270,6 +270,30 @@ want both.
 
 ---
 
+## Your pack's three pictures
+
+`icon` is an emoji and costs nothing. Beyond that a pack may carry three real
+images, and they do different jobs:
+
+| Field | Shown | Draw |
+|---|---|---|
+| `cover` | 56px square in the course list | usually skip it — an emoji reads better that small |
+| `scene` | wide banner on the briefing, before the first command | the place your story **opens** |
+| `reveal` | uncovered by the class, one square per find | the place your story **ends** |
+
+Draw `scene` and `reveal` as the same place, before and after. All three
+shipped packs do: the same evidence bench with the case unopened and then with
+the recovered drawings on it; the same hills at 21:40 and then at sunrise; the
+same lost-property desk after hours and then in daylight with the form filled
+in. A class that spends a term turning over squares arrives back where it
+started and can see what changed.
+
+All three are optional, and all three follow the same rules — raster only,
+never SVG, never a web address, 128 KB each. `reveal` is cropped to 12 x 8, so
+draw it **3:2**; `scene` is cropped to a banner, so keep its subject centred.
+
+---
+
 ## The picture your class uncovers
 
 Two optional manifest fields turn the class screen into the end of your story
