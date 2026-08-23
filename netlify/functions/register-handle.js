@@ -3,7 +3,7 @@
 
 import { checkSFW } from '../../packages/engine/sfw-filter.js';
 import { createSessionToken } from '../../packages/engine/crypto-utils.js';
-import { DEFAULT_PACK_ID, hasPack } from '../../packs/index.js';
+import { isPackEnabled, defaultPackId } from '../../packs/index.js';
 import { createPlayer } from './utils/store.js';
 import { isAdminHandle, setupCodeMatches, grantInstructor } from './utils/admin.js';
 
@@ -19,7 +19,7 @@ export default async (req) => {
   }
 
   try {
-    const { handle, classPassword, setupCode, packId = DEFAULT_PACK_ID } =
+    const { handle, classPassword, setupCode, packId = null } =
       (await req.json().catch(() => ({})));
 
     if (!handle) {
@@ -70,7 +70,7 @@ export default async (req) => {
       });
     }
 
-    const activePackId = hasPack(packId) ? packId : DEFAULT_PACK_ID;
+    const activePackId = isPackEnabled(packId) ? packId : defaultPackId();
 
     const { created } = await createPlayer(cleanHandle);
     if (!created) {

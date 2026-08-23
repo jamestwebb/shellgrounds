@@ -50,12 +50,64 @@ export function hasPack(packId) {
   return typeof packId === 'string' && Object.prototype.hasOwnProperty.call(PACKS, packId);
 }
 
+// ── Which packs this deployment offers ──────────────────────────────────────
+// ENABLED_PACKS lets a teacher run one course at a time instead of all three.
+// It is read from two places because the pack list is needed in two: the
+// Netlify functions read the environment directly, and the browser bundle gets
+// the same value inlined by vite.config.js at build time.
+//
+// Unset, blank, or naming nothing that exists all mean "offer every pack". A
+// site that shows a student an empty menu is a worse failure than one that
+// ignores a typo, and the typo is announced in the build log either way.
+function rawEnabledSetting() {
+  if (typeof process !== 'undefined' && process.env && process.env.ENABLED_PACKS != null) {
+    return process.env.ENABLED_PACKS;
+  }
+  if (typeof __ENABLED_PACKS__ !== 'undefined') return __ENABLED_PACKS__;
+  return '';
+}
+
+let warnedAboutSetting = null;
+export function enabledPackIds() {
+  const asked = String(rawEnabledSetting() ?? '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (asked.length === 0) return Object.keys(PACKS);
+
+  const known = asked.filter(hasPack);
+  if (known.length === 0) {
+    const setting = asked.join(',');
+    if (warnedAboutSetting !== setting) {
+      warnedAboutSetting = setting;
+      console.warn(
+        `ENABLED_PACKS names no pack that exists (${setting}). Offering every pack instead. `
+        + `Valid ids: ${Object.keys(PACKS).join(', ')}`
+      );
+    }
+    return Object.keys(PACKS);
+  }
+  return known;
+}
+
+/** True when students of this deployment may see the pack at all. */
+export function isPackEnabled(packId) {
+  return hasPack(packId) && enabledPackIds().includes(packId);
+}
+
+/** The pack a student lands on. DEFAULT_PACK_ID unless it was switched off. */
+export function defaultPackId() {
+  const enabled = enabledPackIds();
+  return enabled.includes(DEFAULT_PACK_ID) ? DEFAULT_PACK_ID : enabled[0];
+}
+
+// Takes an explicit id even when it is disabled, because the CLI and the
+// validator must be able to check a pack the running site does not offer.
+// Refusing a disabled pack is the job of the request handlers, not of loading.
 export function getPack(packId = DEFAULT_PACK_ID) {
-  return hasPack(packId) ? PACKS[packId] : PACKS[DEFAULT_PACK_ID];
+  return hasPack(packId) ? PACKS[packId] : PACKS[defaultPackId()];
 }
 
 export function listPacks() {
-  return Object.values(PACKS).map(p => ({
+  return enabledPackIds().map(id => PACKS[id]).map(p => ({
     id: p.id,
     name: p.manifest.name,
     version: p.manifest.version,

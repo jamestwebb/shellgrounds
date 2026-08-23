@@ -2,7 +2,7 @@
 // Netlify Function: GET /api/session
 
 import { verifySessionToken, createSessionToken } from '../../packages/engine/crypto-utils.js';
-import { DEFAULT_PACK_ID, PACKS } from '../../packs/index.js';
+import { PACKS, isPackEnabled, defaultPackId } from '../../packs/index.js';
 import { getPlayer, getSolves, getHintsUsed, normalizeSolve, splitSolveKey } from './utils/store.js';
 import { resolveIsInstructor } from './utils/admin.js';
 
@@ -31,7 +31,10 @@ export default async (req) => {
   // The pack in the token is only a starting suggestion for the UI now. The
   // server resolves the pack of each submission from its challenge id, so a
   // student may move between modules freely.
-  const packId = verified.packId || DEFAULT_PACK_ID;
+  // A token issued before the teacher switched a pack off still names it, so
+  // fall back rather than hand the browser a pack it may not load.
+  const tokenPack = verified.packId;
+  const packId = isPackEnabled(tokenPack) ? tokenPack : defaultPackId();
   const isAdmin = await resolveIsInstructor(handle);
 
   try {

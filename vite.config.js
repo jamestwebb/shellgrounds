@@ -3,6 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  // The pack menu is built in the browser from packs/index.js, which cannot
+  // read a Netlify environment variable at run time. Inline the value at build
+  // time instead, so ENABLED_PACKS decides the menu as well as the API. It is
+  // not secret: it is a list of course names the student is about to be shown.
+  define: {
+    __ENABLED_PACKS__: JSON.stringify(process.env.ENABLED_PACKS || '')
+  },
   server: {
     // Vite binds the ONE address `localhost` resolves to. On this host that is
     // ::1, so nothing listens on 127.0.0.1:3000 and an IPv4 client is refused
