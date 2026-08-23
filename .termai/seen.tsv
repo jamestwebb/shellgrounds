@@ -131,3 +131,6 @@
 1787500886	packages/engine/reveal.js
 1787501061	packages/engine/shell/exec.js
 1787501073	packs/linux-fundamentals/fs.linux.js
+1787501631	packages/engine/sfw-filter.js
+1787501998	packages/engine/sfw-words.json
+1787502083	tests/sfw.test.js
