@@ -71,8 +71,13 @@ export const Reveal = ({ packId, handle }) => {
     return <div className="p-8 text-center text-xs text-red-300">{error}</div>;
   }
 
-  const { columns, rows, total, uncovered, complete, contributors, yours, image, accent } = data;
-  const pct = total > 0 ? Math.round((uncovered / total) * 100) : 0;
+  const {
+    columns, rows, total, uncovered, complete, contributors, yours, image, accent,
+    target, finds
+  } = data;
+  // Progress is a share of the picture, not a count of squares. The squares are
+  // only how it is drawn, and the grid gets finer as the class gets bigger.
+  const pct = Math.round((data.fraction ?? (total ? uncovered / total : 0)) * 100);
 
   return (
     <div className="p-4 sm:p-5 space-y-4">
@@ -83,8 +88,8 @@ export const Reveal = ({ packId, handle }) => {
           </h2>
           <p className="text-[11px] text-neutral-400 mt-1 max-w-lg leading-relaxed">
             {complete
-              ? `Your class uncovered the whole picture from ${data.packName}. Anything found now still counts — there is simply no square left to turn.`
-              : 'Every find by anyone in the class turns over one square. Nobody is racing anybody; the picture is the class’s.'}
+              ? `Your class uncovered the whole picture from ${data.packName}. Anything found now still counts towards your own work — there is simply no more of it to turn over.`
+              : 'Everything anyone in the class finds uncovers a little more of this. Nobody is racing anybody; the picture belongs to all of you.'}
           </p>
         </div>
         <button
@@ -145,11 +150,17 @@ export const Reveal = ({ packId, handle }) => {
       <div>
         <div className="flex items-baseline justify-between gap-3 text-[11px]">
           <span className="text-neutral-300">
-            {uncovered} of {total} squares turned over
+            {complete
+              ? 'The whole picture'
+              : <>{pct}% uncovered — <span className="text-neutral-500">{finds} of {target} finds</span></>}
           </span>
           <span className="text-neutral-500 flex items-center gap-3">
             <span className="inline-flex items-center gap-1"><Users size={11} /> {contributors} finding</span>
-            {yours > 0 && <span className="text-term-green">you turned {yours}</span>}
+            {yours > 0 && (
+              <span className="text-term-green">
+                you found {yours}
+              </span>
+            )}
           </span>
         </div>
         <div className="mt-1.5 h-1.5 rounded-full bg-term-gray overflow-hidden">
@@ -195,7 +206,12 @@ export const Reveal = ({ packId, handle }) => {
 
       <p className="text-[11px] text-neutral-500 leading-relaxed">
         Every student gets a different find, so nobody can hand you theirs — and nobody here is
-        ahead of or behind anybody. Helping someone next to you turns over a square just the same.
+        ahead of or behind anybody. Helping someone next to you uncovers just as much as doing it
+        yourself.{' '}
+        {target > total && (
+          <>The picture is sized to your class, so in a group this big each square takes a few
+          finds between you.</>
+        )}
       </p>
     </div>
   );
