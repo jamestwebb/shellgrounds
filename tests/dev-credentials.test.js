@@ -59,8 +59,19 @@ describe('a production build carries no credential panel', () => {
   });
 
   // The route name is the one string that would let a page ask for the code.
-  it('never names the dev endpoint', () => {
-    expect(built).not.toContain('dev-credentials');
+  it('never names a dev endpoint', () => {
+    for (const route of ['dev-credentials', 'dev-signin']) {
+      expect(built, `the bundle must not name ${route}`).not.toContain(route);
+    }
+  });
+
+  // dev-signin mints a session token for any handle with no password at all.
+  // On a real site that would be a complete authentication bypass, which is
+  // exactly why it lives in a file Netlify never uploads.
+  it('carries nothing that could sign a person in without a password', () => {
+    for (const marker of ['instructor · @', 'signing in…', 'createSessionToken']) {
+      expect(built, `bundle should not contain ${JSON.stringify(marker)}`).not.toContain(marker);
+    }
   });
 
   it('carries none of the panel that would display it', () => {
@@ -110,6 +121,7 @@ describe('the endpoint is not deployable', () => {
   it('lives in scripts/, which Netlify does not upload', () => {
     const dev = readFileSync(join(ROOT, 'scripts/dev-functions.mjs'), 'utf8');
     expect(dev).toContain("name === 'dev-credentials'");
+    expect(dev).toContain("name === 'dev-signin'");
   });
 
   it('is absent from every deployed function', () => {
