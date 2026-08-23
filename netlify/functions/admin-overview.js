@@ -13,10 +13,10 @@
 // without hunting through JSON.
 
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
-import { getPack, PACKS, DEFAULT_PACK_ID } from '../../packs/index.js';
+import { getPack, PACKS, hasPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 import { listPlayers, getSolves, getHintsUsed, normalizeSolve, splitSolveKey, hintCountFor }
   from './utils/store.js';
-import { isAdminHandle } from './utils/admin.js';
+import { resolveIsInstructor } from './utils/admin.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -72,13 +72,13 @@ export default async (req) => {
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
   const verified = verifySessionToken(sessionSecret, token);
   if (!verified) return json(401, { error: 'Unauthorized' });
-  if (!isAdminHandle(verified.handle)) {
+  if (!(await resolveIsInstructor(verified.handle))) {
     return json(403, { error: 'Forbidden: Admin clearance required' });
   }
 
   const url = new URL(req.url);
   const requested = url.searchParams.get('packId');
-  const packId = PACKS[requested] ? requested : (verified.packId || DEFAULT_PACK_ID);
+  const packId = hasPack(requested) ? requested : (verified.packId || DEFAULT_PACK_ID);
   const format = url.searchParams.get('format') || 'json';
   const view = url.searchParams.get('view') || 'overview';
   const pack = getPack(packId);

@@ -16,7 +16,7 @@ import {
   getSolves, addSolve, readSolveEntry, splitSolveKey, normalizeSolve,
   getHintsUsed, hintCountFor, touchPlayer
 } from './utils/store.js';
-import { isAdminHandle } from './utils/admin.js';
+import { resolveIsInstructor } from './utils/admin.js';
 
 function isActUnlocked(actId, acts, challenges, solvedIdSet) {
   const act = acts.find(a => a.id === actId);
@@ -214,7 +214,11 @@ export default async (req) => {
         isWindows,
         user: (isWindows ? pack.manifest.windows?.user : pack.manifest.linux?.user)
           || (isWindows ? 'Student' : 'student'),
-        trusted: true
+        // First-party packs shipped in this repository only. The moment a
+        // teacher-supplied pack can reach this path, this must become
+        // pack.trusted === true, or a downloaded pack could run its own
+        // JavaScript on the server while grading.
+        trusted: pack.trusted !== false
       });
 
       isValid = ok && predicatePasses;
@@ -238,7 +242,7 @@ export default async (req) => {
 
     // An instructor works the material in whatever order they like: they are
     // building a lesson, not being paced by one. Students keep the gate.
-    if (!isAdminHandle(handle)
+    if (!(await resolveIsInstructor(handle))
         && !isActUnlocked(challenge.act, pack.manifest.acts, pack.challenges, solvedSet)) {
       return json(403, {
         error: 'This act is still locked — finish more of the previous act first.'

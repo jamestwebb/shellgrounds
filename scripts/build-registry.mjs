@@ -20,6 +20,20 @@ const OUT = path.join(PACKS_DIR, 'registry.gen.js');
 
 const ident = (id) => id.replace(/[^a-zA-Z0-9]+(.)?/g, (_, c) => (c ? c.toUpperCase() : ''));
 
+// A pack id and a directory name both land inside generated source. They come
+// from a pack.json a teacher may have downloaded, so a quote or a backslash
+// would break out of the string literal and corrupt the registry.
+const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+function assertSafeId(value, what, dir) {
+  if (!SAFE_ID.test(value)) {
+    throw new Error(
+      `Refusing to generate a registry: the ${what} ${JSON.stringify(value)} in packs/${dir} `
+      + 'must be letters, numbers, dot, dash or underscore, and start with a letter or number.'
+    );
+  }
+  return value;
+}
+
 function discover() {
   return fs.readdirSync(PACKS_DIR, { withFileTypes: true })
     .filter(e => e.isDirectory())
@@ -27,7 +41,9 @@ function discover() {
     .filter(name => fs.existsSync(path.join(PACKS_DIR, name, 'pack.json')))
     .sort()
     .map(dir => {
+      assertSafeId(dir, 'directory name', dir);
       const manifest = JSON.parse(fs.readFileSync(path.join(PACKS_DIR, dir, 'pack.json'), 'utf8'));
+      assertSafeId(manifest.id || dir, 'pack id', dir);
       const has = (f) => fs.existsSync(path.join(PACKS_DIR, dir, f));
       // Read the real export names rather than assuming a convention. The
       // shipped packs predate any convention, and a teacher's hand-written pack
@@ -36,7 +52,7 @@ function discover() {
         if (!has(f)) return null;
         const src = fs.readFileSync(path.join(PACKS_DIR, dir, f), 'utf8');
         const m = src.match(re);
-        return m ? m[1] : null;
+        return m && /^[A-Za-z_$][\w$]*$/.test(m[1]) ? m[1] : null;
       };
       return {
         dir,

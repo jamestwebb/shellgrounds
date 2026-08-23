@@ -17,7 +17,14 @@ import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
 
-const RETRIES = 5;
+const RETRIES = 12;
+
+// Every attempt after the first waits a little, with jitter, so a burst of
+// simultaneous writers does not keep colliding in lockstep. Without this, ten
+// concurrent submissions from one student exhausted five attempts and five
+// solves came back as 500s.
+const backoff = (attempt) =>
+  new Promise(r => setTimeout(r, Math.min(200, 5 * 2 ** attempt) + Math.random() * 15));
 
 // GAUNTLET_BLOBS_FILE lets a test point the local backend at its own temp file
 // so a test run can never touch a developer's real class data.
@@ -44,7 +51,20 @@ function fileBackend() {
       if (err.code === 'ENOENT') return {};
       throw err;
     }
-    if (raw.trim() === '') return {};
+    // An empty file is not an empty store. It is a write that was interrupted,
+    // and treating it as {} means the next write erases every player — the
+    // exact loss the guard below exists to prevent.
+    if (raw === '') {
+      throw new Error(
+        `Local blob store at ${filePath} is zero bytes and was NOT overwritten. `
+        + 'Delete it deliberately if you meant to start empty.'
+      );
+    }
+    if (raw.trim() === '') {
+      throw new Error(
+        `Local blob store at ${filePath} contains only whitespace and was NOT overwritten.`
+      );
+    }
     try {
       return JSON.parse(raw);
     } catch (err) {
@@ -161,6 +181,19 @@ export async function createPlayer(handle) {
   return { created: true };
 }
 
+/**
+ * Records that this account proved it held INSTRUCTOR_SETUP_CODE. Being named
+ * in ADMIN_HANDLES is not enough on its own — see utils/admin.js.
+ */
+export async function setInstructorFlag(handle, value = true) {
+  const s = store();
+  const key = playerKey(handle);
+  const player = await s.get(key, { type: 'json' });
+  if (!player) return false;
+  await s.setJSON(key, { ...player, instructor: !!value });
+  return true;
+}
+
 export async function touchPlayer(handle) {
   const s = store();
   const player = await s.get(playerKey(handle), { type: 'json' });
@@ -213,7 +246,8 @@ export async function addSolve(handle, packId, challengeId, record = {}) {
     if (!res || res.modified !== false) {
       return { alreadySolved: false, solves: next };
     }
-    // Lost the race. Loop: re-read and rebuild on top of the winner's write.
+    // Lost the race. Wait a moment, then re-read and rebuild on the winner's write.
+    await backoff(attempt);
   }
 
   throw new Error(`Could not record solve for ${handle}/${composite} after ${RETRIES} attempts`);
@@ -276,13 +310,17 @@ export async function openHint(handle, packId, challengeId, index) {
   for (let attempt = 0; attempt < RETRIES; attempt++) {
     const { data, etag } = await readWithEtag(s, key);
     const hints = data || {};
-    const current = Number(hints[composite]) || 0;
+    // Read through the same accessor the pricing uses. Reading only the
+    // pack-scoped key while the price fell back to a legacy bare key let a
+    // re-opened hint collapse a penalty of 2 back down to 1.
+    const current = hintCountFor(hints, packId, challengeId);
     const count = Math.max(current, Number(index) + 1);
     if (count === current) return current;
 
     const opts = etag ? { onlyIfMatch: etag } : (data ? {} : { onlyIfNew: true });
     const res = await s.setJSON(key, { ...hints, [composite]: count }, opts);
     if (!res || res.modified !== false) return count;
+    await backoff(attempt);
   }
   throw new Error(`Could not record hint for ${handle}/${composite}`);
 }

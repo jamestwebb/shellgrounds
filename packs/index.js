@@ -42,8 +42,16 @@ export function getPackForChallenge(challengeId) {
   return CHALLENGE_INDEX.get(challengeId) || null;
 }
 
+// Never index PACKS with a bare bracket on caller-supplied text. Every member
+// of Object.prototype answers truthily: PACKS['constructor'] returned the Object
+// constructor, and a session token minted with packId 'constructor' made
+// /api/manifest throw for 72 hours.
+export function hasPack(packId) {
+  return typeof packId === 'string' && Object.prototype.hasOwnProperty.call(PACKS, packId);
+}
+
 export function getPack(packId = DEFAULT_PACK_ID) {
-  return PACKS[packId] || PACKS[DEFAULT_PACK_ID];
+  return hasPack(packId) ? PACKS[packId] : PACKS[DEFAULT_PACK_ID];
 }
 
 export function listPacks() {
