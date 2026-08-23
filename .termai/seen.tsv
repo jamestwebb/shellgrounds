@@ -125,3 +125,9 @@
 1787499495	packages/engine/shell/tokenizer.js
 1787499621	tests/fixes.test.js
 1787499691	src/engine/pipeline.js
+1787500801	docs/research/gemini-audit-shellgrounds.md
+1787500821	packages/engine/validate/safe-regex.js
+1787500857	node_modules/@netlify/blobs/dist/main.d.ts
+1787500886	packages/engine/reveal.js
+1787501061	packages/engine/shell/exec.js
+1787501073	packs/linux-fundamentals/fs.linux.js

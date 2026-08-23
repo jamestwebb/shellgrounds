@@ -14,6 +14,7 @@ import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
 import { validatePresentation } from './presentation.js';
+import { compileSafe, probePattern, PROBE_BUDGET_MS } from './safe-regex.js';
 
 const TEST_SECRET = 'pack-validator-secret';
 const TEST_HANDLE = 'validator_bot';
@@ -159,6 +160,36 @@ export async function validatePack(packObj, options = {}) {
     results.checks[check].pass = false;
     results.errors.push(msg);
   };
+
+  // ── Every pattern in the pack, timed ─────────────────────────────────────
+  // The static safety check is a heuristic and has been wrong before, so each
+  // pattern is also run against input built to make a backtracking engine work
+  // hardest. A pattern that is slow here would be slow on a student's
+  // submission, where it pins the server instead of failing a validation run.
+  {
+    const seen = new Set();
+    const walkPredicates = (cfg, where) => {
+      if (!cfg || typeof cfg !== 'object') return;
+      for (const sub of cfg.predicates || []) walkPredicates(sub, where);
+      const pattern = cfg.pattern;
+      if (typeof pattern !== 'string' || seen.has(pattern)) return;
+      seen.add(pattern);
+
+      const regex = compileSafe(pattern, cfg.flags || 'i');
+      if (!regex) {
+        fail('solvability', `${where}: pattern /${pattern}/ was refused as unsafe or invalid.`);
+        return;
+      }
+      const probe = probePattern(regex);
+      if (!probe.ok) {
+        fail('solvability',
+          `${where}: pattern /${pattern}/ took ${probe.worstMs}ms on a ${probe.input?.length}-character `
+          + `input (budget ${PROBE_BUDGET_MS}ms). That is catastrophic backtracking; it would hang the `
+          + 'server on a student submission. Rewrite it without a quantifier inside a quantified group.');
+      }
+    };
+    for (const c of challenges) walkPredicates(c.success, `Challenge '${c.id}'`);
+  }
 
   // How the pack introduces itself. Checked for every pack, not only for one
   // loaded from a file, because a directory pack a teacher wrote by hand is

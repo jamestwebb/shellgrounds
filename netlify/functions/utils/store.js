@@ -162,13 +162,30 @@ export function readSolveEntry(solves, packId, challengeId) {
   return solves?.[solveKey(packId, challengeId)] ?? solves?.[challengeId] ?? null;
 }
 
+/**
+ * Reads a record together with the etag that every compare-and-swap below
+ * depends on.
+ *
+ * There used to be a fallback here: no `getWithMetadata`, no etag, and the
+ * callers then wrote with no condition at all — silently degrading to
+ * last-write-wins in the exact code paths that exist to prevent it. Nothing
+ * would error; two simultaneous solves would just quietly become one.
+ *
+ * Both backends implement it (the real SDK and the local file one), so that
+ * branch was unreachable — it was a trap laid for whoever swaps the storage
+ * layer next. A missing etag now stops the request instead, because losing a
+ * student's work silently is worse than a 500 that says why.
+ */
 async function readWithEtag(s, key) {
-  if (typeof s.getWithMetadata === 'function') {
-    const res = await s.getWithMetadata(key, { type: 'json', consistency: 'strong' });
-    if (!res) return { data: null, etag: null };
-    return { data: res.data ?? null, etag: res.etag ?? null };
+  if (typeof s.getWithMetadata !== 'function') {
+    throw new Error(
+      'The blob store does not support getWithMetadata, so writes cannot be made safe '
+      + 'against a second simultaneous write. Refusing rather than risking a lost solve.'
+    );
   }
-  return { data: await s.get(key, { type: 'json' }), etag: null };
+  const res = await s.getWithMetadata(key, { type: 'json', consistency: 'strong' });
+  if (!res) return { data: null, etag: null };
+  return { data: res.data ?? null, etag: res.etag ?? null };
 }
 
 // ── Site settings ───────────────────────────────────────────────────────────
@@ -221,14 +238,28 @@ export async function updateSettings(fields, updatedBy = null) {
 // never stamps "settings changed" on something the instructor owns.
 const revealKey = (packId) => `reveal/${packId}`;
 
+/**
+ * How far the class picture has got, and the grid it is being drawn on.
+ *
+ * The grid is recorded for the same reason as the fraction. It is chosen from
+ * the roster, so a growing class would cross a threshold onto a finer grid —
+ * whose square ordering is a different permutation, so squares a student had
+ * watched open would shut again. Pinned on first use, kept for the term.
+ */
 export async function getRevealProgress(packId) {
   const rec = await store().get(revealKey(packId), { type: 'json' });
   const f = Number(rec?.fraction);
-  return Number.isFinite(f) ? Math.max(0, Math.min(1, f)) : 0;
+  const grid = rec?.grid && Number.isFinite(rec.grid.columns) && Number.isFinite(rec.grid.rows)
+    ? { columns: rec.grid.columns, rows: rec.grid.rows }
+    : null;
+  return {
+    fraction: Number.isFinite(f) ? Math.max(0, Math.min(1, f)) : 0,
+    grid
+  };
 }
 
-/** Raises the mark, never lowers it. Returns the value now in force. */
-export async function raiseRevealProgress(packId, fraction) {
+/** Raises the mark, never lowers it, and pins the grid the first time. */
+export async function raiseRevealProgress(packId, fraction, grid = null) {
   const value = Math.max(0, Math.min(1, Number(fraction) || 0));
   const s = store();
   const key = revealKey(packId);
@@ -236,15 +267,23 @@ export async function raiseRevealProgress(packId, fraction) {
   for (let attempt = 0; attempt < RETRIES; attempt++) {
     const { data, etag } = await readWithEtag(s, key);
     const current = Number(data?.fraction) || 0;
-    if (value <= current) return current;
+    const pinned = data?.grid || null;
+    // Nothing to do only when the fraction has not moved AND the grid is
+    // already recorded. A first write must land even at fraction zero.
+    if (value <= current && pinned) return { fraction: current, grid: pinned };
 
+    const next = {
+      fraction: Math.max(value, current),
+      grid: pinned || grid || null,
+      at: new Date().toISOString()
+    };
     const opts = etag ? { onlyIfMatch: etag } : { onlyIfNew: !data };
-    const res = await s.setJSON(key, { fraction: value, at: new Date().toISOString() }, opts);
-    if (!res || res.modified !== false) return value;
+    const res = await s.setJSON(key, next, opts);
+    if (!res || res.modified !== false) return { fraction: next.fraction, grid: next.grid };
     await backoff(attempt);
   }
-  // Losing this race costs nothing: the next reader raises it instead.
-  return value;
+  // Losing this race costs nothing: the next reader records it instead.
+  return { fraction: value, grid };
 }
 
 export async function getPlayer(handle) {
@@ -428,13 +467,25 @@ export function normalizeSolve(record) {
 export async function mapLimit(items, limit, fn) {
   const out = new Array(items.length);
   let next = 0;
+  // Promise.all rejects the moment one worker throws, but the others carry on
+  // pulling items and calling the API for a response nobody will read. On a
+  // class of two hundred that is most of four hundred wasted requests, made
+  // while the store is already in trouble. First failure stops the batch.
+  let failed = false;
+
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (true) {
+    while (!failed) {
       const i = next++;
       if (i >= items.length) return;
-      out[i] = await fn(items[i], i);
+      try {
+        out[i] = await fn(items[i], i);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
     }
   });
+
   await Promise.all(workers);
   return out;
 }

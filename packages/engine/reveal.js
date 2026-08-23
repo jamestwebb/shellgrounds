@@ -32,13 +32,26 @@
 // backwards: 40% of the image is 38 of 96 squares or 154 of 384, and both look
 // like the same 40%.
 //
-// ── The one thing that could still step backwards ──────────────────────────
+// ── Two things that could step backwards, and both are guarded ─────────────
 //
-// The target grows with the roster, so a second section registering in week
-// five would raise the denominator and shrink the fraction. A class watching
-// its picture RE-COVER because more people joined would be a bizarre and
-// demoralising thing to ship. `floorFraction` is the guard: the caller passes
-// the highest fraction ever reached, and the picture never goes below it.
+// AREA. The target grows with the roster, so a second section registering in
+// week five would raise the denominator and shrink the fraction. A class
+// watching its picture RE-COVER because more people joined would be a bizarre
+// and demoralising thing to ship. `floorFraction` is the guard: the caller
+// passes the highest fraction ever reached, and the picture never goes below it.
+//
+// PARTICULAR SQUARES. A third-party review caught the second one, which the
+// area guard does not cover. The grid is chosen from the target, so a growing
+// class crosses a threshold and moves from 24 squares to 216 — and the
+// permutation for 216 is an entirely different sequence. The same 40% of the
+// picture would be showing, but through different holes: squares a student
+// watched open would visibly shut again.
+//
+// The guard is `pinnedGrid`. The first time a class uncovers anything, the
+// grid it was drawn on is recorded and reused for the rest of the term. A
+// class that grows a great deal keeps a coarser grid, so each square comes to
+// stand for several finds — which the screen says plainly. That is a much
+// smaller cost than a picture that visibly un-paints itself.
 
 /** Squares are only ever the drawing. These are the 3:2 grids available. */
 export const GRID_LADDER = [
@@ -85,8 +98,17 @@ export function revealTarget(roster, challenges) {
 /**
  * The grid to draw on: fine enough that one find is about one square, coarse
  * enough that a square is still a square.
+ *
+ * @param {number} target
+ * @param {{columns: number, rows: number}|null} pinned  a grid already in use
+ *        for this class. Honoured if it is one of the ladder's, because
+ *        changing grid mid-term re-covers squares that were already open.
  */
-export function revealGrid(target) {
+export function revealGrid(target, pinned = null) {
+  if (pinned) {
+    const match = GRID_LADDER.find(g => g.columns === pinned.columns && g.rows === pinned.rows);
+    if (match) return { ...match, tiles: match.columns * match.rows };
+  }
   let chosen = GRID_LADDER[0];
   for (const g of GRID_LADDER) {
     if (g.columns * g.rows <= target) chosen = g;
@@ -110,6 +132,13 @@ export function tileOrder(seed, n) {
     state ^= ch.charCodeAt(0);
     state = Math.imul(state, 16777619) >>> 0;
   }
+  // xorshift32 has one fixed point: zero maps to zero for ever, and the shuffle
+  // would degenerate into a rotation that fills the picture almost in reading
+  // order. Reaching it needs an FNV-1a hash of exactly zero, which is about one
+  // pack id in four billion — a one-line guard against a bug nobody would ever
+  // reproduce, and would never work out from the symptom.
+  if (state === 0) state = 0x9e3779b9;
+
   const next = () => {
     state ^= state << 13; state >>>= 0;
     state ^= state >>> 17;
@@ -143,11 +172,12 @@ export function buildReveal(solves, seed, opts = {}) {
     viewer = null,
     roster = 1,
     challenges = 20,
-    floorFraction = 0
+    floorFraction = 0,
+    pinnedGrid = null
   } = opts;
 
   const target = revealTarget(roster, challenges);
-  const grid = revealGrid(target);
+  const grid = revealGrid(target, pinnedGrid);
 
   // Oldest first, so the picture uncovers in the order the class actually
   // worked. A solve with no usable timestamp sorts last rather than throwing
