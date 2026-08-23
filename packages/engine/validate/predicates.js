@@ -20,9 +20,16 @@ import { compileSafe, testSafe } from './safe-regex.js';
  *   status: number,
  *   isWindows: boolean,
  *   user: string,
- *   env: Object,
- *   trusted: boolean (true only for first-party registered packs)
+ *   env: Object
  * }
+ *
+ * Every predicate is DATA. There is deliberately no predicate that executes a
+ * function supplied by a pack: that is what lets a teacher open a pack somebody
+ * else wrote without running their code. A `js` predicate used to exist for
+ * checks awkward to express as data; nothing ever used it, and it was the one
+ * field that could have broken that promise, so it was removed. If a future
+ * check cannot be expressed here, add a named data predicate for it rather than
+ * an escape hatch — every teacher can then read and trust it.
  */
 export function evaluatePredicate(predicateConfig, context = {}) {
   if (!predicateConfig) return false;
@@ -36,8 +43,7 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     output = '',
     status = 0,
     isWindows = false,
-    user = 'student',
-    trusted = false
+    user = 'student'
   } = context;
 
   const type = predicateConfig.predicate || predicateConfig.kind;
@@ -160,24 +166,6 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     case 'anyOf': {
       const predicates = predicateConfig.predicates || [];
       return predicates.some(p => evaluatePredicate(p, context));
-    }
-
-    case 'js': {
-      // Two independent gates, deliberately. The pack loader refuses this
-      // predicate in a downloaded pack file, and this refuses it again unless
-      // the caller positively declared the pack trusted. Either alone would be
-      // a single point of failure for arbitrary code in a student's browser.
-      if (!trusted) {
-        console.warn('Untrusted pack attempted to execute a JS predicate; rejected.');
-        return false;
-      }
-      if (typeof predicateConfig.fn === 'function') {
-        return !!predicateConfig.fn(fs, context);
-      }
-      if (typeof predicateConfig.check === 'function') {
-        return !!predicateConfig.check(fs, context);
-      }
-      return false;
     }
 
     default:

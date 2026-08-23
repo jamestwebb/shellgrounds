@@ -115,9 +115,10 @@ export function assertNoCode(value, path = '$', depth = 0) {
   if ((typeof value.predicate === 'string' && value.predicate === 'js')
       || (typeof value.kind === 'string' && value.kind === 'js')) {
     throw new PackFormatError(
-      "Pack file uses the 'js' predicate. That predicate runs JavaScript and is available only to " +
-      'packs shipped with the platform. Use a declarative predicate, or allOf/anyOf to combine ' +
-      'several. docs/PACK-FORMAT.md lists every predicate',
+      "Pack file uses the 'js' predicate. That predicate has been removed: it was the one " +
+      'field that could run a pack author\'s own JavaScript, which is exactly what makes ' +
+      'opening somebody else\'s pack unsafe. Use a declarative predicate, or allOf/anyOf to ' +
+      'combine several. docs/PACK-FORMAT.md lists every predicate',
       path
     );
   }
