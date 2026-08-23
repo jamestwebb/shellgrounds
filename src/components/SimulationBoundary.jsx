@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Interactive Simulation Boundary Reference Modal / View
 
 import React, { useState } from 'react';
@@ -36,7 +36,7 @@ export default function SimulationBoundary({ isOpen, onClose, defaultPlatform = 
                 Simulation Boundary & Command Reference
               </h2>
               <p className="text-xs text-slate-400">
-                Full transparency: see exactly which commands and flags are simulated in this browser terminal.
+                See exactly which commands, and which flags, this browser terminal simulates. Nothing here is hidden from you.
               </p>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function SimulationBoundary({ isOpen, onClose, defaultPlatform = 
 
           {commands.length === 0 && (
             <div className="text-center py-12 text-slate-500 text-sm">
-              No simulated commands matching "{searchTerm}"
+              No simulated command matches "{searchTerm}".
             </div>
           )}
 
@@ -151,7 +151,7 @@ export default function SimulationBoundary({ isOpen, onClose, defaultPlatform = 
               <span>🌐</span> Real-World System Commands (Out of Simulator Scope)
             </h3>
             <p className="text-xs text-slate-400">
-              The Gauntlet aims for strict pedagogical honesty. If you run one of these tools, the shell will explain its real-world role rather than pretending it does not exist:
+              Shellgrounds never pretends. If you run one of these tools, the shell tells you what it really does on a real system instead of acting as though it does not exist:
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
               {unsimulatedList.slice(0, 30).map(tName => (

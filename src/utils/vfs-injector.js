@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Slices per-user flags into the virtual filesystem templates.
 //
 // This MUST run over the filesystem itself, not just over rendered output:

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Virtual Filesystem Operations: read, write, mkdir, unlink, chmod, chown, stat
 
 import { normalizePath, resolvePath, findVfsKey, dirname, basename } from './path.js';
@@ -311,7 +311,10 @@ export function rmdir(fs, targetPath, isWindows = false, options = {}) {
     return { ok: false, error: isWindows ? 'The directory is not empty.' : `Directory not empty: ${targetPath}` };
   }
 
-  return unlink(fs, targetPath, isWindows, { user });
+  // rmdir has already proved the target is an empty directory, so pass
+  // recursive: true. Without it unlink refuses every directory and rmdir could
+  // never succeed at all — `rmdir emptydir` answered "Is a directory".
+  return unlink(fs, targetPath, isWindows, { user, recursive: true });
 }
 
 /**

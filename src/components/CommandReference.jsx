@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Command Reference tab: searchable man pages for every real command in the game.
 // Deliberately teaches the habit it assists: every entry shows how to get the
 // same information inside a real shell (man <cmd> / --help).
@@ -86,7 +86,7 @@ export const CommandReference = () => {
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-green-400">COMMAND REFERENCE</h1>
               <p className="text-xs text-neutral-400">
-                Every command in the game. In a real shell, get the same pages with <code className="text-term-green">man &lt;command&gt;</code> or <code className="text-term-green">&lt;command&gt; --help</code>.
+                Every command Shellgrounds understands. On a real machine you get the same pages with <code className="text-term-green">man &lt;command&gt;</code> or <code className="text-term-green">&lt;command&gt; --help</code>.
               </p>
             </div>
           </div>
@@ -111,7 +111,7 @@ export const CommandReference = () => {
             <TerminalSquare size={14} className="text-term-green" /> Linux ({linuxEntries.length})
           </div>
           {linuxEntries.length === 0 ? (
-            <div className="text-xs text-neutral-500 p-4">No Linux commands match that search.</div>
+            <div className="text-xs text-neutral-500 p-4">No Linux command matches that search.</div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {linuxEntries.map(([cmd, page]) => (
@@ -124,10 +124,10 @@ export const CommandReference = () => {
         {/* Windows commands */}
         <div className="space-y-3 pb-8">
           <div className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2 select-none">
-            <TerminalSquare size={14} className="text-cyan-400" /> Windows CMD — Topside ({windowsEntries.length})
+            <TerminalSquare size={14} className="text-cyan-400" /> Windows CMD ({windowsEntries.length})
           </div>
           {windowsEntries.length === 0 ? (
-            <div className="text-xs text-neutral-500 p-4">No Windows commands match that search.</div>
+            <div className="text-xs text-neutral-500 p-4">No Windows command matches that search.</div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {windowsEntries.map(([cmd, text]) => (

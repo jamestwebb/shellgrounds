@@ -1,58 +1,58 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Netlify Function: GET /api/manifest (Serves Pack Manifests & Flag Hashes)
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
+// Netlify Function: GET /api/manifest — this student's flag values for one pack.
+//
+// Migrated from the v1 handler signature to v2, so every function in this
+// directory now has the same shape.
+//
+// These values necessarily reach the browser: the simulated filesystem runs
+// client-side and must place each flag inside the simulated files. Per-student
+// HMAC flags therefore stop a student SHARING an answer — the neighbour's flag
+// differs — but they cannot stop a student reading their own. Grade on
+// command-proof challenges, which the server replays and cannot be faked.
 
 import { verifySessionToken, generateUserFlag } from '../../packages/engine/crypto-utils.js';
-import { getPack, DEFAULT_PACK_ID } from '../../packs/index.js';
+import { getPack, hasPack, DEFAULT_PACK_ID } from '../../packs/index.js';
 
-export const handler = async (event) => {
+const json = (status, obj, extraHeaders = {}) =>
+  new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders }
+  });
+
+export default async (req) => {
   const sessionSecret = process.env.SESSION_SECRET;
   if (!sessionSecret) {
     console.error('Missing SESSION_SECRET environment variable');
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Server is not configured. Contact the instructor.' })
-    };
+    return json(500, { error: 'Server is not configured. Contact the instructor.' });
   }
 
-  const authHeader = event.headers.authorization || event.headers.Authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
   const verified = verifySessionToken(sessionSecret, token);
   if (!verified) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Unauthorized: Valid session token required' })
-    };
+    return json(401, { error: 'Unauthorized: Valid session token required' });
   }
 
   const handle = verified.handle;
-  const packId = verified.packId || event.queryStringParameters?.packId || DEFAULT_PACK_ID;
+  const requested = new URL(req.url).searchParams.get('packId');
+  const packId = hasPack(requested) ? requested : (verified.packId || DEFAULT_PACK_ID);
   const pack = getPack(packId);
 
-  const flags = {};
-  for (const c of pack.challenges) {
-    if (c.success?.kind === 'flag') {
-      if (c.success.staticFlag) {
-        flags[c.id] = c.success.staticFlag;
-      } else {
-        flags[c.id] = generateUserFlag(sessionSecret, handle, c.id, pack.id);
+  // This was the one handler with no try/catch, so anything unexpected became
+  // an unhandled rejection rather than a 500 the student could act on.
+  try {
+    const flags = {};
+    for (const c of pack.challenges) {
+      if (c.success?.kind === 'flag') {
+        flags[c.id] = c.success.staticFlag
+          ? c.success.staticFlag
+          : generateUserFlag(sessionSecret, handle, c.id, pack.id);
       }
     }
-  }
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'private, no-cache'
-    },
-    body: JSON.stringify({
-      success: true,
-      handle,
-      packId: pack.id,
-      flags
-    })
-  };
+    return json(200, { success: true, handle, packId: pack.id, flags },
+      { 'Cache-Control': 'private, no-cache' });
+  } catch (err) {
+    console.error('Manifest error:', err);
+    return json(500, { error: 'Could not load this module. Try again in a moment.' });
+  }
 };

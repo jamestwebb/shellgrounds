@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Unified Command Registry for Linux Bash and Windows CMD
 
 import { ALL_LINUX_COMMANDS } from './linux/index.js';
@@ -38,8 +38,20 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
       let switchVal = colonIdx !== -1 ? switchBody.slice(colonIdx + 1) : true;
 
       // Lookup case-insensitively in flagSpecs
-      const specKey = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName.toLowerCase());
-      const spec = specKey ? flagSpecs[specKey] : null;
+      let specKey = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName.toLowerCase());
+      let spec = specKey ? flagSpecs[specKey] : null;
+
+      // cmd.exe also attaches a value with no colon: `dir /ah` is `/a:h`, and
+      // `dir /a-d` excludes directories. Recognise a one-letter switch whose
+      // spec takes a value followed by the value itself.
+      if (!spec && switchName.length > 1 && colonIdx === -1) {
+        const head = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName[0].toLowerCase());
+        if (head && flagSpecs[head].type === 'string') {
+          specKey = head;
+          spec = flagSpecs[head];
+          switchVal = switchBody.slice(1);
+        }
+      }
 
       if (!spec) {
         // Unknown switch
@@ -56,7 +68,14 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
         };
       }
 
-      if (spec.type === 'string' && colonIdx === -1 && i + 1 < argv.length && !argv[i + 1].startsWith('/')) {
+      // A cmd.exe switch takes its value ATTACHED — `/a:h`, `/ah`, `/c:text` —
+      // never as the following word. Swallowing the next word made
+      // `dir /a Documents` list the current directory instead of Documents,
+      // because "Documents" was read as the attribute filter for /a.
+      // A spec may opt back in with separateValue when a real tool works that way.
+      if (spec.type === 'string' && spec.separateValue
+          && colonIdx === -1 && switchVal === true
+          && i + 1 < argv.length && !argv[i + 1].startsWith('/')) {
         switchVal = argv[++i];
       }
 
@@ -100,8 +119,33 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
       continue;
     }
 
-    if (!isWindows && arg.startsWith('-') && arg.length > 1 && !/^\d+$/.test(arg.slice(1))) {
+    if (!isWindows && arg.startsWith('-') && arg.length > 1) {
       const body = arg.slice(1);
+
+      // 0. All-digit body, e.g. -3, -1, -9. Decide in this order:
+      //    a. The command declares those digits as flags (ls -1) -> fall through
+      //       and let the normal short-option parse below handle them.
+      //    b. The command counts lines with -n (head, tail) -> this is GNU's
+      //       obsolete -NUM form, so `head -3 f` means `head -n 3 f`.
+      //    c. Neither (kill -9 1234) -> keep the word as an operand.
+      if (/^\d+$/.test(body)) {
+        const digitsAreFlags = body.split('').every(ch => flagSpecs[ch]);
+        if (!digitsAreFlags) {
+          const lineSpec = flagSpecs.n;
+          const countsLines = lineSpec
+            && lineSpec.status === 'implemented'
+            && lineSpec.long === 'lines'
+            && (lineSpec.type === 'string' || lineSpec.type === 'number');
+
+          if (countsLines) {
+            flags.n = lineSpec.type === 'number' ? Number(body) : body;
+          } else {
+            operands.push(arg);
+          }
+          i++;
+          continue;
+        }
+      }
 
       // 1. Check if the entire body matches a single-dash multi-character option (e.g. -name, -type in find)
       const multiSpecKey = Object.keys(flagSpecs).find(k => k === body || flagSpecs[k]?.long === body);

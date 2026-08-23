@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // The validator's own test suite.
 //
 // A check that cannot fail is worse than no check: it certifies broken content
@@ -50,7 +50,7 @@ describe('Pack validator rejects broken content', () => {
   it('catches a flag challenge whose flagFile does not exist', async () => {
     const pack = clonePack('forensics-cli-101');
     const target = pack.challenges.find(c => c.success?.kind === 'flag' && c.success.flagFile?.startsWith('/'));
-    target.success.flagFile = '/home/analyst/does_not_exist.txt';
+    target.success.flagFile = '/home/examiner/does_not_exist.txt';
     const r = await validatePack(pack);
     expect(r.valid).toBe(false);
     expect(errorText(r)).toMatch(/does_not_exist\.txt/);
@@ -72,8 +72,22 @@ describe('Pack validator rejects broken content', () => {
 
   it('catches a command challenge that its own solution cannot satisfy', async () => {
     const pack = clonePack('forensics-cli-101');
-    const target = pack.challenges.find(c => c.success?.predicate === 'commandMatches');
-    target.success.pattern = '^this_will_never_match$';
+    // A commandMatches check no longer sits alone at the top level. It is
+    // nested inside an allOf beside an output assertion, so that a challenge
+    // proves what the terminal produced and not only what was typed — which is
+    // the whole point of the output-validation work. Search the tree.
+    const findCommandMatches = (node) => {
+      if (!node || typeof node !== 'object') return null;
+      if ((node.predicate || node.kind) === 'commandMatches') return node;
+      for (const child of node.predicates || []) {
+        const hit = findCommandMatches(child);
+        if (hit) return hit;
+      }
+      return null;
+    };
+    const target = pack.challenges.find(c => findCommandMatches(c.success));
+    expect(target, 'no challenge uses commandMatches anywhere').toBeTruthy();
+    findCommandMatches(target.success).pattern = '^this_will_never_match$';
     const r = await validatePack(pack);
     expect(r.valid).toBe(false);
     expect(errorText(r)).toMatch(new RegExp(target.id));
@@ -92,7 +106,7 @@ describe('Pack validator rejects broken content', () => {
   it('catches a broken command quoted in a brief', async () => {
     const pack = clonePack('forensics-cli-101');
     const target = pack.challenges.find(c => !c.commandCheckExemptSnippets);
-    target.brief = 'Run `cat /home/analyst/definitely_missing_file.txt` to continue.';
+    target.brief = 'Run `cat /home/examiner/definitely_missing_file.txt` to continue.';
     const r = await validatePack(pack);
     expect(r.valid).toBe(false);
     expect(errorText(r)).toMatch(/definitely_missing_file/);
@@ -113,7 +127,7 @@ describe('Pack validator rejects broken content', () => {
 
   it('catches a setup.cwd that does not exist', async () => {
     const pack = clonePack('forensics-cli-101');
-    pack.challenges[0].setup = { cwd: '/home/analyst/nowhere' };
+    pack.challenges[0].setup = { cwd: '/home/examiner/nowhere' };
     const r = await validatePack(pack);
     expect(r.valid).toBe(false);
     expect(errorText(r)).toMatch(/nowhere/);

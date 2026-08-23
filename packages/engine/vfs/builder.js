@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // VFS Builder for Declarative Filesystems
 
 import { md5, sha256Sync } from '../crypto-utils.js';
@@ -17,8 +17,12 @@ export function file(content = '', options = {}) {
     content: textContent,
     fileType: options.fileType || 'ASCII text',
     mode: defaultMode,
-    owner: options.owner || 'student',
-    group: options.group || 'student',
+    // Left undefined when the author did not set one, so buildFS fills it from
+    // the pack's own home directory. Hardcoding 'student' meant a pack whose
+    // user is anybody else owned nothing inside its own home, and any
+    // permissions challenge broke the moment a pack renamed its user.
+    owner: options.owner,
+    group: options.group,
     size: options.size !== undefined ? options.size : textContent.length,
     mtime: options.mtime || '2026-08-17T09:30:00.000Z',
     md5: options.md5 || md5(textContent),
@@ -36,8 +40,8 @@ export function dir(options = {}) {
   return {
     _isDir: true,
     mode: options.mode !== undefined ? options.mode : 0o755,
-    owner: options.owner || 'student',
-    group: options.group || 'student',
+    owner: options.owner,
+    group: options.group,
     mtime: options.mtime || '2026-08-17T09:30:00.000Z',
     attrib: options.attrib || 'D',
     ...options
@@ -89,11 +93,28 @@ export function buildFS(config = {}) {
   const SYSTEM_DIR_MODES = isWindows ? {} : { '/tmp': 0o1777, '/var/tmp': 0o1777 };
   const SYSTEM_DIR_OWNER = isWindows ? {} : { '/tmp': 'root', '/var/tmp': 'root' };
 
+  // Ownership follows LOCATION, the way a real machine works: your home is
+  // yours, and /etc and /var belong to root. Deriving every file's owner from
+  // the pack's home user handed the student /etc/passwd and quietly removed the
+  // permission lesson from every pack.
+  const homeNorm = home ? normalizePath(home, isWindows) : null;
+  function ownerForPath(path) {
+    if (isWindows) return { owner: defaultOwner, group: defaultGroup };
+    const norm = normalizePath(path, isWindows);
+    if (homeNorm && (norm === homeNorm || norm.startsWith(`${homeNorm}/`))) {
+      return { owner: defaultOwner, group: defaultGroup };
+    }
+    if (norm.startsWith('/tmp/') || norm.startsWith('/var/tmp/')) {
+      return { owner: defaultOwner, group: defaultGroup };
+    }
+    return { owner: 'root', group: 'root' };
+  }
+
   function ensureDir(path, mode = null, owner = null, group = null) {
     const norm = normalizePath(path, isWindows);
     if (mode === null) mode = SYSTEM_DIR_MODES[norm] ?? 0o755;
-    if (owner === null) owner = SYSTEM_DIR_OWNER[norm] ?? defaultOwner;
-    if (group === null) group = SYSTEM_DIR_OWNER[norm] ?? defaultGroup;
+    if (owner === null) owner = SYSTEM_DIR_OWNER[norm] ?? ownerForPath(norm).owner;
+    if (group === null) group = SYSTEM_DIR_OWNER[norm] ?? ownerForPath(norm).group;
     if (!fs[norm]) {
       fs[norm] = {
         type: 'dir',
@@ -161,14 +182,17 @@ export function buildFS(config = {}) {
         addEntryToParent(currentPath, name);
 
         const { _isFile, ...fileNode } = value;
+        // Spread FIRST, then the resolved fields. The other order let an
+        // undefined owner on the node overwrite the value just computed from
+        // it, so every file came out owned by nobody.
         fs[normFilePath] = {
+          ...fileNode,
           type: 'file',
           mode: fileNode.mode !== undefined ? fileNode.mode : 0o644,
-          owner: fileNode.owner || defaultOwner,
-          group: fileNode.group || defaultGroup,
+          owner: fileNode.owner || ownerForPath(normFilePath).owner,
+          group: fileNode.group || ownerForPath(normFilePath).group,
           size: fileNode.size !== undefined ? fileNode.size : (fileNode.content ? fileNode.content.length : 0),
-          mtime: fileNode.mtime || '2026-08-17T09:30:00.000Z',
-          ...fileNode
+          mtime: fileNode.mtime || '2026-08-17T09:30:00.000Z'
         };
       } else if (value && value._isDir) {
         const dirPath = isWindows

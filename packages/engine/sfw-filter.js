@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// SFW filter and validation rules for handles in The Gauntlet
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
+// SFW filter and validation rules for handles in Shellgrounds
 
 export const BLOCKED_WORDS = [
   'fuck', 'shit', 'ass', 'damn', 'hell', 'bitch', 'bastard', 'crap', 'piss',

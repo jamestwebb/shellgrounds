@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Desktop Keyboard Guard for screens under 768px width
 
 import React, { useState, useEffect } from 'react';
@@ -28,13 +28,13 @@ export const KeyboardGuard = () => {
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-green-400">DESKTOP KEYBOARD REQUIRED</h2>
-          <p className="text-xs text-neutral-400 mt-1">The Gauntlet is an authentic CLI simulation</p>
+          <h2 className="text-lg font-bold text-green-400">YOU NEED A REAL KEYBOARD</h2>
+          <p className="text-xs text-neutral-400 mt-1">Shellgrounds is a working command line</p>
         </div>
 
         <p className="text-xs text-neutral-300 leading-relaxed">
-          Course labs and challenges rely on Tab auto-completion, Up/Down arrow history, and typing pipe characters — none of which work well on a phone keyboard.
-          Please open The Gauntlet on a laptop or desktop workstation.
+          The challenges use Tab to complete names, the Up and Down arrows to repeat commands, and the pipe
+          character. None of those work well on a phone. Open Shellgrounds on a laptop or a desktop instead.
         </p>
 
         <div className="pt-2">
@@ -42,7 +42,7 @@ export const KeyboardGuard = () => {
             onClick={() => setBypassed(true)}
             className="w-full py-2.5 rounded bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
           >
-            I have a physical keyboard attached (Proceed)
+            I have a real keyboard attached — continue
           </button>
         </div>
       </div>

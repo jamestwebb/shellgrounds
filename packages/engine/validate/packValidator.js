@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Pack Validator: proves a curriculum pack is completely solvable and bug-free.
 //
 // Design rule: a check that cannot fail is worse than no check, because it
@@ -12,9 +12,83 @@ import { registry } from '../commands/registry.js';
 import { ERROR_MARKERS } from '../constants.js';
 import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
+import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
 
 const TEST_SECRET = 'pack-validator-secret';
 const TEST_HANDLE = 'validator_bot';
+
+/**
+ * Predicates that inspect what actually happened — the terminal's output, the
+ * filesystem afterwards, where the student ended up, or the exit status. A
+ * success condition built only from things NOT in this set is grading the
+ * keystrokes.
+ */
+const EVIDENCE_PREDICATES = new Set([
+  'fileExists', 'dirExists', 'fileMatches', 'fileEquals', 'lineCountAtLeast',
+  'fileHashEquals', 'cwdIs', 'outputMatches', 'outputContains', 'outputEquals',
+  'outputLineCountIs', 'exitStatusIs', 'fileHasMode', 'fileHasOwner', 'js', 'flag'
+]);
+
+/** Every predicate name used anywhere in a success condition, allOf/anyOf included. */
+function predicateKinds(cfg, out = new Set()) {
+  if (!cfg || typeof cfg !== 'object') return out;
+  const type = cfg.predicate || cfg.kind;
+  if (type === 'allOf' || type === 'anyOf') {
+    for (const p of cfg.predicates || []) predicateKinds(p, out);
+  } else if (type) {
+    out.add(type);
+  }
+  return out;
+}
+
+/**
+ * Challenge ids must be unique across EVERY pack on the deployment, because
+ * the server resolves which pack a submission belongs to from the challenge id
+ * alone (docs/PLAN-TECHNICAL.md §1). A collision scores a challenge against
+ * the wrong pack's filesystem.
+ *
+ * `packs/index.js` throws on a duplicate at import time, which is a hard stop
+ * for the whole site. This runs first, on packs that are not registered yet,
+ * and says which two packs collided and on what.
+ */
+export function checkGlobalChallengeIds(packs) {
+  const owner = new Map();
+  const collisions = [];
+  const perPack = {};
+  for (const pack of packs) {
+    const id = pack.id || pack.manifest?.id || '(unnamed pack)';
+    perPack[id] = (pack.challenges || []).length;
+    const withinPack = new Set();
+    for (const c of pack.challenges || []) {
+      if (!c?.id) {
+        collisions.push(`Pack '${id}' has a challenge with no id (title: ${JSON.stringify(c?.title ?? '?')}).`);
+        continue;
+      }
+      if (withinPack.has(c.id)) {
+        collisions.push(`Pack '${id}' uses the challenge id '${c.id}' twice.`);
+        continue;
+      }
+      withinPack.add(c.id);
+      const prior = owner.get(c.id);
+      if (prior && prior !== id) {
+        collisions.push(
+          `Challenge id '${c.id}' is used by both '${prior}' and '${id}'. Ids must be unique across ` +
+          'all packs, because the server works out which pack a submission belongs to from the id ' +
+          `alone. Give one of them a pack-specific prefix (for example '${id.split('-')[0]}-${c.id}').`
+        );
+        continue;
+      }
+      owner.set(c.id, id);
+    }
+  }
+  return {
+    pass: collisions.length === 0,
+    totalIds: owner.size,
+    packsChecked: Object.keys(perPack).length,
+    perPack,
+    collisions
+  };
+}
 
 const isPathLike = (s, isWindows) =>
   typeof s === 'string' && (isWindows ? /^[A-Za-z]:[\\/]/.test(s) : s.startsWith('/'));
@@ -47,8 +121,12 @@ function buildReachableCorpus(filesystems, help, commands) {
 }
 
 export async function validatePack(packObj, options = {}) {
-  const { verbose = false } = options;
+  const { verbose = false, packFile = null } = options;
   const { id, manifest, challenges, help = {}, commands = {}, createFs } = packObj;
+  // A pack loaded from a .pack.json is untrusted: the `js` predicate must not
+  // run for it even here, or the validator would certify content the browser
+  // will then refuse.
+  const trusted = packObj.trusted !== false;
 
   const results = {
     packId: id,
@@ -56,9 +134,17 @@ export async function validatePack(packObj, options = {}) {
     valid: true,
     errors: [],
     warnings: [],
+    // Two lists that are NOT errors and do not turn the run red. They are
+    // findings a later content pass has to clear, and burying them in the
+    // warning stream is how 60 keystroke-graded challenges went unnoticed.
+    variantFailures: [],
+    outputBlind: [],
     checks: {
+      packFormat: { pass: true, checked: false, formatVersion: packObj.formatVersion ?? null },
       vfsPaths: { pass: true, tested: 0 },
       solvability: { pass: true, total: challenges.length, solved: 0, variantsTested: 0, flagsVerified: 0 },
+      acceptedVariants: { pass: true, tested: 0, failed: 0 },
+      outputAssertions: { pass: true, checked: 0, blind: 0 },
       flagPlaceholders: { pass: true, placeholders: 0, mapped: 0 },
       actProgression: { pass: true, actsCount: manifest.acts.length, gatedActsChecked: 0 },
       briefCommands: { pass: true, commandsTested: 0 },
@@ -71,6 +157,19 @@ export async function validatePack(packObj, options = {}) {
     results.checks[check].pass = false;
     results.errors.push(msg);
   };
+
+  // ── CHECK 0: single-file pack format ───────────────────────────────────────
+  // Runs only for a pack that came from a .pack.json. A directory pack has no
+  // formatVersion to check, and inventing one for it would be a check that
+  // cannot fail.
+  if (packFile) {
+    results.checks.packFormat.checked = true;
+    results.checks.packFormat.formatVersion = packFile.formatVersion ?? null;
+    results.checks.packFormat.readerVersion = PACK_FORMAT_VERSION;
+    const { errors: fErrors, warnings: fWarnings } = validatePackFileStructure(packFile);
+    for (const e of fErrors) fail('packFormat', `Pack file: ${e}`);
+    for (const w of fWarnings) results.warnings.push(`Pack file: ${w}`);
+  }
 
   const platforms = manifest.platforms || ['linux'];
   const filesystems = {};
@@ -138,6 +237,24 @@ export async function validatePack(packObj, options = {}) {
     actPoints[challenge.act] = (actPoints[challenge.act] || 0) + (challenge.points || 0);
     if (Array.isArray(challenge.teaches)) challenge.teaches.forEach(t => teachesConcepts.add(t));
 
+    // ── CHECK 2b: does this challenge look at anything but the keystrokes? ───
+    // `commandMatches` alone grades the typed line. It marks a student wrong
+    // for a smarter equivalent command, and marks them right when the
+    // simulation printed something false. Counted, named, and reported — not
+    // failed, because fixing 60 of them is a separate content pass.
+    results.checks.outputAssertions.checked++;
+    const kinds = predicateKinds(challenge.success);
+    if (kinds.has('commandMatches') && ![...kinds].some(k => EVIDENCE_PREDICATES.has(k))) {
+      results.checks.outputAssertions.blind++;
+      results.checks.outputAssertions.pass = false;
+      results.outputBlind.push({
+        id: challenge.id,
+        act: challenge.act,
+        title: challenge.title,
+        pattern: challenge.success?.pattern ?? null
+      });
+    }
+
     if (challenge.success?.kind === 'flag') {
       // A flag challenge is solvable only if its flag actually reaches the student.
       if (challenge.success.staticFlag) {
@@ -191,6 +308,13 @@ export async function validatePack(packObj, options = {}) {
       continue;
     }
 
+    // Only entries the author actually WROTE in acceptedVariants are held to
+    // the "every variant works" bar. A command scraped out of the brief is a
+    // fallback for proving solvability, not a promise to the student.
+    const declaredVariants = new Set(
+      Array.isArray(challenge.acceptedVariants) ? challenge.acceptedVariants : []
+    );
+
     const failures = [];
     let passedAtLeastOne = false;
     for (const sol of testSolutions) {
@@ -201,21 +325,45 @@ export async function validatePack(packObj, options = {}) {
       const predicateOk = evaluatePredicate(challenge.success, {
         fs: res.fs, cwd: res.newCwd || cwd, commandText: sol,
         stdout: res.stdout, stderr: res.stderr, output: res.output,
-        status: res.status, isWindows: isWin, trusted: true
+        status: res.status, isWindows: isWin, trusted
       });
       // A solution that errors is not a solution — unless it deliberately
       // demonstrates failure handling (`||`, or an explicit expected status).
       const intentionalFailure = sol.includes('||') || challenge.success?.predicate === 'exitStatusIs';
       const clean = intentionalFailure || (!res.hasError && !ERROR_MARKERS.test(res.output || ''));
-      if (predicateOk && clean) passedAtLeastOne = true;
+      const ok = predicateOk && clean;
+      if (ok) passedAtLeastOne = true;
       else failures.push(`'${sol}' (predicate=${predicateOk}, clean=${clean})`);
+
+      // ── CHECK 2c: every accepted variant must actually pass ───────────────
+      // An accepted variant that fails is the course sanctioning an answer
+      // that does not work: the student types a line the pack lists as
+      // correct, is marked wrong, and has no way to tell which of them is
+      // broken. Reported as its own category with a count, kept out of
+      // `errors` so the run stays green while the content is repaired.
+      if (declaredVariants.has(sol)) {
+        results.checks.acceptedVariants.tested++;
+        if (!ok) {
+          results.checks.acceptedVariants.failed++;
+          results.checks.acceptedVariants.pass = false;
+          const firstLine = String(res.output || '').split('\n').find(l => l.trim()) || '';
+          results.variantFailures.push({
+            id: challenge.id,
+            act: challenge.act,
+            title: challenge.title,
+            variant: sol,
+            predicateOk,
+            clean,
+            reason: !clean
+              ? `the command itself failed: ${firstLine.slice(0, 100)}`
+              : "the command ran, but the challenge's success condition did not accept it"
+          });
+        }
+      }
     }
 
     if (passedAtLeastOne) {
       results.checks.solvability.solved++;
-      if (failures.length) {
-        results.warnings.push(`Challenge '${challenge.id}': some acceptedVariants failed: ${failures.join('; ')}`);
-      }
     } else {
       fail('solvability', `Challenge '${challenge.id}' (${challenge.title}) is not solvable by any declared solution: ${failures.join('; ')}`);
     }
@@ -338,7 +486,9 @@ export async function validatePack(packObj, options = {}) {
     totalPoints: Object.values(actPoints).reduce((a, b) => a + b, 0),
     pointsPerAct: actPoints,
     conceptsCount: teachesConcepts.size,
-    concepts: Array.from(teachesConcepts).sort()
+    concepts: Array.from(teachesConcepts).sort(),
+    outputBlindChallenges: results.checks.outputAssertions.blind,
+    brokenAcceptedVariants: results.checks.acceptedVariants.failed
   };
 
   if (verbose) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Coach: one-line plain-language explanations of what a command just did (or why it failed).
 // Aimed at CLI learners to close the loop between action and mental model.
 

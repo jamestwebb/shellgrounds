@@ -1,5 +1,5 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
-// Cryptographic token & flag generator for The Gauntlet
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
+// Cryptographic token & flag generator for Shellgrounds
 
 // Base32 RFC 4648 alphabet
 const BASE32_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

@@ -1,9 +1,10 @@
-// Copyright (c) 2026 Rational Mystic LLC. All rights reserved.
+// Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Declarative Validation Predicates for Challenges and Verification
 
 import { findVfsKey, resolvePath, normalizePath } from '../vfs/path.js';
 import { stat, readFile } from '../vfs/ops.js';
 import { md5, sha256Sync } from '../crypto-utils.js';
+import { compileSafe, testSafe } from './safe-regex.js';
 
 /**
  * Evaluates a declarative predicate against an execution result state.
@@ -19,9 +20,16 @@ import { md5, sha256Sync } from '../crypto-utils.js';
  *   status: number,
  *   isWindows: boolean,
  *   user: string,
- *   env: Object,
- *   trusted: boolean (true only for first-party registered packs)
+ *   env: Object
  * }
+ *
+ * Every predicate is DATA. There is deliberately no predicate that executes a
+ * function supplied by a pack: that is what lets a teacher open a pack somebody
+ * else wrote without running their code. A `js` predicate used to exist for
+ * checks awkward to express as data; nothing ever used it, and it was the one
+ * field that could have broken that promise, so it was removed. If a future
+ * check cannot be expressed here, add a named data predicate for it rather than
+ * an escape hatch — every teacher can then read and trust it.
  */
 export function evaluatePredicate(predicateConfig, context = {}) {
   if (!predicateConfig) return false;
@@ -35,8 +43,7 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     output = '',
     status = 0,
     isWindows = false,
-    user = 'student',
-    trusted = false
+    user = 'student'
   } = context;
 
   const type = predicateConfig.predicate || predicateConfig.kind;
@@ -58,8 +65,8 @@ export function evaluatePredicate(predicateConfig, context = {}) {
       const resolved = resolvePath(cwd, predicateConfig.path, isWindows);
       const res = readFile(fs, resolved, isWindows, { user });
       if (!res.ok) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(res.content);
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, res.content);
     }
 
     case 'fileEquals': {
@@ -94,15 +101,41 @@ export function evaluatePredicate(predicateConfig, context = {}) {
 
     case 'commandMatches': {
       if (!commandText || !predicateConfig.pattern) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(commandText.trim());
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, commandText.trim());
     }
 
     case 'outputMatches': {
       const textToTest = stdout || output || '';
       if (!predicateConfig.pattern) return false;
-      const regex = new RegExp(predicateConfig.pattern, predicateConfig.flags || 'i');
-      return regex.test(textToTest);
+      const regex = compileSafe(predicateConfig.pattern, predicateConfig.flags || 'i');
+      return testSafe(regex, textToTest);
+    }
+
+    // Output predicates. A challenge that only checks the typed command grades
+    // keystrokes, not understanding: it marks a student wrong for a smarter
+    // equivalent command, and marks them right when the simulation printed
+    // something false. Assert on what the terminal actually produced.
+    case 'outputContains': {
+      const textToTest = stdout || output || '';
+      const needle = String(predicateConfig.text ?? '');
+      if (!needle) return false;
+      return predicateConfig.caseSensitive
+        ? textToTest.includes(needle)
+        : textToTest.toLowerCase().includes(needle.toLowerCase());
+    }
+
+    case 'outputEquals': {
+      const textToTest = (stdout || output || '');
+      const expected = String(predicateConfig.text ?? '');
+      const norm = (t) => t.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').trim();
+      return norm(textToTest) === norm(expected);
+    }
+
+    case 'outputLineCountIs': {
+      const textToTest = (stdout || output || '');
+      const lines = textToTest.replace(/\r\n/g, '\n').split('\n').filter(l => l.trim().length > 0);
+      return lines.length === Number(predicateConfig.n);
     }
 
     case 'exitStatusIs': {
@@ -133,20 +166,6 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     case 'anyOf': {
       const predicates = predicateConfig.predicates || [];
       return predicates.some(p => evaluatePredicate(p, context));
-    }
-
-    case 'js': {
-      if (!trusted) {
-        console.warn('Untrusted pack attempted to execute JS predicate; rejected.');
-        return false;
-      }
-      if (typeof predicateConfig.fn === 'function') {
-        return !!predicateConfig.fn(fs, context);
-      }
-      if (typeof predicateConfig.check === 'function') {
-        return !!predicateConfig.check(fs, context);
-      }
-      return false;
     }
 
     default:
