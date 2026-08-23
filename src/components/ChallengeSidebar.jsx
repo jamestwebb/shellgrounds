@@ -4,8 +4,9 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2, Circle, Lock, Lightbulb, ChevronRight,
-  Zap, Trophy, Send, Award, Layers, AlertCircle, HelpCircle
+  Zap, Trophy, Send, Award, Layers, AlertCircle, HelpCircle, RotateCcw, Eye
 } from 'lucide-react';
+import { practiceState } from '../../packages/engine/practice.js';
 import { ACT_DEFINITIONS, isActUnlockedFor, requiredSolvesToUnlock } from '../data/challenges';
 import { nextWrongAnswerMessage, actLockedCopy } from '../copy';
 import { sounds } from '../utils/audio';
@@ -69,13 +70,53 @@ export const ChallengeSidebar = ({
   const isActUnlockedForStudent = (act) =>
     isActUnlockedFor(act, new Set(Object.keys(solvesMap)), challenges, acts);
 
-  const hintsRevealedCount = (currentChallenge && unlockedHints[currentChallenge.id]) || 0;
+  const paidHints = (currentChallenge && unlockedHints[currentChallenge.id]) || 0;
+
+  // ── Practising something already solved ───────────────────────────────────
+  // Held here rather than in App because it is a way of looking at a
+  // challenge, not a fact about the student. It ends when they navigate away.
+  const [practisingId, setPractisingId] = useState(null);
+  // Hints re-opened during practice. Separate from `paidHints` so that hiding
+  // them cannot un-buy them: the student already paid, and this number only
+  // decides what is on screen right now.
+  const [practiceHintsShown, setPracticeHintsShown] = useState(0);
+
+  const practising = !!currentChallenge && practisingId === currentChallenge.id;
+  const history = practiceState(currentChallenge && solvesMap[currentChallenge.id]);
+
+  // Selecting a different challenge leaves practice mode, and re-hides
+  // anything that was reopened inside it.
+  React.useEffect(() => {
+    setPractisingId(null);
+    setPracticeHintsShown(0);
+  }, [selectedChallengeId]);
+
+  const startPractice = () => {
+    setPractisingId(currentChallenge.id);
+    setPracticeHintsShown(0);
+    setFeedback(null);
+  };
+
+  // During practice the answer is put away: the success message goes, and the
+  // hints the student already owns collapse. Recalling something unaided is
+  // most of where the value is, and it cannot happen with the answer on
+  // screen. They come back with one click, at no cost.
+  const hintsRevealedCount = practising ? practiceHintsShown : paidHints;
+  const hintsAreFree = practising;
 
   const [openingHint, setOpeningHint] = useState(false);
 
   const handleRevealNextHint = async (cost) => {
     if (!currentChallenge?.hints || openingHint) return;
     if (hintsRevealedCount >= currentChallenge.hints.length) return;
+
+    // Already bought. Showing it again is a local act with no price and no
+    // server call -- charging a second time would teach a student that going
+    // back over their own work costs them, which is the wrong lesson to sell.
+    if (practising && practiceHintsShown < paidHints) {
+      setPracticeHintsShown(n => n + 1);
+      return;
+    }
 
     if (cost > 0) {
       const ok = window.confirm(`This hint costs ${cost} XP, subtracted from this challenge's points. Reveal it?`);
@@ -105,6 +146,11 @@ export const ChallengeSidebar = ({
           setFeedback({
             type: 'success',
             message: `That one belonged to '${solved?.title || res.challengeId}' — recorded there! (+${res.pointsAwarded} XP)`
+          });
+        } else if (res.alreadySolved) {
+          setFeedback({
+            type: 'success',
+            message: 'Still right — and still yours. Nothing scored, which is the point of practice.'
           });
         } else {
           setFeedback({ type: 'success', message: res.successMessage || 'Found it!' });
@@ -244,6 +290,7 @@ export const ChallengeSidebar = ({
       <div className="p-3 border-b border-term-sidebar-border bg-term-sidebar-deep/60 max-h-48 overflow-y-auto flex-none space-y-1 scrollbar-thin scrollbar-thumb-neutral-700">
         {actChallenges.map((challenge, idx) => {
           const solved = !!solvesMap[challenge.id];
+          const stale = practiceState(solvesMap[challenge.id]).worthRevisiting;
           const isSelected = currentChallenge?.id === challenge.id;
 
           return (
@@ -260,7 +307,13 @@ export const ChallengeSidebar = ({
             >
               <div className="flex items-center gap-2 truncate pr-2">
                 {solved ? (
-                  <CheckCircle2 size={14} className="text-term-green shrink-0" />
+                  /* A tick that has gone quiet: solved, but a while ago. It is
+                     a suggestion, never a warning -- nothing is wrong with a
+                     challenge somebody finished a fortnight back. */
+                  <CheckCircle2
+                    size={14}
+                    className={stale ? 'text-term-amber/70 shrink-0' : 'text-term-green shrink-0'}
+                  />
                 ) : (
                   <Circle size={14} className="text-neutral-500 shrink-0" />
                 )}
@@ -307,7 +360,9 @@ export const ChallengeSidebar = ({
                     <Lightbulb size={13} className="text-term-amber" /> Hints
                   </span>
                   <span className="text-[10px] text-neutral-500">
-                    {hintsRevealedCount}/{currentChallenge.hints.length} unlocked
+                    {practising
+                      ? `${hintsRevealedCount}/${paidHints} shown — already paid for`
+                      : `${hintsRevealedCount}/${currentChallenge.hints.length} unlocked`}
                   </span>
                 </div>
 
@@ -326,17 +381,22 @@ export const ChallengeSidebar = ({
                   );
                 })}
 
-                {hintsRevealedCount < currentChallenge.hints.length && (
+                {/* In practice, only hints the student already bought can come
+                    back. Buying a NEW one mid-practice would charge for a
+                    challenge that can no longer pay, so the button stops at
+                    what they own. */}
+                {hintsRevealedCount < (practising ? paidHints : currentChallenge.hints.length) && (
                   <button
                     onClick={() => handleRevealNextHint(currentChallenge.hints[hintsRevealedCount].cost || 0)}
                     disabled={openingHint}
                     className="w-full py-2 px-3 rounded-lg bg-term-sidebar-raised border border-dashed border-term-sidebar-border hover:border-amber-500/50 hover:bg-term-sidebar-deep text-xs text-amber-300 flex items-center justify-between transition-all cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5">
-                      <HelpCircle size={13} /> Unlock Hint {hintsRevealedCount + 1}
+                      <HelpCircle size={13} />
+                      {hintsAreFree ? 'Show' : 'Unlock'} Hint {hintsRevealedCount + 1}
                     </span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-900 text-amber-400 border border-amber-900/40">
-                      {currentChallenge.hints[hintsRevealedCount].cost === 0
+                      {hintsAreFree || currentChallenge.hints[hintsRevealedCount].cost === 0
                         ? 'Free'
                         : `-${currentChallenge.hints[hintsRevealedCount].cost} XP`}
                     </span>
@@ -348,17 +408,99 @@ export const ChallengeSidebar = ({
 
           {/* Submission and Success Section */}
           <div className="pt-2">
-            {isSolved ? (
+            {isSolved && practising ? (
+              /* Practising something already owned. The answer is put away and
+                 the terminal is the only place to prove it again. Nothing here
+                 is scored: the run is worth doing, and worth nothing. */
+              <div className="p-3 rounded-lg bg-term-sidebar-raised border border-term-border text-xs space-y-2 mb-2">
+                <div className="font-bold flex items-center gap-1.5 text-neutral-200">
+                  <RotateCcw size={14} /> Practising
+                </div>
+                <div className="text-[11px] leading-relaxed text-neutral-400">
+                  {currentChallenge.success?.kind === 'flag'
+                    ? 'The answer is hidden and the points are already yours, so this run is worth '
+                      + 'nothing and worth doing. Go and find it again.'
+                    : 'The answer is hidden and the points are already yours, so this run is worth '
+                      + 'nothing and worth doing. Run the command in the terminal from memory.'}
+                </div>
+
+                {/* A flag challenge is proved by pasting, so practice needs the
+                    box back. The server answers a second submission with
+                    alreadySolved and pays nothing, which is the behaviour we
+                    want anyway. */}
+                {currentChallenge.success?.kind === 'flag' && (
+                  <form onSubmit={handleSubmit} className="pt-1">
+                    <input
+                      type="text"
+                      value={flagInput}
+                      onChange={(e) => setFlagInput(e.target.value)}
+                      placeholder="FIND{...}"
+                      spellCheck="false"
+                      autoComplete="off"
+                      className="w-full px-2.5 py-2 rounded bg-term-black border border-term-border
+                                 text-xs font-mono text-neutral-200 placeholder-neutral-600
+                                 focus:border-term-green focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={submitting || !flagInput.trim()}
+                      className="w-full mt-2 py-2 rounded bg-term-sidebar-deep border border-term-border
+                                 text-neutral-300 hover:text-white font-bold text-xs tracking-wider
+                                 flex items-center justify-center gap-1.5 transition-all cursor-pointer
+                                 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send size={13} /> Check it
+                    </button>
+                  </form>
+                )}
+
+                {feedback && (
+                  <div className={`text-[11px] leading-relaxed ${
+                    feedback.type === 'success' ? 'text-term-green' : 'text-red-300'
+                  }`}>
+                    {feedback.message}
+                  </div>
+                )}
+                <button
+                  onClick={() => { setPractisingId(null); setPracticeHintsShown(0); }}
+                  className="w-full mt-1 py-2 rounded bg-term-sidebar-deep border border-term-border text-neutral-300 hover:text-white font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Eye size={13} /> Show me the answer again
+                </button>
+              </div>
+            ) : isSolved ? (
               <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-700 text-emerald-300 text-xs space-y-2 mb-2">
-                <div className="font-bold flex items-center gap-1.5 text-emerald-400">
-                  <CheckCircle2 size={15} /> SOLVED (+{solvesMap[currentChallenge.id].netPoints} XP)
+                <div className="font-bold flex items-center justify-between gap-2 text-emerald-400">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 size={15} /> SOLVED (+{solvesMap[currentChallenge.id].netPoints} XP)
+                  </span>
+                  {history.sinceLabel && (
+                    <span className="text-[10px] font-normal text-emerald-600/90">
+                      {history.sinceLabel}
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] leading-relaxed text-emerald-200 font-mono">
                   {currentChallenge.successMessage}
                 </div>
+
+                {/* Retrieval beats re-reading, and it is the one study habit a
+                    student will not adopt unless something asks them to. */}
+                <button
+                  onClick={startPractice}
+                  className={`w-full py-2 rounded border font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    history.worthRevisiting
+                      ? 'bg-term-amber/15 border-term-amber/50 text-amber-300 hover:bg-term-amber/25'
+                      : 'bg-transparent border-emerald-800 text-emerald-300 hover:bg-emerald-900/40'
+                  }`}
+                >
+                  <RotateCcw size={13} />
+                  {history.worthRevisiting ? 'Worth a revisit — practise it' : 'Practise it again'}
+                </button>
+
                 <button
                   onClick={handleNextChallenge}
-                  className="w-full mt-2 py-2 rounded bg-term-green text-term-black font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 hover:bg-green-400 transition-all cursor-pointer"
+                  className="w-full py-2 rounded bg-term-green text-term-black font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 hover:bg-green-400 transition-all cursor-pointer"
                 >
                   Next Challenge <ChevronRight size={14} />
                 </button>

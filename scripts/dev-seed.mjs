@@ -87,8 +87,11 @@ for (const [i, student] of STUDENTS.entries()) {
   const solves = {};
   for (let n = 0; n < take; n++) {
     const c = ordered[n];
-    // Spread the work backwards over about five days, most recent first.
-    const when = minutesAgo(Math.round((take - n) * (60 * 24 * 5) / Math.max(take, 1)) + i * 7);
+    // Spread the work backwards over about three weeks, most recent first.
+    // Wider than a few days on purpose: a challenge only counts as worth
+    // revisiting once it is REVISIT_AFTER_DAYS old, so a seed compressed into
+    // one week leaves the whole practice affordance invisible on dev.
+    const when = minutesAgo(Math.round((take - n) * (60 * 24 * 21) / Math.max(take, 1)) + i * 7);
     solves[`${packId}/${c.id}`] = {
       points: c.points ?? 10,
       hintPenalty: n % 5 === 0 ? 2 : 0,
