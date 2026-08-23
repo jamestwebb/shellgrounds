@@ -38,8 +38,20 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
       let switchVal = colonIdx !== -1 ? switchBody.slice(colonIdx + 1) : true;
 
       // Lookup case-insensitively in flagSpecs
-      const specKey = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName.toLowerCase());
-      const spec = specKey ? flagSpecs[specKey] : null;
+      let specKey = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName.toLowerCase());
+      let spec = specKey ? flagSpecs[specKey] : null;
+
+      // cmd.exe also attaches a value with no colon: `dir /ah` is `/a:h`, and
+      // `dir /a-d` excludes directories. Recognise a one-letter switch whose
+      // spec takes a value followed by the value itself.
+      if (!spec && switchName.length > 1 && colonIdx === -1) {
+        const head = Object.keys(flagSpecs).find(k => k.toLowerCase() === switchName[0].toLowerCase());
+        if (head && flagSpecs[head].type === 'string') {
+          specKey = head;
+          spec = flagSpecs[head];
+          switchVal = switchBody.slice(1);
+        }
+      }
 
       if (!spec) {
         // Unknown switch
@@ -56,7 +68,14 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false) {
         };
       }
 
-      if (spec.type === 'string' && colonIdx === -1 && i + 1 < argv.length && !argv[i + 1].startsWith('/')) {
+      // A cmd.exe switch takes its value ATTACHED — `/a:h`, `/ah`, `/c:text` —
+      // never as the following word. Swallowing the next word made
+      // `dir /a Documents` list the current directory instead of Documents,
+      // because "Documents" was read as the attribute filter for /a.
+      // A spec may opt back in with separateValue when a real tool works that way.
+      if (spec.type === 'string' && spec.separateValue
+          && colonIdx === -1 && switchVal === true
+          && i + 1 < argv.length && !argv[i + 1].startsWith('/')) {
         switchVal = argv[++i];
       }
 

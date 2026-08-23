@@ -1,16 +1,17 @@
 {
   "id": "windows-cmd-essentials",
-  "name": "Windows CMD Essentials",
-  "version": "1.0.0",
+  "name": "Windows CMD Essentials: Lost & Found",
+  "version": "1.1.0",
   "platforms": ["windows"],
   "windows": {
     "home": "C:\\Users\\Student",
     "user": "Student",
+    "host": "lostfound",
     "shell": "cmd"
   },
   "theme": {
     "accent": "#3b82f6",
-    "titleBar": "Command Prompt - C:\\Windows\\System32\\cmd.exe",
+    "titleBar": "LOST PROPERTY - LAPTOP LF-2291 - cmd.exe",
     "sidebarTone": "blue"
   },
   "messages": {
@@ -20,51 +21,51 @@
   "acts": [
     {
       "id": 1,
-      "name": "Act I: Navigation & Inspection",
-      "tagline": "CMD directory traversal, DIR switches, TYPE, and TREE",
-      "icon": "🪟",
+      "name": "Act I: Whose Machine Is This?",
+      "tagline": "Walk the disk with CD, DIR switches, TYPE, TREE and WHERE",
+      "icon": "🔎",
       "glyph": "─·─",
       "unlockThreshold": 0.0
     },
     {
       "id": 2,
-      "name": "Act II: File Management & Batch",
-      "tagline": "COPY, MOVE, REN, DEL, ATTRIB, and %ENVIRONMENT% variables",
+      "name": "Act II: Tidy It Up",
+      "tagline": "Copy, move, rename, delete, and read the machine's own environment",
       "icon": "📁",
       "glyph": "─··─",
       "unlockThreshold": 0.8
     },
     {
       "id": 3,
-      "name": "Act III: Filtering & Diagnostics",
-      "tagline": "FINDSTR, FIND, pipelines, TASKLIST, IPCONFIG, and CERTUTIL",
-      "icon": "⚙️",
+      "name": "Act III: Fill In the Form",
+      "tagline": "FINDSTR, pipes, diagnostics, and a hash for the property record",
+      "icon": "🧾",
       "glyph": "═★═",
       "unlockThreshold": 0.8
     }
   ],
   "badges": [
     {
-      "id": "badge-cmd-explorer",
-      "name": "CMD Explorer",
-      "description": "Completed Act I: Mastered Windows CMD navigation, switches, and tree listings.",
-      "icon": "🪟",
+      "id": "badge-property-tag",
+      "name": "Property Tag",
+      "description": "Completed Act I: searched an unfamiliar machine with DIR switches, TREE and TYPE.",
+      "icon": "🔎",
       "color": "from-sky-500 to-blue-600",
       "act": 1
     },
     {
-      "id": "badge-batch-operator",
-      "name": "Batch Operator",
-      "description": "Completed Act II: Managed Windows files, attributes, and environment variables.",
+      "id": "badge-clean-sweep",
+      "name": "Clean Sweep",
+      "description": "Completed Act II: copied, moved, renamed and removed files, and read %ENVIRONMENT% variables.",
       "icon": "📁",
       "color": "from-blue-500 to-indigo-600",
       "act": 2
     },
     {
-      "id": "badge-win-admin",
-      "name": "Windows Administrator",
-      "description": "Completed Act III: Mastered FINDSTR filtering, system diagnostics, and CertUtil hashing.",
-      "icon": "🏆",
+      "id": "badge-returned",
+      "name": "Returned to Owner",
+      "description": "Completed Act III: filtered the logs, ran the diagnostics, and hashed the evidence for the record.",
+      "icon": "🧾",
       "color": "from-indigo-500 to-purple-600",
       "special": true,
       "act": 3

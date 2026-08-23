@@ -1,5 +1,8 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Virtual Filesystem Definition for Windows CMD Essentials
+// Virtual Filesystem Definition for Windows CMD Essentials — Lost & Found.
+//
+// The fiction lives here and in pack.json, never in the engine: one unclaimed
+// laptop on the lost-property desk, with a command prompt and no name on it.
 
 import { buildFS, file } from '../../packages/engine/vfs/builder.js';
 
@@ -9,24 +12,26 @@ export function createWindowsEssentialsFilesystem() {
     isWindows: true,
     tree: {
       'Users\\Student': {
+        'lostfound.tag': file('Asset tag: LF-2291\r\nHanded in at: front desk, Tuesday\r\nReturn to owner once identified.\r\n', { attrib: 'H', hidden: true }),
         'Documents': {
           'readme.txt': file(
 `================================================================================
-                    WINDOWS CMD ESSENTIALS PROVING GROUND
+                      LOST & FOUND - UNCLAIMED LAPTOP LF-2291
 ================================================================================
-Welcome to the Windows Command Prompt (cmd.exe) training environment.
+This machine came into the lost-property office with no name on it. Your job is
+to find out whose it is, tidy it up, and log what you did.
 
-Key Windows CMD Concepts:
+Everything you need is in this Command Prompt window:
 - Backslashes (\\) separate directory levels.
 - Command switches use forward slashes (e.g. DIR /A /S).
 - Environment variables are delimited by percent signs (e.g. %USERPROFILE%).
-- FINDSTR provides powerful regex pattern matching.
-- CERTUTIL calculates MD5 and SHA256 file hashes.
+- FINDSTR searches inside files the way GREP does on Linux.
+- CERTUTIL calculates the MD5 and SHA256 hashes you write on the form.
 
-Start with Act I in the left panel to begin.
+Start with Act I in the left panel.
 `),
           'notes.txt': file('Project Status: Windows Rollout\r\nDomain: CORP.INTERNAL\r\nAdministrator: Student\r\n'),
-          'servers.txt': file('DC01=192.168.1.10\r\nFS01=192.168.1.20\r\nSQL01=192.168.1.30\r\nWEB01=192.168.1.40\r\n'),
+          'servers.txt': file('DC01=192.168.1.10\r\nFS01=192.168.1.20\r\nSQL01=192.168.1.30\r\nWEB01=192.168.1.40\r\nRECOVERY=[[FLAG:w1-boss]]\r\n'),
           'hidden_config.ini': file('LicenseKey=WIN-PRO-2026-X99\r\n', { attrib: 'H', hidden: true }),
           'data.csv': file(
 `EmployeeID,FullName,Department,Location,Status
@@ -45,6 +50,7 @@ Start with Act I in the left panel to begin.
           'setup.exe': file('[PE32 executable for Windows]'),
           'archive.zip': file('[ZIP Archive Container]')
         },
+        'Projects': {},
         'logs': {
           'eventlog.txt': file(
 `[EVENT ID 4624] An account was successfully logged on: TargetUserName: Student

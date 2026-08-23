@@ -1,17 +1,17 @@
 {
   "id": "linux-fundamentals",
-  "name": "Linux Fundamentals",
-  "version": "1.0.0",
+  "name": "Linux Fundamentals: The Night Shift",
+  "version": "1.1.0",
   "platforms": ["linux"],
   "linux": {
     "home": "/home/student",
     "user": "student",
-    "host": "sandbox",
+    "host": "meridian",
     "shell": "bash"
   },
   "theme": {
     "accent": "#22c55e",
-    "titleBar": "SANDBOX TTY1",
+    "titleBar": "MERIDIAN OBSERVATORY TTY1",
     "sidebarTone": "green"
   },
   "messages": {
@@ -21,67 +21,67 @@
   "acts": [
     {
       "id": 1,
-      "name": "Act I: Navigation & Files",
-      "tagline": "Standing your ground, inspecting files, and shell wildcards",
-      "icon": "🧭",
+      "name": "Act I: Opening the Dome",
+      "tagline": "Learn the building before dark: paths, listings, files, and wildcards",
+      "icon": "🔭",
       "glyph": "─·─",
       "unlockThreshold": 0.0
     },
     {
       "id": 2,
-      "name": "Act II: Text Streams & Pipes",
-      "tagline": "Filtering, counting, sorting, and connecting data streams",
+      "name": "Act II: Reading the Night Log",
+      "tagline": "Filter, count, sort and pipe what the observatory recorded",
       "icon": "📜",
       "glyph": "─··─",
       "unlockThreshold": 0.8
     },
     {
       "id": 3,
-      "name": "Act III: Operations & Permissions",
-      "tagline": "Creating, copying, removing, permissions, and sudo elevation",
+      "name": "Act III: Keys to the Dome",
+      "tagline": "Create, copy, move, remove, and decide who may read what",
       "icon": "🔐",
       "glyph": "─···─",
       "unlockThreshold": 0.8
     },
     {
       "id": 4,
-      "name": "Act IV: Advanced Shell & Scripting",
-      "tagline": "Find, sed, awk, exit codes, conditionals, and variables",
-      "icon": "⚡",
+      "name": "Act IV: Handover at Dawn",
+      "tagline": "Find, edit, test and chain — everything the day crew will not do for you",
+      "icon": "🌅",
       "glyph": "═★═",
       "unlockThreshold": 0.8
     }
   ],
   "badges": [
     {
-      "id": "badge-navigator",
-      "name": "Navigator",
-      "description": "Completed Act I: Mastered Linux paths, directory navigation, and wildcards.",
-      "icon": "🧭",
+      "id": "badge-first-light",
+      "name": "First Light",
+      "description": "Completed Act I: found your way around the observatory with paths, listings and wildcards.",
+      "icon": "🔭",
       "color": "from-emerald-500 to-green-600",
       "act": 1
     },
     {
-      "id": "badge-streamer",
-      "name": "Data Streamer",
-      "description": "Completed Act II: Constructed multi-stage Unix pipelines with grep, sort, and cut.",
-      "icon": "🚰",
+      "id": "badge-log-keeper",
+      "name": "Log Keeper",
+      "description": "Completed Act II: read the night's records with grep, sort, cut and pipelines.",
+      "icon": "📜",
       "color": "from-cyan-500 to-blue-600",
       "act": 2
     },
     {
-      "id": "badge-admin",
-      "name": "System Admin",
-      "description": "Completed Act III: Managed files, directories, chmod permissions, and sudo rights.",
-      "icon": "🛡️",
+      "id": "badge-keyholder",
+      "name": "Keyholder",
+      "description": "Completed Act III: created, copied and removed files, and set who may read them.",
+      "icon": "🔐",
       "color": "from-amber-500 to-yellow-600",
       "act": 3
     },
     {
-      "id": "badge-master",
-      "name": "Shell Master",
-      "description": "Completed Act IV: Mastered find, sed, awk, exit codes, and shell variables.",
-      "icon": "🏆",
+      "id": "badge-dawn-shift",
+      "name": "Dawn Shift",
+      "description": "Completed Act IV: handed the observatory back with find, sed, awk, exit codes and command chains.",
+      "icon": "🌅",
       "color": "from-yellow-400 to-amber-500",
       "special": true,
       "act": 4

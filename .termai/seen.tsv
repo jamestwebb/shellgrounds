@@ -51,3 +51,7 @@
 1787444705	tests/vfs.test.js
 1787444705	tests/exec.linux.test.js
 1787444705	tests/pipeline.test.js
+1787445493	packages/engine/commands/windows/index.js
+1787445500	packages/engine/commands/registry.js
+1787445544	packages/engine/vfs/builder.js
+1787445687	tests/fixes.test.js

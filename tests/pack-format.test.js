@@ -488,17 +488,20 @@ describe('validator: keystroke-only challenges are counted, not buried', () => {
     expect(r.checks.outputAssertions.blind).toBe(0);
   });
 
-  it('reports the real count for every shipped pack', async () => {
-    let total = 0;
+  it('finds none left in any shipped pack', async () => {
+    // This began life asserting the count was above zero, because 60 of the 97
+    // challenges graded keystrokes and the number was the point. They have all
+    // been converted, so the assertion is inverted: shipped content must assert
+    // on what the terminal produced, and a regression here is a real one.
+    const offenders = [];
     for (const [id, pack] of Object.entries(PACKS)) {
       const r = await validatePack({ trusted: true, ...pack, id });
       expect(r.checks.outputAssertions.checked).toBe(pack.challenges.length);
       expect(r.outputBlind.length).toBe(r.checks.outputAssertions.blind);
-      total += r.checks.outputAssertions.blind;
+      offenders.push(...r.outputBlind.map(c => `${id}/${c.id ?? c}`));
     }
-    // A number, not a range: if a content pass fixes some, this test tells the
-    // next person exactly how many are left rather than quietly agreeing.
-    expect(total).toBeGreaterThan(0);
+    expect(offenders,
+      'these challenges check the typed command and nothing else').toEqual([]);
   });
 });
 
