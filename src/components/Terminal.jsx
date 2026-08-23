@@ -2,11 +2,15 @@
 // Terminal component: Accessible Simulated CLI shell with history, tab completion, and redirection
 
 import React, { useRef, useEffect, useCallback } from 'react';
+import { FIND_TOKEN_PREFIX, FIND_TOKEN_OPEN } from '../../packages/engine/constants.js';
 import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin } from 'lucide-react';
 import { getTabCompletions } from '../engine/complete';
 import { sounds } from '../utils/audio';
 
-const FLAG_PATTERN = /(FLAG\{[A-Z2-7]{12}\})/g;
+// Built from the one place the token prefix is defined, so renaming what a
+// student collects never leaves the terminal quietly failing to highlight it.
+const FIND_PATTERN = new RegExp(`(${FIND_TOKEN_PREFIX}\\{[A-Z2-7]{12}\\})`, 'g');
+const FIND_EXACT = new RegExp(`^${FIND_TOKEN_PREFIX}\\{[A-Z2-7]{12}\\}$`);
 
 export const Terminal = ({
   platform = 'linux',
@@ -38,18 +42,18 @@ export const Terminal = ({
     }).catch(() => {});
   };
 
-  // Render FLAG{...} tokens as click-to-copy chips
+  // Render FIND{...} tokens as click-to-copy chips
   const renderOutputText = (text) => {
-    if (!text || !text.includes('FLAG{')) return text;
-    const parts = text.split(FLAG_PATTERN);
+    if (!text || !text.includes(FIND_TOKEN_OPEN)) return text;
+    const parts = text.split(FIND_PATTERN);
     return parts.map((part, idx) => {
-      if (/^FLAG\{[A-Z2-7]{12}\}$/.test(part)) {
+      if (FIND_EXACT.test(part)) {
         const isCopied = copiedFlag === part;
         return (
           <button
             key={idx}
             onClick={(e) => { e.stopPropagation(); copyFlag(part); }}
-            title="Click to copy this flag"
+            title="Click to copy this find"
             className={`inline px-1 py-0.5 mx-0.5 rounded border font-bold cursor-pointer transition-all align-baseline ${
               isCopied
                 ? 'bg-term-green text-term-black border-term-green'
@@ -226,7 +230,7 @@ export const Terminal = ({
               className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer"
               title="Open the system map"
             >
-              <MapPin size={11} /> MAP
+              <MapPin size={11} /> Map
             </button>
           )}
 
@@ -239,7 +243,7 @@ export const Terminal = ({
             }`}
             title="Turn the plain-English explanations on or off"
           >
-            <Sparkles size={11} /> COACH {coachEnabled ? 'ON' : 'OFF'}
+            <Sparkles size={11} /> Coach {coachEnabled ? 'on' : 'off'}
           </button>
 
           <button

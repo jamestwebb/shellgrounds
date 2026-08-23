@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {
-  Terminal, Flag, Trophy, Lightbulb, ArrowRight, Check, Users, Monitor
+  Terminal, Shell as ShellIcon, Trophy, Lightbulb, ArrowRight, Check, Users, Monitor
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 
@@ -54,16 +54,16 @@ const POINTS = [
         + 'anything, so the fastest way to learn is to try something and read what comes back.'
   },
   {
-    icon: Flag,
-    title: 'Capture flags to prove it',
-    body: 'Each challenge is solved by doing the thing, not by describing it. Some hide a flag '
-        + 'in the filesystem for you to find; others watch what your command actually produced.'
+    icon: ShellIcon,
+    title: 'Find things to prove it',
+    body: 'Each challenge is solved by doing the thing, not by describing it. Some leave a find '
+        + 'somewhere in the filesystem; others simply watch what your command actually produced.'
   },
   {
     icon: Trophy,
-    title: 'Your flags are yours',
-    body: 'Every student gets different flags, generated from their own handle. A classmate’s '
-        + 'answer will not work for you, so the leaderboard is a record of what you did.'
+    title: 'What you find is yours',
+    body: 'Every student finds something different, generated from their own handle. A '
+        + 'classmate’s answer will not work for you, so the leaderboard records what you did.'
   },
   {
     icon: Lightbulb,
@@ -82,7 +82,7 @@ export const Welcome = ({ handle, onContinue, continueLabel = 'Continue' }) => (
       </h1>
       <p className="mt-2 text-sm text-neutral-300 leading-relaxed max-w-2xl">
         Shellgrounds teaches the command line by having you use it. Not a video, not a quiz —
-        a terminal, a problem, and a flag you can only capture by solving it.
+        a terminal, a problem, and something you can only find by solving it.
       </p>
     </div>
 
@@ -166,7 +166,7 @@ export const ChoosePack = ({ packs, onChoose, currentPackId = null }) => (
                   {m.name}
                 </span>
                 {current && (
-                  <span className="text-[10px] uppercase tracking-wider text-term-green
+                  <span className="text-[10px] tracking-wider text-term-green
                                    inline-flex items-center gap-1">
                     <Check size={10} /> current
                   </span>
@@ -214,7 +214,7 @@ export const PackBriefing = ({ pack, onStart, onBack = null }) => {
           <span className="text-3xl shrink-0">{m.icon || '📦'}</span>
         )}
         <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-neutral-500">{m.name}</p>
+          <p className="text-[11px] tracking-wider text-neutral-500">{m.name}</p>
           <h1 className="text-lg sm:text-xl font-bold text-green-200 mt-0.5">
             {b.heading || 'Your briefing'}
           </h1>
@@ -233,7 +233,7 @@ export const PackBriefing = ({ pack, onStart, onBack = null }) => {
 
       {b.youWillLearn?.length > 0 && (
         <div className="p-6 sm:p-8 border-b border-term-border">
-          <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
+          <h2 className="text-xs tracking-wider text-neutral-400 font-medium">
             By the end you will be able to
           </h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -249,7 +249,7 @@ export const PackBriefing = ({ pack, onStart, onBack = null }) => {
 
       {acts.length > 0 && (
         <div className="p-6 sm:p-8 border-b border-term-border">
-          <h2 className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
+          <h2 className="text-xs tracking-wider text-neutral-400 font-medium">
             {acts.length} acts
           </h2>
           <ul className="mt-3 space-y-2">

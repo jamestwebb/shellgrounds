@@ -104,10 +104,10 @@ export const ChallengeSidebar = ({
           const solved = challenges.find(c => c.id === res.challengeId);
           setFeedback({
             type: 'success',
-            message: `That flag belonged to '${solved?.title || res.challengeId}' — recorded there! (+${res.pointsAwarded} XP)`
+            message: `That one belonged to '${solved?.title || res.challengeId}' — recorded there! (+${res.pointsAwarded} XP)`
           });
         } else {
-          setFeedback({ type: 'success', message: res.successMessage || 'Flag accepted!' });
+          setFeedback({ type: 'success', message: res.successMessage || 'Found it!' });
         }
         setFlagInput('');
       } else {
@@ -160,7 +160,7 @@ export const ChallengeSidebar = ({
           <div className="flex items-center gap-2">
             <span className="text-xl">{currentAct?.icon}</span>
             <div>
-              <div className="text-xs font-bold text-green-400 uppercase tracking-wider">{currentAct?.name}</div>
+              <div className="text-xs font-bold text-green-400 tracking-wider">{currentAct?.name}</div>
               <div className="text-[10px] text-neutral-400">{currentAct?.glyph}</div>
             </div>
           </div>
@@ -183,7 +183,7 @@ export const ChallengeSidebar = ({
             // A Windows-only act reads as WIN rather than as a number; this was
             // hardcoded to act 6, which is only true of one pack.
             const actCs = challenges.filter(c => c.act === act.id);
-            const label = actCs.length && actCs.every(c => c.platform === 'windows') ? 'WIN' : act.id;
+            const label = actCs.length && actCs.every(c => c.platform === 'windows') ? 'Win' : act.id;
             return (
               <button
                 key={act.id}
@@ -216,7 +216,7 @@ export const ChallengeSidebar = ({
         </div>
 
         {isAdmin && (
-          <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+          <div className="mt-2 flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 border border-amber-500/40 text-amber-300 text-[10px] font-bold tracking-wider">
             <Layers size={11} />
             <span>Instructor view — every act open</span>
             <span className="ml-auto font-normal normal-case tracking-normal text-amber-200/70">
@@ -281,7 +281,7 @@ export const ChallengeSidebar = ({
             {/* Title & Points Header */}
             <div className="flex items-start justify-between gap-2 mb-3">
               <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-wider">
+                <span className="text-[10px] font-bold text-neutral-400 tracking-wider">
                   {currentAct.name}
                 </span>
                 <h3 className="text-sm font-bold text-green-400 mt-0.5">
@@ -302,7 +302,7 @@ export const ChallengeSidebar = ({
             {/* Hint Accordion */}
             {currentChallenge.hints && currentChallenge.hints.length > 0 && (
               <div className="mb-4 space-y-2">
-                <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center justify-between">
+                <div className="text-xs font-bold text-neutral-400 tracking-wider flex items-center justify-between">
                   <span className="flex items-center gap-1">
                     <Lightbulb size={13} className="text-term-amber" /> Hints
                   </span>
@@ -337,7 +337,7 @@ export const ChallengeSidebar = ({
                     </span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-neutral-900 text-amber-400 border border-amber-900/40">
                       {currentChallenge.hints[hintsRevealedCount].cost === 0
-                        ? 'FREE'
+                        ? 'Free'
                         : `-${currentChallenge.hints[hintsRevealedCount].cost} XP`}
                     </span>
                   </button>
@@ -358,7 +358,7 @@ export const ChallengeSidebar = ({
                 </div>
                 <button
                   onClick={handleNextChallenge}
-                  className="w-full mt-2 py-2 rounded bg-term-green text-term-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-green-400 transition-all cursor-pointer"
+                  className="w-full mt-2 py-2 rounded bg-term-green text-term-black font-bold text-xs tracking-wider flex items-center justify-center gap-1.5 hover:bg-green-400 transition-all cursor-pointer"
                 >
                   Next Challenge <ChevronRight size={14} />
                 </button>
@@ -367,12 +367,12 @@ export const ChallengeSidebar = ({
               /* Command/state challenges have no flag: kill the "what do I type
                  in the box?" hunt before it starts */
               <div className="p-3 rounded-lg bg-term-sidebar-raised border border-term-sidebar-border text-xs text-neutral-300">
-                <span className="text-term-green font-bold">No flag needed.</span> This challenge
+                <span className="text-term-green font-bold">Nothing to paste.</span> This challenge
                 completes automatically the moment you run the right command in the terminal.
               </div>
             ) : (
               <div>
-                {/* Submit Flag Form */}
+                {/* Submit a find */}
                 <form onSubmit={handleSubmit} className="space-y-2">
                   <div className="relative">
                     <input
@@ -407,7 +407,7 @@ export const ChallengeSidebar = ({
                   )}
 
                   <div className="text-[10px] text-neutral-500 text-center">
-                    You can also type <code className="text-term-green">submit &lt;flag&gt;</code> in the terminal.
+                    You can also type <code className="text-term-green">submit &lt;find&gt;</code> in the terminal.
                   </div>
                 </form>
               </div>

@@ -7,12 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        'term-black': '#050505',
-        'term-void': '#030303',
-        'term-gray': '#0a0a0a',
-        'term-panel': '#111111',
+        'term-black': '#0a0a09',
+        'term-void': '#070706',
+        'term-gray': '#111110',
+        'term-panel': '#171614',
         'term-panel-light': '#181818',
-        'term-border': '#262626',
+        'term-border': '#2b2a27',
         // Two deliberately different surfaces so students can tell at a glance
         // which pane is which: the sidebar is a neutral gray "workbook"...
         'term-sidebar': '#17181b',
@@ -29,9 +29,9 @@ export default {
         // rather than as a console. The shell is sand; the terminal stays green.
         'sand': '#e0c58c',
         'sand-deep': '#c9a86a',
-        'term-green': '#22c55e',
-        'term-green-dim': '#15803d',
-        'term-green-faint': 'rgba(34, 197, 94, 0.15)',
+        'term-green': '#34d399',
+        'term-green-dim': '#0f9b6c',
+        'term-green-faint': 'rgba(52, 211, 153, 0.14)',
         'term-amber': '#f59e0b',
         'term-cyan': '#06b6d4',
         'term-red': '#ef4444',

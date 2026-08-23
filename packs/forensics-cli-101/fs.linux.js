@@ -31,7 +31,7 @@ Essential commands:
   cd <dir>     - Enter a directory (cd .. goes back up)
   cat <file>   - Read a file
   map          - Show a map of this whole filesystem
-  submit <flag>- Send a captured FLAG{...} flag in for points
+  submit <find> - Hand in a FIND{...} for points
 
 Start with Act I in the left panel. Work carefully.
 `),

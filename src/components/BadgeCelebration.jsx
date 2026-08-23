@@ -31,10 +31,10 @@ export const BadgeCelebration = ({ badge, onClose }) => {
       <div className="max-w-md w-full bg-term-black border border-term-border rounded-2xl shadow-2xl overflow-hidden text-center relative">
         {/* Glowing Header Banner */}
         <div className="bg-gradient-to-r from-yellow-600 via-amber-500 to-yellow-600 p-6 text-term-black relative overflow-hidden">
-          <div className="flex items-center justify-center gap-2 mb-1 text-xs font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-center gap-2 mb-1 text-xs font-bold tracking-wider">
             <Trophy size={16} /> Badge earned <Trophy size={16} />
           </div>
-          <h2 className="text-2xl font-black tracking-wide">NICE WORK</h2>
+          <h2 className="text-2xl font-black tracking-wide">Nice work</h2>
         </div>
 
         {/* Badge Icon & Description Body */}
@@ -59,9 +59,9 @@ export const BadgeCelebration = ({ badge, onClose }) => {
 
           <button
             onClick={onClose}
-            className="w-full py-3 rounded-xl bg-term-green hover:bg-green-400 text-term-black font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-pointer"
+            className="w-full py-3 rounded-xl bg-term-green hover:bg-green-400 text-term-black font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.4)] cursor-pointer"
           >
-            KEEP GOING <ChevronRight size={16} />
+            Keep going <ChevronRight size={16} />
           </button>
         </div>
       </div>

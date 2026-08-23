@@ -406,7 +406,7 @@
       },
       {
         "cost": 10,
-        "text": "The file is `Documents\\servers.txt`. Print it with `type`, then paste the FLAG{...} value into the box."
+        "text": "The file is `Documents\\servers.txt`. Print it with `type`, then paste the FIND{...} value into the box."
       }
     ],
     "successMessage": "A domain controller, a file server, a database and a web server — and a recovery code that was yours alone. Search first, read second.",

@@ -9,13 +9,13 @@
 // by the tenth read and reads as contempt by the twentieth.
 
 export const PRODUCT_NAME = 'Shellgrounds';
-export const TAGLINE = 'Learn the command line by capturing flags.';
+export const TAGLINE = 'Learn the command line, one find at a time.';
 
 // Never imply the student is slow. Every line points at something to check.
 export const WRONG_ANSWER_COPY = [
-  'Not that one. Look again at what the last command printed — the flag is usually in the output, not the filename.',
-  'That flag did not match. Check for copy-paste gaps: the whole thing, braces included.',
-  'Close, but no. Re-read the brief — it says exactly which file the flag lives in.',
+  'Not that one. Look again at what the last command printed — the find is usually in the output, not the filename.',
+  'That find did not match. Check for copy-paste gaps: the whole thing, braces included.',
+  'Close, but no. Re-read the brief — it says exactly which file the find lives in.',
   'Not it. Try the free hint if you have not — that is what it is there for.',
   'That one did not match. Wrong answers cost nothing, so keep poking at it.',
 ];
@@ -23,18 +23,18 @@ export const WRONG_ANSWER_COPY = [
 // Shown alongside the challenge's own successMessage, which carries the
 // teaching point. These carry the warmth.
 export const SOLVE_COPY = [
-  'Flag accepted. That command is yours now.',
+  'Found it. That command is yours now.',
   'Solved. You typed that like you meant it.',
   'Captured. On to the next one.',
   'That is a real skill, not a game skill. Logged and scored.',
-  'Flag accepted — and nobody could have handed you that one. It was yours alone.',
+  'Found it — and nobody could have handed you that one. It was yours alone.',
 ];
 
 export const EMPTY_STATES = {
   noSolves:
-    'No flags captured yet. Open Act I and run your first command — everyone on the leaderboard started exactly here.',
+    'Nothing found yet. Open Act I and run your first command — everyone on the leaderboard started exactly here.',
   boardEmpty:
-    'The board is empty. The first flag anyone captures will appear here.',
+    'The board is empty. The first thing anyone finds will appear here.',
   boardSolo:
     'One name on the board so far. Plenty of room at the top.',
   boardNoSearchMatch:

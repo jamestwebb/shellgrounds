@@ -89,7 +89,7 @@ function leafDetail(cfg, ctx) {
       return `wants ${resolved} to be owned by ${cfg.owner}; owner is ${st.exists ? st.owner : 'n/a'}`;
     }
     case 'flag':
-      return 'is a flag challenge: the student finds a FLAG{…} string and submits it, so there is ' +
+      return 'is a find challenge: the student locates a FIND{…} string and hands it in, so there is ' +
         'no command to check. Look for the [[FLAG:<id>]] placeholder in the filesystem';
     case 'js':
       return 'runs JavaScript supplied by the pack (first-party packs only)';

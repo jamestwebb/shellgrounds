@@ -2,6 +2,7 @@
 // Cryptographic Utility Tests
 
 import { describe, it, expect } from 'vitest';
+import { FIND_TOKEN_PREFIX, FIND_TOKEN_OPEN } from '../packages/engine/constants.js';
 import {
   generateUserFlag,
   createSessionToken,
@@ -15,11 +16,16 @@ describe('Cryptographic Engine & Session Integrity', () => {
   const SECRET = 'test-secret-key-1234567890';
   const HANDLE = 'student_01';
 
-  it('generates deterministic user flags matching FLAG{...} format', () => {
+  // The token's prefix is defined in one place so the word a student collects
+  // can be changed without hunting through the codebase. The test reads it from
+  // there rather than restating it, or renaming the token would leave a test
+  // passing against a literal nothing produces any more.
+  it('generates a deterministic find per student, in the declared token format', () => {
     const flag1 = generateUserFlag(SECRET, HANDLE, 'act1-cd', 'forensics-cli-101');
     const flag2 = generateUserFlag(SECRET, HANDLE, 'act1-cd', 'forensics-cli-101');
     expect(flag1).toBe(flag2);
-    expect(flag1).toMatch(/^FLAG\{[A-Z2-7]{12}\}$/);
+    expect(flag1).toMatch(new RegExp(`^${FIND_TOKEN_PREFIX}\\{[A-Z2-7]{12}\\}$`));
+    expect(flag1.startsWith(FIND_TOKEN_OPEN), 'built from the shared constant').toBe(true);
 
     // Different challenge gets different flag
     const flag3 = generateUserFlag(SECRET, HANDLE, 'act1-hidden', 'forensics-cli-101');

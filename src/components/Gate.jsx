@@ -66,7 +66,7 @@ const DevCredentials = ({ creds, onFill }) => {
   return (
     <div className="mb-5 rounded border border-amber-700/60 bg-amber-950/20 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] uppercase tracking-wider text-amber-300 font-medium">
+        <span className="text-[11px] tracking-wider text-amber-300 font-medium">
           Local development only
         </span>
         <button
@@ -177,9 +177,9 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
           <div className="inline-flex p-3 rounded-full bg-term-green-faint border border-term-green/30 mb-4 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
             <BrandMark size={36} />
           </div>
-          <h1 className="text-2xl font-bold text-green-400 tracking-wider">SHELLGROUNDS</h1>
-          <p className="text-xs text-neutral-400 mt-1.5">Learn the command line by capturing flags.</p>
-          <div className="text-[11px] text-neutral-400 mt-1 uppercase tracking-widest">
+          <h1 className="text-2xl font-bold text-green-400 tracking-wider">Shellgrounds</h1>
+          <p className="text-xs text-neutral-400 mt-1.5">Learn the command line, one find at a time.</p>
+          <div className="text-[11px] text-neutral-400 mt-1 tracking-widest">
             {packName}
           </div>
         </div>
@@ -205,7 +205,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
         {/* Registration Form */}
         <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
+            <label className="block text-xs tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
               <Terminal size={13} className="text-term-green" /> Handle (your leaderboard name)
             </label>
             <div className="relative">
@@ -238,7 +238,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
           </div>
 
           <div>
-            <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
+            <label className="block text-xs tracking-wider text-neutral-300 mb-1.5 font-medium flex items-center gap-1.5">
               <Key size={13} className="text-term-green" /> Class password
             </label>
             <input
@@ -261,7 +261,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
               I am the instructor
             </summary>
             <div className="mt-2">
-              <label className="block text-xs uppercase tracking-wider text-neutral-300 mb-1.5 font-medium">
+              <label className="block text-xs tracking-wider text-neutral-300 mb-1.5 font-medium">
                 Instructor setup code
               </label>
               <input
@@ -291,7 +291,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded bg-term-green text-term-black font-bold text-sm tracking-wider uppercase hover:bg-green-400 active:scale-[0.99] transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 rounded bg-term-green text-term-black font-bold text-sm tracking-wider hover:bg-green-400 active:scale-[0.99] transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
@@ -300,7 +300,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
               </>
             ) : (
               <>
-                ENTER
+                Enter
                 <ArrowRight size={16} />
               </>
             )}

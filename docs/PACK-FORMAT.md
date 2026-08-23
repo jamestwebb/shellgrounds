@@ -650,7 +650,7 @@ the feedback is instant and it grades the effect.
 
 ### A flag
 
-The student finds a secret string of the form `FLAG{…}` somewhere in the
+The student finds a secret string of the form `FIND{…}` somewhere in the
 simulated computer and pastes it into a submit box. The server checks it.
 
 ```json

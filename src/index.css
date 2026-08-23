@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --term-green: #22c55e;
+    --term-green: #34d399;
     --term-green-dim: #15803d;
-    --term-black: #050505;
-    --term-void: #030303;
+    --term-black: #0a0a09;
+    --term-void: #070706;
     --term-gray: #0a0a0a;
     --term-border: #262626;
   }

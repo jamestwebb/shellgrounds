@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Shellgrounds — learn the command line by capturing flags
+// Shellgrounds — learn the command line, one find at a time
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -431,7 +431,7 @@ export default function App() {
         sounds.playSuccess();
         setTerminalHistory(prev => [
           ...prev,
-          { type: 'output', text: `[★] FLAG ACCEPTED (+${c.points} XP): ${c.title}\n${nextSolveMessage()}`, isSuccess: true }
+          { type: 'output', text: `[★] FOUND IT (+${c.points} XP): ${c.title}\n${nextSolveMessage()}`, isSuccess: true }
         ]);
       }
       return;
@@ -451,14 +451,14 @@ export default function App() {
         }));
         setTerminalHistory(prev => [
           ...prev,
-          { type: 'output', text: `[★] FLAG ACCEPTED (+${res.points} XP)\n${[res.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`, isSuccess: true }
+          { type: 'output', text: `[★] FOUND IT (+${res.points} XP)\n${[res.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`, isSuccess: true }
         ]);
       }
     } catch (err) {
       sounds.playError();
       setTerminalHistory(prev => [
         ...prev,
-        { type: 'output', text: `[!] ${err.message || 'That flag did not match.'}\n    ${nextWrongAnswerMessage()}`, isError: true }
+        { type: 'output', text: `[!] ${err.message || 'That find did not match.'}\n    ${nextWrongAnswerMessage()}`, isError: true }
       ]);
     }
   };
@@ -573,7 +573,7 @@ export default function App() {
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveTab('terminal')}>
             <BrandMark size={22} />
             <span className="font-bold text-sm tracking-wider text-green-400 hidden md:inline">
-              SHELLGROUNDS
+              Shellgrounds
             </span>
           </div>
 
@@ -598,7 +598,7 @@ export default function App() {
                 : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <TerminalIcon size={14} /> <span className="hidden sm:inline">TERMINAL</span>
+            <TerminalIcon size={14} /> <span className="hidden sm:inline">Terminal</span>
           </button>
 
           <button
@@ -609,7 +609,7 @@ export default function App() {
                 : 'text-neutral-400 hover:text-white hover:bg-term-gray'
             }`}
           >
-            <Trophy size={14} /> <span className="hidden sm:inline">LEADERBOARD</span>
+            <Trophy size={14} /> <span className="hidden sm:inline">Leaderboard</span>
           </button>
 
           <button
@@ -617,7 +617,7 @@ export default function App() {
             className="px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-cyan-500/30"
             title="What this terminal simulates, and every command in it"
           >
-            <BookOpen size={14} /> <span className="hidden sm:inline">REFERENCE</span>
+            <BookOpen size={14} /> <span className="hidden sm:inline">Reference</span>
           </button>
 
           {session?.isAdmin && (
@@ -629,7 +629,7 @@ export default function App() {
                   : 'text-purple-400 hover:text-purple-300 hover:bg-purple-950/40'
               }`}
             >
-              <Shield size={14} /> <span className="hidden sm:inline">INSTRUCTOR</span>
+              <Shield size={14} /> <span className="hidden sm:inline">Instructor</span>
             </button>
           )}
         </div>
@@ -694,7 +694,7 @@ export default function App() {
               platform={platform}
               cwd={cwd}
               user={platform === 'windows' ? (currentPack.manifest.windows?.user || 'Student') : (currentPack.manifest.linux?.user || 'student')}
-              host={platform === 'windows' ? 'DESKTOP' : (currentPack.manifest.linux?.host || 'sandbox')}
+              host={platform === 'windows' ? 'Desktop' : (currentPack.manifest.linux?.host || 'sandbox')}
               terminalHistory={terminalHistory}
               currentInput={currentInput}
               setCurrentInput={setCurrentInput}

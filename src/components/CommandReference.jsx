@@ -32,7 +32,7 @@ const CommandCard = ({ cmd, page }) => (
     <div className="text-xs text-neutral-300 font-mono mb-2">{page.name}</div>
 
     <div className="text-[11px] text-neutral-400 font-mono mb-3">
-      <span className="text-neutral-500 uppercase tracking-wider text-[10px]">Synopsis: </span>
+      <span className="text-neutral-500 tracking-wider text-[10px]">Synopsis: </span>
       <code className="text-cyan-300">{page.synopsis}</code>
     </div>
 
@@ -40,7 +40,7 @@ const CommandCard = ({ cmd, page }) => (
 
     {page.options && page.options.length > 0 && (
       <div className="mb-3">
-        <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Options</div>
+        <div className="text-[10px] tracking-wider text-neutral-500 mb-1">Options</div>
         <div className="bg-term-gray rounded-lg border border-term-border p-2.5 space-y-1">
           {page.options.map((opt, i) => (
             <div key={i} className="text-[11px] font-mono text-neutral-300 whitespace-pre-wrap">{opt}</div>
@@ -51,7 +51,7 @@ const CommandCard = ({ cmd, page }) => (
 
     {page.examples && page.examples.length > 0 && (
       <div>
-        <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Examples</div>
+        <div className="text-[10px] tracking-wider text-neutral-500 mb-1">Examples</div>
         <div className="bg-term-gray rounded-lg border border-term-border p-2.5 space-y-1">
           {page.examples.map((ex, i) => (
             <div key={i} className="text-[11px] font-mono text-term-green/90 whitespace-pre-wrap">{ex}</div>
@@ -84,7 +84,7 @@ export const CommandReference = () => {
               <BookOpen size={24} />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-green-400">COMMAND REFERENCE</h1>
+              <h1 className="text-xl md:text-2xl font-bold text-green-400">Command reference</h1>
               <p className="text-xs text-neutral-400">
                 Every command Shellgrounds understands. On a real machine you get the same pages with <code className="text-term-green">man &lt;command&gt;</code> or <code className="text-term-green">&lt;command&gt; --help</code>.
               </p>
@@ -107,7 +107,7 @@ export const CommandReference = () => {
 
         {/* Linux commands */}
         <div className="space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2 select-none">
+          <div className="text-xs font-bold tracking-wider text-neutral-400 flex items-center gap-2 select-none">
             <TerminalSquare size={14} className="text-term-green" /> Linux ({linuxEntries.length})
           </div>
           {linuxEntries.length === 0 ? (
@@ -123,7 +123,7 @@ export const CommandReference = () => {
 
         {/* Windows commands */}
         <div className="space-y-3 pb-8">
-          <div className="text-xs font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-2 select-none">
+          <div className="text-xs font-bold tracking-wider text-neutral-400 flex items-center gap-2 select-none">
             <TerminalSquare size={14} className="text-cyan-400" /> Windows CMD ({windowsEntries.length})
           </div>
           {windowsEntries.length === 0 ? (

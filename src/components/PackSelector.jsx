@@ -65,7 +65,7 @@ export default function PackSelector({ isOpen, onClose, currentPackId, onSelectP
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-100 text-sm">{pack.name}</span>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                       v{pack.version}
                     </span>
                     {isSelected && (

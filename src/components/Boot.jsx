@@ -10,15 +10,20 @@ import {
 import { BrandMark } from './BrandMark';
 import { sounds } from '../utils/audio';
 
+// The words a student reads while they wait. This used to open with "Checking
+// system integrity" and "Verifying challenge integrity", which is the voice of
+// a system arming itself. The audience is somebody who is nervous about the
+// terminal, and the first thing they read should sound like a workshop being
+// opened up rather than a perimeter being secured.
 const BOOT_CHECKS = [
-  { id: 'integrity', label: 'Checking system integrity', icon: Cpu, duration: 250 },
-  { id: 'workstation', label: 'Preparing your workstation', icon: ArrowDownCircle, duration: 300 },
-  { id: 'vfs', label: 'Mounting the practice filesystem', icon: HardDrive, duration: 280 },
-  { id: 'pack', label: 'Loading challenge pack', icon: Database, duration: 320 },
-  { id: 'flags', label: 'Generating your personal flags', icon: Key, duration: 240 },
-  { id: 'verify', label: 'Verifying challenge integrity', icon: Shield, duration: 260 },
-  { id: 'board', label: 'Connecting the leaderboard', icon: Wifi, duration: 280 },
-  { id: 'ready', label: 'Terminal ready', icon: Activity, duration: 200 },
+  { id: 'integrity', label: 'Opening up', icon: Cpu, duration: 250 },
+  { id: 'workstation', label: 'Setting out your workstation', icon: ArrowDownCircle, duration: 300 },
+  { id: 'vfs', label: 'Laying out the practice files', icon: HardDrive, duration: 280 },
+  { id: 'pack', label: 'Bringing in your course', icon: Database, duration: 320 },
+  { id: 'flags', label: 'Setting aside your own finds', icon: Key, duration: 240 },
+  { id: 'verify', label: 'Checking everything is solvable', icon: Shield, duration: 260 },
+  { id: 'board', label: 'Saying hello to the leaderboard', icon: Wifi, duration: 280 },
+  { id: 'ready', label: 'Ready when you are', icon: Activity, duration: 200 },
 ];
 
 export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
@@ -93,13 +98,13 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
           <div className="flex items-center gap-3">
             <BrandMark size={28} />
             <div>
-              <div className="text-lg font-bold tracking-wider text-green-400">SHELLGROUNDS // BOOT</div>
+              <div className="text-lg font-bold tracking-wider text-green-400">Shellgrounds</div>
               <div className="text-xs text-neutral-400">{packName}</div>
             </div>
           </div>
           <div className="text-right">
             <div className="text-xs font-bold text-term-green px-2 py-0.5 rounded bg-term-green-faint border border-term-green/30">
-              SYSTEM CHECK
+              Getting ready
             </div>
             <div className="text-xs text-neutral-400 mt-1">{clockText}</div>
           </div>
@@ -107,7 +112,7 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
 
         {/* System initialization checks */}
         <div className="space-y-2 mb-6">
-          <div className="text-xs font-bold uppercase tracking-widest text-neutral-300 mb-3 flex items-center gap-2">
+          <div className="text-xs font-bold tracking-widest text-neutral-300 mb-3 flex items-center gap-2">
             <Terminal size={14} className="text-term-green" /> Startup checks
           </div>
 
@@ -176,14 +181,14 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
           <button
             onClick={handleFinish}
             disabled={!canSkip && !isReady}
-            className={`px-5 py-2 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2 rounded text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
               isReady
                 ? 'bg-term-green text-term-black hover:bg-green-400 shadow-[0_0_15px_rgba(34,197,94,0.4)]'
                 : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
             }`}
           >
             <Play size={12} fill="currentColor" />
-            {isReady ? 'START' : 'SKIP'}
+            {isReady ? 'Start' : 'Skip'}
           </button>
         </div>
       </div>

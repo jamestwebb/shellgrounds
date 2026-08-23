@@ -141,7 +141,7 @@ export const PackSettings = ({ onSaved }) => {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold flex items-center gap-2 text-term-green">
-            <Layers size={15} /> PACKS
+            <Layers size={15} /> Packs
           </h2>
           <p className="text-[11px] text-neutral-400 mt-1 max-w-xl">
             Each pack switched on is its own course, with its own leaderboard. Students pick
@@ -160,8 +160,8 @@ export const PackSettings = ({ onSaved }) => {
           }`}
         >
           {busy
-            ? <><RefreshCw size={12} className="animate-spin" /> SAVING</>
-            : <><Save size={12} /> {dirty ? 'SAVE CHANGES' : 'SAVED'}</>}
+            ? <><RefreshCw size={12} className="animate-spin" /> Saving</>
+            : <><Save size={12} /> {dirty ? 'Save changes' : 'Saved'}</>}
         </button>
       </div>
 
@@ -231,7 +231,7 @@ export const PackSettings = ({ onSaved }) => {
                   on ? 'text-term-green' : 'text-neutral-600'
                 }`}
               >
-                {on ? <><Check size={12} /> ON</> : 'OFF'}
+                {on ? <><Check size={12} /> On</> : 'Off'}
               </span>
             </div>
           );

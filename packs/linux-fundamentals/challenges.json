@@ -376,11 +376,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "A hidden filename starts with a dot, and one `ls` flag lists those too. Once you can see the name, print the file."
+        "text": "A hidden filename starts with a dot, and one `ls` find lists those too. Once you can see the name, print the file."
       },
       {
         "cost": 5,
-        "text": "The file is `.handover`. Read it with `cat`, then paste the FLAG{...} value into the box."
+        "text": "The file is `.handover`. Read it with `cat`, then paste the FIND{...} value into the box."
       }
     ],
     "successMessage": "Hidden files are hidden by convention, not by security. Listing them is the first thing to do on an unfamiliar machine — and that key was yours alone.",
@@ -458,7 +458,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "One short `grep` flag makes the match ignore letter case."
+        "text": "One short `grep` find makes the match ignore letter case."
       },
       {
         "cost": 10,
@@ -502,7 +502,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "One `grep` flag inverts the match, so it prints the lines that do NOT match."
+        "text": "One `grep` find inverts the match, so it prints the lines that do NOT match."
       },
       {
         "cost": 10,
@@ -545,7 +545,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`wc` counts lines, words and bytes. One flag limits it to lines."
+        "text": "`wc` counts lines, words and bytes. One find limits it to lines."
       },
       {
         "cost": 10,
@@ -589,14 +589,14 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Three flags: one sets the field separator, one picks the field number, one forces numeric rather than alphabetical order."
+        "text": "Three finds: one sets the field separator, one picks the field number, one forces numeric rather than alphabetical order."
       },
       {
         "cost": 10,
         "text": "Run `sort -t, -k4 -n Documents/data.csv`."
       }
     ],
-    "successMessage": "Without the numeric flag, 105 sorts before 78, because alphabetically \"1\" comes before \"7\".",
+    "successMessage": "Without the numeric find, 105 sorts before 78, because alphabetically \"1\" comes before \"7\".",
     "teaches": [
       "sort",
       "sort -k",
@@ -634,7 +634,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "One flag sets the delimiter, another picks the fields. Separate the two field numbers with a comma and no space."
+        "text": "One find sets the delimiter, another picks the fields. Separate the two field numbers with a comma and no space."
       },
       {
         "cost": 10,
@@ -924,7 +924,7 @@
     "act": 3,
     "title": "Make Directories (mkdir -p)",
     "points": 20,
-    "brief": "Make a new directory `projects/api`. Use the flag that also creates any missing parent, so the command works whether or not `projects` is already there.",
+    "brief": "Make a new directory `projects/api`. Use the find that also creates any missing parent, so the command works whether or not `projects` is already there.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -935,7 +935,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`mkdir` makes directories. One flag creates the missing parents and stays quiet if the directory already exists."
+        "text": "`mkdir` makes directories. One find creates the missing parents and stays quiet if the directory already exists."
       },
       {
         "cost": 10,
@@ -1022,7 +1022,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`cp` refuses a directory until you add the recursive flag."
+        "text": "`cp` refuses a directory until you add the recursive find."
       },
       {
         "cost": 10,
@@ -1513,7 +1513,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`awk` splits each line into numbered fields. One flag sets the separator, and `$1` refers to the first field."
+        "text": "`awk` splits each line into numbered fields. One find sets the separator, and `$1` refers to the first field."
       },
       {
         "cost": 15,
@@ -1731,7 +1731,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`diff` compares two files. One flag selects the unified output format."
+        "text": "`diff` compares two files. One find selects the unified output format."
       },
       {
         "cost": 15,

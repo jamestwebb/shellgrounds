@@ -2,17 +2,21 @@
 
 # Shellgrounds
 
-> **Learn the command line by capturing flags.**
+> **Learn the command line, one find at a time.**
 
 **Shellgrounds is a free command-line game you can run for your class.** Students open a
 web page, pick a handle, and learn real bash and Windows commands by solving small
-challenges and capturing flags — with a class leaderboard, badges, and hints for the ones
+challenges and finding things — with a class leaderboard, badges, and hints for the ones
 who get stuck. There is nothing to install and no server to maintain: it is a static site
 you deploy to Netlify's free tier by clicking a button, setting three settings, and telling
 your class one password. If you can make a Google Form, you can run this. Every student
-gets flags generated just for them, so answers cannot be copied — the only way onto the
-leaderboard is through the terminal. Setup takes about twenty minutes; the guide below
-walks through every step.
+finds something different, generated just for them, so answers cannot be copied — the only
+way onto the leaderboard is through the terminal. Setup takes about twenty minutes; the
+guide below walks through every step.
+
+*If you have run a capture-the-flag before: this is one, built for a classroom rather than
+a competition. Students never see the words "capture" or "flag" — they find things — but
+the mechanic is the one you know, and nothing here is timed or eliminating.*
 
 ---
 
@@ -125,7 +129,7 @@ ENABLED_PACKS=linux-fundamentals,windows-cmd-essentials
 ```
 
 The ids are `linux-fundamentals`, `windows-cmd-essentials`, and `forensics-cli-101`. Each
-enabled pack is its own CTF with its own leaderboard, so running two at once does not make
+enabled pack is its own contest with its own leaderboard, so running two at once does not make
 students compete across different material. A pack you switch off disappears from the
 switcher, and the site refuses to grade its challenges even for a student who saved the
 link from last term.

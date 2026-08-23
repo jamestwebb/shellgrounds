@@ -9,7 +9,7 @@
 
 // Shown when the server manifest could not be loaded. Flags are only ever generated
 // server-side (per-user HMAC); the client must never synthesize them locally.
-export const FLAG_UNAVAILABLE = '[FLAG UNAVAILABLE — refresh the page to re-sync with HQ]';
+export const FLAG_UNAVAILABLE = '[not loaded yet — refresh the page and try again]';
 
 /**
  * Injects user-specific flags into VFS file contents.

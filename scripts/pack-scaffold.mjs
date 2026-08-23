@@ -211,8 +211,8 @@ export async function scaffoldPack(packId, outDir = null, options = {}) {
       acceptedVariants: ['grep -c ERROR notes/log.txt', 'grep -c ERROR /home/student/notes/log.txt']
     },
     {
-      '//': 'A FLAG challenge. The student finds a FLAG{...} string and submits it, so there is no '
-        + 'command to check. The flag is per-student: the file holds the placeholder [[FLAG:<id>]] '
+      '//': 'A find challenge. The student locates a FIND{...} string and hands it in, so there is no '
+        + 'command to check. It is per-student: the file holds the placeholder [[FLAG:<id>]] '
         + 'and the server substitutes a value derived from the student handle, so a leaked flag is '
         + 'useless to anyone else.',
       id: `${p}-2-keycode`,
