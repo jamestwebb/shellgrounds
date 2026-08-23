@@ -144,6 +144,25 @@ feedback — the part that says whether you got it right — that is silent.
 
 **Fix:** one `role="status"` container for feedback.
 
+### A6b — Two overlays claim to be modal and do not behave like one
+
+`SimulationBoundary.jsx:27` and `PackSelector.jsx:23` set `role="dialog"` and
+`aria-modal="true"` on a positioned `<div>`, and stop there. Neither traps
+focus, so a keyboard user Tabs straight out of the dialog into the page behind
+it while the page still claims to be inert; neither closes on Escape; neither
+restores focus on close.
+
+`aria-modal="true"` is a promise to assistive technology about behaviour the
+page has to implement. Making it and not keeping it is worse than not making
+it, because a screen reader will present the rest of the page as unavailable
+when it is not.
+
+**Fixed for the third one.** The hint-cost confirmation moved off
+`window.confirm` and onto the platform's `<dialog>` + `showModal()`
+(`ConfirmDialog.jsx`), which supplies focus containment, Escape, dialog
+semantics and focus restoration without a line of trap code. The same component
+is what these two should become.
+
 ### A6 — No skip link, and one landmark short
 
 `App.jsx` has `<header>` and `<main>` but no `<nav>`, and no skip link. The tab

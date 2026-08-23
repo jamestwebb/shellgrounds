@@ -10,6 +10,7 @@ import { practiceState } from '../../packages/engine/practice.js';
 import { ACT_DEFINITIONS, isActUnlockedFor, requiredSolvesToUnlock } from '../data/challenges';
 import { nextWrongAnswerMessage, actLockedCopy } from '../copy';
 import { sounds } from '../utils/audio';
+import { ConfirmDialog } from './ConfirmDialog';
 
 // Helper to highlight backtick-wrapped commands in text
 const formatBriefText = (text) => {
@@ -106,6 +107,20 @@ export const ChallengeSidebar = ({
 
   const [openingHint, setOpeningHint] = useState(false);
 
+  // The hint awaiting a yes or no, or null. Holds the cost as it was when the
+  // student clicked, so the figures in the dialog cannot drift under them.
+  const [pendingHint, setPendingHint] = useState(null);
+
+  // What a hint actually costs this challenge, in the terms a student cares
+  // about: not "minus ten", but "you can still earn twenty of thirty".
+  const hintArithmetic = (cost) => {
+    const worth = currentChallenge?.points || 0;
+    const spentAlready = (currentChallenge?.hints || [])
+      .slice(0, paidHints)
+      .reduce((sum, h) => sum + (h.cost || 0), 0);
+    return { worth, spentAlready, cost, remaining: Math.max(0, worth - spentAlready - cost) };
+  };
+
   const handleRevealNextHint = async (cost) => {
     if (!currentChallenge?.hints || openingHint) return;
     if (hintsRevealedCount >= currentChallenge.hints.length) return;
@@ -118,11 +133,17 @@ export const ChallengeSidebar = ({
       return;
     }
 
+    // A free hint needs no ceremony. A costed one is asked about in the page
+    // rather than in a browser dialog -- see ConfirmDialog for why that swap
+    // needed the platform's <dialog> and not another hand-rolled overlay.
     if (cost > 0) {
-      const ok = window.confirm(`This hint costs ${cost} XP, subtracted from this challenge's points. Reveal it?`);
-      if (!ok) return;
+      setPendingHint({ index: hintsRevealedCount, cost });
+      return;
     }
+    await openHintNow();
+  };
 
+  const openHintNow = async () => {
     sounds.playKeypress();
     setOpeningHint(true);
     try {
@@ -564,6 +585,42 @@ export const ChallengeSidebar = ({
           </div>
         </div>
       )}
+
+      {/* Spending points is the one thing here a student cannot undo, so it is
+          asked in the page, with the arithmetic shown rather than a bare cost. */}
+      <ConfirmDialog
+        open={!!pendingHint}
+        title={`Reveal hint ${(pendingHint?.index ?? 0) + 1}?`}
+        confirmLabel={`Reveal it (-${pendingHint?.cost ?? 0} XP)`}
+        cancelLabel="Not yet"
+        onCancel={() => setPendingHint(null)}
+        onConfirm={async () => {
+          setPendingHint(null);
+          await openHintNow();
+        }}
+      >
+        {pendingHint && (() => {
+          const a = hintArithmetic(pendingHint.cost);
+          return (
+            <>
+              <p>
+                This hint costs <span className="text-term-amber font-bold">{a.cost} XP</span>, taken
+                off what this challenge can still pay you.
+              </p>
+              <p className="text-neutral-400">
+                {currentChallenge?.title} is worth {a.worth} XP
+                {a.spentAlready > 0 && <> and you have spent {a.spentAlready} on hints already</>}.
+                Take this one and you can still earn{' '}
+                <span className="text-term-green font-bold">{a.remaining} XP</span> for it.
+              </p>
+              <p className="text-neutral-500">
+                Solving it is worth more than the points. A hint you needed is cheaper than
+                twenty minutes stuck.
+              </p>
+            </>
+          );
+        })()}
+      </ConfirmDialog>
     </div>
   );
 };

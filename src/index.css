@@ -78,3 +78,21 @@
   white-space: nowrap;
   border-width: 0;
 }
+
+/* The <dialog> backdrop. The element renders in the top layer, so this is the
+   whole of the dimming: no fixed-position overlay, no z-index, no scroll lock. */
+.sg-dialog::backdrop {
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(2px);
+}
+
+/* A dialog is display:none until it is open, so the entrance cannot be animated
+   from the closed state. Animating only the open state keeps it honest, and
+   prefers-reduced-motion above already collapses it to nothing. */
+.sg-dialog[open] {
+  animation: sg-dialog-in 120ms ease-out;
+}
+@keyframes sg-dialog-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
