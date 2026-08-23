@@ -111,6 +111,10 @@ sits next to the field.
 | `name` | string | **yes** | — | The title a student sees in the pack picker. |
 | `version` | string | no | `"1.0.0"` | Your own version number. The platform does not interpret it. |
 | `platforms` | array | **yes** | — | `["linux"]`, `["windows"]`, or both. Each one needs its own filesystem. The first is the default. |
+| `description` | string | no, but write one | — | The paragraph a student reads when choosing between courses. 600 characters at most. §3.1. |
+| `icon` | string | no, but write one | `📦` | One or two emoji. How your course is recognised in a list. §3.1. |
+| `cover` | string | no | — | An image, embedded. Raster data URI only — never SVG, never a web address. §3.2. |
+| `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |
 | `linux` | object | if used | — | `{ home, user, host, shell }` — see below. |
 | `windows` | object | if used | — | `{ home, user, shell }` — see below. |
 | `theme` | object | no | platform default | `{ accent, titleBar, sidebarTone }`. |
@@ -118,6 +122,54 @@ sits next to the field.
 | `courseTools` | object | no | `{}` | Real tools you name but do not simulate. |
 | `acts` | array | **yes** | — | §4. |
 | `badges` | array | no | `[]` | §5. |
+
+### 3.1 How your course introduces itself
+
+Three fields decide what a student knows before they type anything. A pack works without
+them and the validator only warns, but a course with none of them is a name in a list.
+
+```json
+{
+  "icon": "🔭",
+  "description": "You are the overnight operator at the Meridian Observatory. The day crew left the dome in a state, the night log needs reading, and nobody is coming to help until dawn. Starts at \"where am I?\" and ends with you writing a pipeline. No prior experience assumed.",
+  "briefing": {
+    "heading": "The Night Shift",
+    "body": "It is 21:40 and the dome is yours until sunrise.\n\nThe day crew went home in a hurry...",
+    "youWillLearn": [
+      "Move around a filesystem and always know where you are",
+      "Search text with grep, and count what you find"
+    ]
+  }
+}
+```
+
+| Field | Limit | Where it appears |
+|---|---|---|
+| `description` | 600 characters | The card, when a site offers more than one course. Say what the scenario is and who it is for. |
+| `briefing.heading` | short | The title of the briefing screen. Usually the scenario's name. |
+| `briefing.body` | 1500 characters | The briefing screen. A blank line starts a new paragraph. |
+| `briefing.youWillLearn` | 12 lines | Under "By the end you will be able to". Write **what a student will be able to do**, not which commands appear. "Count the lines that match a pattern" teaches more than "`grep -c`". |
+
+A student sees the briefing **once per pack**. It is not a reference page, and anything a
+student needs twice belongs in a challenge brief or a hint instead.
+
+### 3.2 `cover` — the one field that is not text
+
+A pack may carry an image. It has to be embedded, as a base64 `data:` URI:
+
+```json
+"cover": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg…"
+```
+
+| Rule | Why |
+|---|---|
+| PNG, JPEG, WebP or GIF | These are pixels. |
+| **Never SVG** | SVG is a document that can carry `<script>`. Accepting one would let a pack author run code in every student's browser — the exact hole that was closed when the `js` predicate was removed. There is no safe subset worth the risk; export a PNG. |
+| **Never a web address** | A remote image makes a student's browser call somebody else's server. That tells a third party who is studying and from where, breaks a site used offline or behind a school proxy, and lets the picture be swapped for something else after a teacher approved the pack. A reviewed pack must stay the pack that was reviewed. |
+| 128 KB at most | A pack file is something teachers email each other. |
+
+If you have no image, use `icon` instead. An emoji costs nothing, works everywhere, and is
+what all three shipped packs use.
 
 ### `linux` / `windows`
 

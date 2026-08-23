@@ -110,6 +110,28 @@ export async function saveSiteConfig(enabledPacks) {
   return data;
 }
 
+/**
+ * Records that a student has read an introduction screen.
+ *
+ * Deliberately never throws and never blocks: the worst outcome of a failure
+ * is being shown a screen you have already read, which is not worth stopping
+ * somebody from starting their course over.
+ */
+export async function markScreenSeen(what, packId = null) {
+  if (!getAuthToken()) return null;
+  try {
+    const res = await fetch(`${API_BASE}/seen`, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ what, packId })
+    });
+    const data = await parseJsonSafe(res);
+    return data?.seen || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchManifest(packId) {
   if (!getAuthToken()) return { flags: {} };
   const qs = packId ? `?packId=${encodeURIComponent(packId)}` : '';

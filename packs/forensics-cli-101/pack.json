@@ -6,6 +6,21 @@
     "linux",
     "windows"
   ],
+  "icon": "🧭",
+  "description": "A digital-forensics case worked from the command line, from arriving at the bench to carving a file out of a disk image. Written for a cyber-forensics course, and it teaches general CLI skill through the case. Assumes you have met a terminal before.",
+  "briefing": {
+    "heading": "The Aurora Case",
+    "body": "You are first on scene at the bench. The exhibits are logged, the machine is yours, and the case will be built from what you can show — not from what you remember doing.\n\nForensics work is ordinary command-line work done carefully. You will look at files without changing them, prove what a file really is rather than what it claims to be, and carry a number from one command into the next without writing it down wrong.\n\nAct VI moves to the seized Windows laptop and does the same work again in cmd.exe, because a case does not choose its operating system for you.",
+    "youWillLearn": [
+      "Get your bearings on an unfamiliar machine",
+      "Read a file’s true type from its magic bytes, not its extension",
+      "Take and check a forensic hash",
+      "Search a filesystem with grep and find",
+      "Build multi-stage pipelines that answer a real question",
+      "Read a partition table and carry a sector offset",
+      "Do the same work again in Windows CMD"
+    ]
+  },
   "linux": {
     "home": "/home/examiner",
     "user": "examiner",

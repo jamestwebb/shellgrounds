@@ -13,6 +13,7 @@ import { ERROR_MARKERS } from '../constants.js';
 import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
+import { validatePresentation } from './presentation.js';
 
 const TEST_SECRET = 'pack-validator-secret';
 const TEST_HANDLE = 'validator_bot';
@@ -149,6 +150,7 @@ export async function validatePack(packObj, options = {}) {
       actProgression: { pass: true, actsCount: manifest.acts.length, gatedActsChecked: 0 },
       briefCommands: { pass: true, commandsTested: 0 },
       manPageFlags: { pass: true, flagsChecked: 0 },
+      presentation: { pass: true, checked: false, hasDescription: false, hasIcon: false, hasCover: false, hasBriefing: false },
       coverageReport: {}
     }
   };
@@ -157,6 +159,20 @@ export async function validatePack(packObj, options = {}) {
     results.checks[check].pass = false;
     results.errors.push(msg);
   };
+
+  // How the pack introduces itself. Checked for every pack, not only for one
+  // loaded from a file, because a directory pack a teacher wrote by hand is
+  // exactly the one likely to be missing its description.
+  {
+    const p = validatePresentation(manifest);
+    results.checks.presentation.checked = true;
+    results.checks.presentation.hasDescription = typeof manifest.description === 'string' && manifest.description.trim().length > 0;
+    results.checks.presentation.hasIcon = typeof manifest.icon === 'string' && manifest.icon.trim().length > 0;
+    results.checks.presentation.hasCover = typeof manifest.cover === 'string' && manifest.cover.length > 0;
+    results.checks.presentation.hasBriefing = !!manifest.briefing?.body;
+    for (const e of p.errors) fail('presentation', e);
+    results.warnings.push(...p.warnings);
+  }
 
   // ── CHECK 0: single-file pack format ───────────────────────────────────────
   // Runs only for a pack that came from a .pack.json. A directory pack has no

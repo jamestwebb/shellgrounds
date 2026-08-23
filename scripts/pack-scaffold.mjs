@@ -70,6 +70,26 @@ export async function scaffoldPack(packId, outDir = null, options = {}) {
     version: '1.0.0',
     platforms: ['linux'],
     '// platforms': 'One or both of "linux" and "windows". Each needs its own fs.<platform>.json.',
+
+    '// icon': 'One emoji. It is how your course is recognised in a list of them.',
+    icon: '📁',
+    '// description': 'The paragraph a student reads when choosing between courses. Two or three sentences: what the scenario is, and who it is for. 600 characters at most.',
+    description: `${name} is a starter course. Replace this description with what your `
+      + 'students will actually be doing, and who it is for.',
+    '// briefing': 'What a student reads once, before their first command. "body" is required; blank lines separate paragraphs. "youWillLearn" is what they will be able to do at the end, not a list of commands.',
+    briefing: {
+      heading: 'Your briefing',
+      body: 'Set the scene here. Say where the student is, what has gone wrong, and what they '
+        + 'are expected to produce.\n\nThen tell them nothing can break, and that the first hint '
+        + 'on every challenge is free.',
+      youWillLearn: [
+        'Find your way around a filesystem',
+        'Read a file without opening an editor',
+        'Count the lines that match a pattern'
+      ]
+    },
+
+    '// cover': 'Optional. An image, embedded as a data: URI -- "data:image/png;base64,...". PNG, JPEG, WebP or GIF, 128 KB at most. Not SVG, which can carry scripts, and never a web address, which would tell someone else\'s server who your students are. Delete this line to use the emoji instead.',
     linux: {
       '//': 'Who the student is, and where they start. The home directory must exist in fs.linux.json.',
       home: '/home/student',

@@ -2,7 +2,23 @@
   "id": "windows-cmd-essentials",
   "name": "Windows CMD Essentials: Lost & Found",
   "version": "1.1.0",
-  "platforms": ["windows"],
+  "platforms": [
+    "windows"
+  ],
+  "icon": "🔎",
+  "description": "A laptop arrives at a university lost-property desk with no name on it. Find out whose it is, tidy it up, and fill in the property form — using cmd.exe and nothing else. Real Windows commands, not bash wearing a C:\\ prompt. No prior experience assumed.",
+  "briefing": {
+    "heading": "Lost & Found",
+    "body": "Laptop LF-2291. Handed in at the library desk on Tuesday. No name, no case, no charger.\n\nBefore it can be returned it has to be identified, tidied, and written up on the property form. You have the machine and a Command Prompt. You do not have a mouse, a file explorer, or anyone who knows whose laptop this is.\n\nThese are the real commands, with the real switches. What you learn here works on any Windows machine you sit down at, including the ones that have had everything else locked down.",
+    "youWillLearn": [
+      "Walk a Windows disk with CD and DIR, including hidden files",
+      "Read files and see the shape of a folder tree",
+      "Copy, move, rename and delete from the prompt",
+      "Search inside files with FINDSTR",
+      "Read the machine’s own environment variables",
+      "Check a file’s hash and record it properly"
+    ]
+  },
   "windows": {
     "home": "C:\\Users\\Student",
     "user": "Student",
