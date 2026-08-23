@@ -100,6 +100,13 @@ export const Reveal = ({ packId, handle }) => {
   const image = data.hasImage
     ? (getPack(data.packId)?.manifest?.reveal || getPack(data.packId)?.manifest?.cover || null)
     : null;
+  // The line the pack prints under its finished picture — read from the local
+  // pack for the same reason the art is. It is held back until the last square
+  // turns over, because it says what the picture was, and a picture that
+  // announces itself while it is still covered is not being uncovered.
+  const caption = complete
+    ? (getPack(data.packId)?.manifest?.revealCaption || null)
+    : null;
   // Progress is a share of the picture, not a count of squares. The squares are
   // only how it is drawn, and the grid gets finer as the class gets bigger.
   const pct = Math.round((data.fraction ?? (total ? uncovered / total : 0)) * 100);
@@ -170,6 +177,16 @@ export const Reveal = ({ packId, handle }) => {
           })}
         </div>
       </div>
+
+      {/* ── What it turned out to be ─────────────────────────────────────── */}
+      {caption && (
+        <p
+          className="text-xs text-neutral-200 leading-relaxed border-l-2 pl-3 py-0.5"
+          style={{ borderColor: accent || undefined }}
+        >
+          {caption}
+        </p>
+      )}
 
       {/* ── Where it has got to ──────────────────────────────────────────── */}
       <div>

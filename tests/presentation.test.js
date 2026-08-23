@@ -17,13 +17,16 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-  validatePresentation, checkCoverImage,
+  validatePresentation, checkCoverImage, MAX_REVEAL_CAPTION_LENGTH,
   ALLOWED_COVER_TYPES, MAX_COVER_BYTES, MAX_DESCRIPTION_LENGTH
 } from '../packages/engine/validate/presentation.js';
 import { PACKS } from '../packs/index.js';
 
 /** A base64 payload of roughly `bytes` bytes. */
 const payload = (bytes) => 'A'.repeat(Math.ceil(bytes / 3) * 4);
+
+/** A small, valid embedded picture — enough to satisfy the cover rules. */
+const PNG = `data:image/png;base64,${payload(64)}`;
 
 describe('the cover image cannot carry code', () => {
   it('refuses SVG, whatever it is spelled like', () => {
@@ -114,6 +117,32 @@ describe('the fields a pack introduces itself with', () => {
     const blank = { ...base, briefing: { body: 'x', youWillLearn: ['fine', '   '] } };
     expect(validatePresentation(blank).errors.length).toBe(1);
   });
+
+  it('refuses a reveal caption that is not text', () => {
+    expect(validatePresentation({ ...base, revealCaption: 42 }).errors.join(' '))
+      .toMatch(/must be a non-empty string/);
+    expect(validatePresentation({ ...base, revealCaption: '   ' }).errors.join(' '))
+      .toMatch(/must be a non-empty string/);
+  });
+
+  it('refuses a reveal caption long enough to compete with the picture', () => {
+    const long = { ...base, revealCaption: 'x'.repeat(MAX_REVEAL_CAPTION_LENGTH + 1) };
+    expect(validatePresentation(long).errors.join(' '))
+      .toMatch(new RegExp(`limit is ${MAX_REVEAL_CAPTION_LENGTH}`));
+    const fine = { ...base, revealCaption: 'x'.repeat(MAX_REVEAL_CAPTION_LENGTH) };
+    expect(validatePresentation(fine).errors).toEqual([]);
+  });
+
+  // Neither half is an error on its own -- a pack may ship no picture at all --
+  // but each half without the other is somebody halfway through a thought.
+  it('warns about a caption with no picture, and a picture with no caption', () => {
+    expect(validatePresentation({ ...base, revealCaption: 'It was the robot.' }).warnings.join(' '))
+      .toMatch(/nobody will read it/);
+    expect(validatePresentation({ ...base, reveal: PNG }).warnings.join(' '))
+      .toMatch(/decoration/);
+    expect(validatePresentation({ ...base, reveal: PNG, revealCaption: 'It was the robot.' }).warnings)
+      .toEqual([]);
+  });
 });
 
 describe('every shipped pack introduces itself', () => {
@@ -141,6 +170,26 @@ describe('every shipped pack introduces itself', () => {
       // promises six things and has one act is selling something else.
       it('has at least as many acts as it takes to deliver the promise', () => {
         expect((m.acts || []).length).toBeGreaterThan(0);
+      });
+
+      it('says what the class uncovered, not just that they uncovered it', () => {
+        expect(m.reveal).toBeTruthy();
+        expect(m.revealCaption).toBeTruthy();
+      });
+
+      // The picture is sized to the class, so a class finishes it well before
+      // its slowest student finishes the pack. Whoever is still on Act II reads
+      // this caption, which makes it the one piece of end-of-story text that
+      // must not carry an answer. A number is the way that happens: the sector
+      // offset and the event id are both answers, and both are just digits.
+      it('does not hand a mid-course student an answer', () => {
+        const answers = new Set();
+        for (const c of pack.challenges) {
+          const encoded = JSON.stringify(c.success || {}) + ' ' + JSON.stringify(c.flag || '');
+          for (const n of encoded.matchAll(/\d{3,}/g)) answers.add(n[0]);
+        }
+        const leaked = [...answers].filter(n => m.revealCaption.includes(n));
+        expect(leaked).toEqual([]);
       });
     });
   }
