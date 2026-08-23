@@ -9,7 +9,33 @@ import { GENERATED_PACKS } from './registry.gen.js';
 // import it, and Vite's import.meta.glob only solves the browser half — hence a
 // generated file of plain static imports, committed so deploying needs no
 // extra step. Regenerate with:  node scripts/build-registry.mjs
-export const PACKS = GENERATED_PACKS;
+// A directory pack's JSON is imported raw, so its `//` comment keys arrive in
+// the object. A single-file pack has them stripped on load. That difference is
+// invisible until something compares the two -- an export round trip, or a UI
+// that iterates manifest keys -- and then it looks like data loss rather than
+// what it is. Strip here, so a comment means exactly one thing in both shapes:
+// a note for whoever opens the file, never a field.
+const withoutComments = (value) => {
+  if (Array.isArray(value)) return value.map(withoutComments);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (typeof k === 'string' && k.startsWith('//')) continue;
+      out[k] = withoutComments(v);
+    }
+    return out;
+  }
+  return value;
+};
+
+export const PACKS = Object.fromEntries(
+  Object.entries(GENERATED_PACKS).map(([id, pack]) => [id, {
+    ...pack,
+    manifest: withoutComments(pack.manifest),
+    challenges: withoutComments(pack.challenges),
+    help: pack.help ? withoutComments(pack.help) : pack.help
+  }])
+);
 
 export const DEFAULT_PACK_ID = 'forensics-cli-101';
 

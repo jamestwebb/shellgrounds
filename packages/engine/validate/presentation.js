@@ -127,9 +127,13 @@ export function validatePresentation(manifest = {}) {
     warnings.push('manifest.icon is missing. One emoji makes the pack recognisable in a list.');
   }
 
-  if (manifest.cover !== undefined) {
-    const cover = checkCoverImage(manifest.cover);
-    if (!cover.ok) errors.push(cover.error);
+  // Two image fields, one set of rules. `cover` is the small card in a list;
+  // `reveal` is the picture a class uncovers together. Neither may be an SVG
+  // and neither may be a web address -- see checkCoverImage for why.
+  for (const field of ['cover', 'reveal']) {
+    if (manifest[field] === undefined) continue;
+    const checked = checkCoverImage(manifest[field]);
+    if (!checked.ok) errors.push(checked.error.replace('manifest.cover', `manifest.${field}`));
   }
 
   if (manifest.briefing !== undefined) {

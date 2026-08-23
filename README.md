@@ -142,6 +142,24 @@ configured yet; once you save from the screen, the screen wins.
 Scores are never affected. Switching a pack off hides it and stops the site grading its
 challenges; switching it back on brings every score, solve and hint back exactly as it was.
 
+### Competition, or a class working together
+
+Under **Packs** in the instructor view you also choose what your class sees:
+
+- **A shared picture** (the default). Every find by anyone turns over one square of an
+  image from the course. Names appear, nothing is ranked, and the picture finishes well
+  before the last student does — so nobody is ever visibly holding up the class.
+- **A leaderboard.** The familiar ranked board, by points.
+
+Either way you keep the full ranking and the gradebook in the instructor console, because
+marks have to come from somewhere. This decides what the *class* is shown.
+
+The shared picture is the default deliberately. A public ranking pushes students toward
+looking competent rather than becoming competent, and for a first-year who is already
+frightened of the terminal, being shown as 23rd of 24 confirms the thing they feared. Those
+are the students the free first hint and the no-timers rule exist to protect. But you know
+your class and some cohorts genuinely want a board, which is why it is one click away.
+
 **You can also write your own.** A pack is a folder of JSON, or one `.pack.json` file you
 can email to another teacher. See [`docs/PACK-FORMAT.md`](docs/PACK-FORMAT.md) to author
 one and `node bin/shellgrounds.js new <name>` to start from a working scaffold.
