@@ -12,7 +12,9 @@
     "dev:functions": "node scripts/dev-functions.mjs",
     "dev:local": "./scripts/start-dev.sh",
     "registry": "node scripts/build-registry.mjs",
-    "prebuild": "node scripts/build-registry.mjs"
+    "prebuild": "node scripts/build-registry.mjs",
+    "dev:seed": "node scripts/dev-seed.mjs",
+    "dev:reset": "node scripts/dev-seed.mjs --reset"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.13",

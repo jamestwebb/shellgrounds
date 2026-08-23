@@ -53,9 +53,39 @@ function useDevCredentials() {
   return creds;
 }
 
-const DevCredentials = ({ creds, onFill }) => {
+/** Dev only: become an existing account without registering it again. */
+async function devSignIn(handle, asInstructor = false) {
+  const base = import.meta.env?.VITE_API_BASE || '/api';
+  const res = await fetch(`${base}/dev-signin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ handle, instructor: asInstructor })
+  });
+  if (!res.ok) throw new Error('The local dev server did not sign that account in.');
+  return res.json();
+}
+
+const DevCredentials = ({ creds, onFill, onSignedIn }) => {
   const [shown, setShown] = useState(false);
+  const [busy, setBusy] = useState(null);
+  const [err, setErr] = useState(null);
   if (!DEV || !creds) return null;
+
+  const become = async (handle, asInstructor) => {
+    setBusy(handle);
+    setErr(null);
+    try {
+      const { token, handle: who } = await devSignIn(handle, asInstructor);
+      onSignedIn(who, token);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const instructor = creds.adminHandles?.[0];
+  const students = (creds.handles || []).filter(h => h !== instructor);
 
   const rows = [
     ['Class password', creds.classPassword],
@@ -77,6 +107,40 @@ const DevCredentials = ({ creds, onFill }) => {
           {shown ? 'Hide' : 'Show values'}
         </button>
       </div>
+
+      {/* One click to be somebody. The whole point of the panel. */}
+      <div className="mt-2.5 flex flex-wrap gap-1.5">
+        {instructor && (
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => become(instructor, true)}
+            className="px-2 py-1 rounded border border-amber-700/60 bg-amber-900/30 text-amber-200
+                       text-[11px] font-bold hover:bg-amber-900/60 cursor-pointer disabled:opacity-50"
+          >
+            {busy === instructor ? 'signing in…' : `instructor · @${instructor}`}
+          </button>
+        )}
+        {students.map(h => (
+          <button
+            key={h}
+            type="button"
+            disabled={busy !== null}
+            onClick={() => become(h, false)}
+            className="px-2 py-1 rounded border border-term-border bg-term-black text-neutral-300
+                       text-[11px] hover:border-term-green/60 hover:text-white cursor-pointer disabled:opacity-50"
+          >
+            {busy === h ? 'signing in…' : `@${h}`}
+          </button>
+        ))}
+        {students.length === 0 && (
+          <span className="text-[11px] text-neutral-500">
+            No students yet — run <code className="text-neutral-400">npm run dev:seed</code> for a class.
+          </span>
+        )}
+      </div>
+
+      {err && <p className="mt-1.5 text-[11px] text-red-300">{err}</p>}
 
       {shown ? (
         <>
@@ -200,7 +264,11 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
           </div>
         )}
 
-        <DevCredentials creds={devCreds} onFill={fillFromDev} />
+        <DevCredentials
+          creds={devCreds}
+          onFill={fillFromDev}
+          onSignedIn={(who, token) => onAuthenticated(who, token)}
+        />
 
         {/* Registration Form */}
         <form onSubmit={handleRegister} className="space-y-5">

@@ -71,15 +71,64 @@ const server = http.createServer(async (req, res) => {
   // reveal a setup code is not merely switched off in production — it was
   // never uploaded. A guard that can be misconfigured is a guard that will be.
   if (name === 'dev-credentials') {
+    const store = await import('../netlify/functions/utils/store.js');
+    let handles = [];
+    try {
+      handles = (await store.listPlayers()).map(p => p.handle).sort();
+    } catch { /* an empty store is fine; the panel just offers no shortcuts */ }
+
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       dev: true,
       classPassword: process.env.CLASS_PASSWORD || null,
       setupCode: process.env.INSTRUCTOR_SETUP_CODE || null,
       adminHandles: (process.env.ADMIN_HANDLES || '')
-        .split(',').map(h => h.trim()).filter(Boolean)
+        .split(',').map(h => h.trim()).filter(Boolean),
+      // Everyone already registered, so the panel can offer one-click sign-in
+      // as any of them instead of making you remember who exists.
+      handles
     }));
     console.log(`${req.method} /dev-credentials -> 200 (this server only)`);
+    return;
+  }
+
+  // ── Dev-only: become any existing account, in one click ───────────────────
+  // Registration refuses a handle that is already taken, and there is no
+  // password login for an existing one, so switching between a student and the
+  // instructor otherwise means clearing the store and starting again. This
+  // mints a session token directly.
+  //
+  // It lives here for the same reason as the credentials route: Netlify deploys
+  // netlify/functions/ and nothing else, so no version of this is ever
+  // uploaded. There is no equivalent on a real site — see tests/dev-credentials.
+  if (name === 'dev-signin') {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const body = JSON.parse(Buffer.concat(chunks).toString() || '{}');
+    const handle = String(body.handle || '').trim();
+
+    const secret = process.env.SESSION_SECRET;
+    if (!handle || !secret) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'A handle and a SESSION_SECRET are both needed.' }));
+      return;
+    }
+
+    const store = await import('../netlify/functions/utils/store.js');
+    const { createSessionToken } = await import('../packages/engine/crypto-utils.js');
+    const { defaultPackId } = await import('../netlify/functions/utils/enabled.js');
+
+    await store.createPlayer(handle);          // no-op when they already exist
+    if (body.instructor) await store.setInstructorFlag(handle, true);
+
+    const packId = await defaultPackId();
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({
+      success: true,
+      handle,
+      token: createSessionToken(secret, handle, packId)
+    }));
+    console.log(`${req.method} /dev-signin -> 200 as @${handle}${body.instructor ? ' (instructor)' : ''}`);
     return;
   }
 
