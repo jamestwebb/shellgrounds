@@ -92,7 +92,7 @@ releases are optional; simpler to launch Acts I–III on day one and IV–V by W
 
 ## 3. What we lift from White Rabbit (verified against the codebase)
 
-> Source survey: `the White Rabbit codebase dump` is a
+> Source survey: the White Rabbit codebase dump is a
 > **stale Jan-2026 dump** — the terminal trainer is not in it. The real code is in the live tree.
 
 **Lift essentially as-is:**

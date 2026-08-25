@@ -69,11 +69,6 @@ browser — nothing is executed on a server, and there is no server to execute i
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/jamestwebb/shellgrounds)
 
-> **Before this button works, the GitHub repository must be renamed to
-> `jamestwebb/shellgrounds`.** It is still published under its old name, and the button
-> above points at the new one. Rename the repo first, or edit the URL to match wherever
-> the code actually lives.
-
 Clicking the button makes your own copy of the code, builds it, and puts it on the web at
 a free `*.netlify.app` address. On the way through, Netlify asks you for three things:
 
