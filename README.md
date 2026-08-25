@@ -43,12 +43,12 @@ and rebuild every term. [Set it up in twenty minutes →](#deploy-it-for-your-cl
   analytics, no third-party scripts. That is the whole answer to the privacy question.
 - **Answers cannot be passed around.** Every find is generated from the student's own
   handle, so the string that scores for one student scores for nobody else.
-- **A shared picture by default, a leaderboard only if you want one.** Every find turns
-  over one square of a class image: names show, nothing is ranked, and it finishes well
-  before the slowest student does. A public ranking pushes students toward looking
-  competent rather than becoming competent, and being shown as 23rd of 24 confirms exactly
-  what a frightened first-year already suspected. Switch to a board in one click; the full
-  ranking and the gradebook stay in the instructor console either way.
+- **Collaboration by default.** Every find turns over one square of a shared class
+  picture: names show, nothing is ranked. A public board pushes students toward
+  *performance* goals, looking competent, when what a course wants is *mastery* goals,
+  becoming competent, and the cost falls hardest on the students already most anxious
+  about a terminal. A leaderboard is one click away if your cohort wants one, and the
+  full ranking and the gradebook stay in the instructor console either way.
 - **WCAG 2.1 AA, and honest about the gaps.** Six terminal schemes, all contrast-tested at
   4.5:1; colour is never the only signal. What is unfinished is
   [listed by name](docs/ACCESSIBILITY.md).
