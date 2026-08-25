@@ -75,6 +75,19 @@ export const resumeSelection = (challenges, solves) => {
   return challenges[challenges.length - 1] || challenges[0];
 };
 
+// A public demonstration deployment. Set VITE_DEMO_MODE=1 on that site only.
+//
+// This is an EXPLICIT flag, not something inferred from configuration. Deducing
+// "demo" from a missing CLASS_PASSWORD would mean a teacher who simply forgot to
+// set one gets a friendly demo screen instead of the error telling them their
+// deployment is broken.
+const DEMO_MODE = import.meta.env?.VITE_DEMO_MODE === '1'
+  || import.meta.env?.VITE_DEMO_MODE === 'true';
+
+// Shown on the demo so a visitor can register and see scoring work for real. A
+// class deployment never exposes its password anywhere in the interface.
+const DEMO_CLASS_PASSWORD = import.meta.env?.VITE_DEMO_CLASS_PASSWORD || '';
+
 export default function App() {
   // Navigation & Session States
   const [viewState, setViewState] = useState('boot');
@@ -750,7 +763,69 @@ export default function App() {
   if (viewState === 'gate') {
     return (
       <div className="min-h-screen bg-term-void flex flex-col">
+        {DEMO_MODE ? (
+          <div className="pt-8 px-6">
+            <div className="max-w-md mx-auto rounded-lg border border-term-green/40
+                            bg-term-green-faint p-4 space-y-3">
+              <p className="text-[11px] font-bold text-term-green tracking-widest">
+                THIS IS A DEMONSTRATION SITE
+              </p>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                A free command-line training ground for high school and university
+                technology educators. Everything here is real except the class: pick a
+                handle below, use the password shown here, and you are a student. Your
+                deployment gets its own private class, its own password and its own
+                scores.
+              </p>
+              {DEMO_CLASS_PASSWORD && (
+                <p className="text-xs text-neutral-300">
+                  Class password for this demo:{' '}
+                  <code className="px-1.5 py-0.5 rounded bg-term-black text-green-300
+                                   border border-term-green/40 select-all">
+                    {DEMO_CLASS_PASSWORD}
+                  </code>
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <a
+                  href="https://github.com/jamestwebb/shellgrounds"
+                  className="text-xs font-bold text-term-green hover:text-green-300 underline"
+                >
+                  Source and setup guide
+                </a>
+                <a
+                  href="https://app.netlify.com/start/deploy?repository=https://github.com/jamestwebb/shellgrounds"
+                  aria-label="Deploy your own copy to Netlify"
+                >
+                  <img
+                    src="https://www.netlify.com/img/deploy/button.svg"
+                    alt="Deploy your own copy to Netlify"
+                    className="h-7"
+                  />
+                </a>
+              </div>
+            </div>
+            <div className="text-center pt-4">
+              <button
+                onClick={handleStartPractice}
+                className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
+              >
+                Or skip the handle and just practise. Nothing is scored.
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center pb-6">
+            <button
+              onClick={handleStartPractice}
+              className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
+            >
+              Just looking? Practise here without a handle. Nothing is scored.
+            </button>
+          </div>
+        )}
         <Gate
+          fullHeight={!DEMO_MODE}
           onAuthenticated={handleAuthenticated}
           onResumeSession={(h) => {
             setSession({ handle: h, isAdmin: false });
@@ -759,14 +834,6 @@ export default function App() {
           existingHandle={session?.handle}
           packName={currentPack.manifest.name}
         />
-        <div className="text-center pb-6">
-          <button
-            onClick={handleStartPractice}
-            className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
-          >
-            Just looking? Practise here without a handle — nothing is scored.
-          </button>
-        </div>
       </div>
     );
   }

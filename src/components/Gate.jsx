@@ -170,7 +170,11 @@ const DevCredentials = ({ creds, onFill, onSignedIn }) => {
   );
 };
 
-export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packName = 'Shellgrounds' }) => {
+export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packName = 'Shellgrounds',
+  // A demo deployment puts an explanatory panel above this, and two
+  // full-height centred blocks stacked leaves a screen of dead space
+  // between them.
+  fullHeight = true }) => {
   const [handle, setHandle] = useState(existingHandle || '');
   const [password, setPassword] = useState('');
   // Only an instructor needs this. It is what stops a student claiming the
@@ -231,7 +235,7 @@ export const Gate = ({ onAuthenticated, onResumeSession, existingHandle, packNam
   };
 
   return (
-    <div className="min-h-screen bg-term-void text-neutral-200 flex flex-col items-center justify-center p-4 font-mono select-none">
+    <div className={`${fullHeight ? 'min-h-screen justify-center' : 'pt-4 pb-10'} bg-term-void text-neutral-200 flex flex-col items-center p-4 font-mono select-none`}>
       {/* Background ambient grid/scanline effect */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-term-green-faint/15 via-transparent to-transparent pointer-events-none" />
 
