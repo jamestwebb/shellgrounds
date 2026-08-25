@@ -4,8 +4,6 @@
 import { describe, it, expect } from 'vitest';
 import { runPipeline } from '../packages/engine/shell/exec.js';
 import { buildFS, file } from '../packages/engine/vfs/builder.js';
-import { registry } from '../packages/engine/commands/registry.js';
-import { ERROR_MARKERS } from '../packages/engine/constants.js';
 
 function createTestLinuxFs() {
   return buildFS({

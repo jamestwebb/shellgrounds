@@ -3,7 +3,7 @@
 
 import { resolvePath, findVfsKey, dirname, basename } from '../../vfs/path.js';
 import {
-  stat, readFile, writeFile, mkdir, rmdir, unlink, copyFile, moveFile
+  readFile, mkdir, rmdir, unlink, copyFile, moveFile
 } from '../../vfs/ops.js';
 import { md5, sha256Sync } from '../../crypto-utils.js';
 
@@ -275,7 +275,7 @@ export const findstrWinCmd = {
     try {
       const regPattern = flags.c ? pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : pattern;
       regex = new RegExp(regPattern, isIgnoreCase ? 'i' : '');
-    } catch (err) {
+    } catch {
       return { stdout: '', stderr: `FINDSTR: Invalid search expression\r\n`, status: 2 };
     }
 
@@ -621,7 +621,7 @@ export const rdWinCmd = {
   },
   usage: 'RMDIR [/S] [/Q] [drive:]path or RD [/S] [/Q] [drive:]path',
   man: { name: 'RD - Removes a directory.', synopsis: 'RD [/S] [/Q] [drive:]path', description: 'Removes (deletes) a directory.' },
-  run({ flags, operands, cwd, fs }) {
+  run({ _flags, operands, cwd, fs }) {
     if (operands.length === 0) return { stdout: '', stderr: 'The syntax of the command is incorrect.\r\n', status: 1 };
     let workingFs = { ...fs };
     for (const op of operands) {
@@ -741,7 +741,7 @@ export const ipconfigWinCmd = {
   },
   usage: 'ipconfig [/all | /renew [adapter] | /release [adapter] | /flushdns | /displaydns | /registerdns | /showclassid adapter | /setclassid adapter [classid] ]',
   man: { name: 'IPCONFIG - Displays IP configuration.', synopsis: 'ipconfig [/all]', description: 'Displays all current TCP/IP network configuration values.' },
-  run({ flags }) {
+  run({ _flags }) {
     const lines = [
       '',
       'Windows IP Configuration',

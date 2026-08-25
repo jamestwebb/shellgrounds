@@ -173,6 +173,139 @@ export function splitPipes(input, isWindows = false) {
   return { stages };
 }
 
+/**
+ * Bash syntax this shell does not implement.
+ *
+ * Before this existed the tokenizer had no opinion about `echo $(date)`: `$(`
+ * matched no expansion rule, so the literal characters were handed to echo and
+ * the student saw `$(date)` printed back with an exit status of 0. That is
+ * worse than an error. A command that fails teaches the student the tool has a
+ * limit; a command that silently prints the wrong thing teaches them that this
+ * is what bash does.
+ *
+ * So each construct here gets the same answer the engine gives for a real
+ * command it has not built: real, not simulated here, and what to do instead.
+ * A pack can replace the wording through context.unsupportedSyntaxMessage.
+ */
+const UNSUPPORTED_CONSTRUCTS = {
+  commandSubstitution: {
+    syntax: '$(...)',
+    message: '$(...): real bash syntax, but not simulated here. Run the inner command on its own first, then type its output yourself.'
+  },
+  backtickSubstitution: {
+    syntax: '`...`',
+    message: '`...`: real bash syntax, but not simulated here. It is the older spelling of $(...). Run the inner command on its own first, then type its output yourself.'
+  },
+  arithmeticExpansion: {
+    syntax: '$((...))',
+    message: '$((...)): real bash syntax, but not simulated here. Work the arithmetic out yourself and type the number.'
+  },
+  processSubstitution: {
+    syntax: '<(...)',
+    message: '<(...): real bash syntax, but not simulated here. Write the first command output to a file, then use that file.'
+  },
+  outputProcessSubstitution: {
+    syntax: '>(...)',
+    message: '>(...): real bash syntax, but not simulated here. Write the output to a file, then run the second command on that file.'
+  }
+};
+
+/**
+ * The compound-command keywords. They are recognised in COMMAND POSITION ONLY,
+ * which is the whole difficulty: `if`, `for`, `while` and `case` are ordinary
+ * words as well as keywords, and `grep if file` searches for the string "if".
+ * A blacklist over the whole line would refuse that perfectly good command, so
+ * the check looks at the first word of a stage and nowhere else, and only when
+ * that word is unquoted.
+ */
+const COMPOUND_KEYWORDS = new Set(['if', 'for', 'while', 'case']);
+
+function keywordMessage(word) {
+  return `${word}: real bash syntax, but not simulated here. This shell runs one command at a time, so loops and conditionals do not work.`;
+}
+
+/** Is there a closing backtick after position `open`, outside a backslash escape? */
+function hasClosingBacktick(input, open) {
+  for (let j = open + 1; j < input.length; j++) {
+    if (input[j] === '\\') {
+      j++;
+      continue;
+    }
+    if (input[j] === '`') return true;
+  }
+  return false;
+}
+
+/**
+ * Scans a whole command line for syntax this shell cannot run.
+ *
+ * It runs over the RAW line, before any splitting on ; && || or |, because
+ * those operators appear inside the constructs themselves: splitting
+ * `echo $(cd /tmp; ls)` first would hide the pair of backticks or parentheses
+ * in two different pieces and the scan would find nothing.
+ *
+ * Single quotes switch it off, because `echo '$(date)'` really does print the
+ * literal text in bash. Double quotes do not, because "$(date)" really does
+ * substitute in bash.
+ *
+ * Returns { syntax, message } or null.
+ */
+export function detectUnsupportedSyntax(input) {
+  let inSingle = false;
+  let inDouble = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i];
+
+    if (ch === '\\' && !inSingle) {
+      i++;
+      continue;
+    }
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (inSingle) continue;
+
+    if (ch === '$' && input[i + 1] === '(') {
+      return input[i + 2] === '('
+        ? UNSUPPORTED_CONSTRUCTS.arithmeticExpansion
+        : UNSUPPORTED_CONSTRUCTS.commandSubstitution;
+    }
+    if (ch === '`' && hasClosingBacktick(input, i)) {
+      return UNSUPPORTED_CONSTRUCTS.backtickSubstitution;
+    }
+    // Process substitution is a redirection operator followed immediately by
+    // an open parenthesis, so it has to be caught before the tokenizer reads
+    // `<(sort a)` as a redirection from a file called "(sort".
+    if (!inDouble && ch === '<' && input[i + 1] === '(') {
+      return UNSUPPORTED_CONSTRUCTS.processSubstitution;
+    }
+    if (!inDouble && ch === '>' && input[i + 1] === '(') {
+      return UNSUPPORTED_CONSTRUCTS.outputProcessSubstitution;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * The first word of a stage, but only when it was typed unquoted.
+ *
+ * `"if"` and `'for'` are quoted words and bash treats them as command names,
+ * not keywords, so a quoted first word is never a compound command.
+ */
+export function commandPositionWord(rawTokens) {
+  const first = rawTokens && rawTokens[0];
+  if (!first || first.length !== 1) return null;
+  if (first[0].type !== 'unquoted') return null;
+  return first[0].value;
+}
+
 function unquoteTarget(raw) {
   if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     return raw.slice(1, -1);
@@ -377,6 +510,17 @@ export function tokenizeCommandLine(input, isWindows = false) {
     return { lists: [] };
   }
 
+  // Syntax this shell cannot run is caught on the RAW line, before any
+  // splitting: the operators the splitters look for (; && || |) also appear
+  // inside the constructs themselves. Windows cmd has none of these forms, so
+  // the scan is bash-only.
+  if (!isWindows) {
+    const unsupported = detectUnsupportedSyntax(trimmed);
+    if (unsupported) {
+      return { error: unsupported.message, unsupportedSyntax: unsupported, lists: [] };
+    }
+  }
+
   const splitListRes = splitCommandList(trimmed, isWindows);
   if (splitListRes.error) {
     return { error: splitListRes.error, lists: [] };
@@ -396,6 +540,18 @@ export function tokenizeCommandLine(input, isWindows = false) {
       if (stageRes.error) {
         return { error: stageRes.error, lists: [] };
       }
+
+      // A compound keyword counts only as the first word of a stage. Every
+      // stage reaching here is one, because the list and pipe splitters have
+      // already run, so this is exactly command position and nowhere else.
+      if (!isWindows) {
+        const word = commandPositionWord(stageRes.rawTokens);
+        if (word && COMPOUND_KEYWORDS.has(word)) {
+          const unsupported = { syntax: word, message: keywordMessage(word) };
+          return { error: unsupported.message, unsupportedSyntax: unsupported, lists: [] };
+        }
+      }
+
       stages.push({
         ...stageRes,
         pipeBoth: stageObj.pipeBoth

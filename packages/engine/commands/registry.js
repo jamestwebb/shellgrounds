@@ -183,7 +183,6 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false, comman
       }
 
       // 2. Short option(s) e.g. -la, -n 5, -n5, -n+2, -n-2
-      let stopParsing = false;
 
       for (let j = 0; j < body.length; j++) {
         const char = body[j];
@@ -216,7 +215,8 @@ export function parseCommandArgs(argv, flagSpecs = {}, isWindows = false, comman
             val = argv[++i];
           }
           flags[char] = spec.type === 'number' ? Number(val) : String(val);
-          stopParsing = true;
+          // The break below is what stops the cluster; nothing ever read the
+          // flag that used to be set here alongside it.
           break;
         } else {
           flags[char] = true;

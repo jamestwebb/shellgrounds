@@ -2,7 +2,7 @@
 // Tab completion engine for Linux and Windows, derived directly from registry and VFS
 
 import { registry } from './commands/registry.js';
-import { resolvePath, findVfsKey, dirname, basename } from './vfs/path.js';
+import { resolvePath, findVfsKey } from './vfs/path.js';
 
 /**
  * Computes tab completion results for current input line

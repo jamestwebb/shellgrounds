@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { runPipeline } from '../packages/engine/shell/exec.js';
-import { buildFS, file, dir } from '../packages/engine/vfs/builder.js';
+import { buildFS, file } from '../packages/engine/vfs/builder.js';
 import { md5 } from '../packages/engine/crypto-utils.js';
 
 const README = 'hello\nworld\n';
@@ -656,7 +656,7 @@ describe('Defect 4: flags that cannot be honoured are refused, not ignored', () 
     ['tail -f readme.txt', 'tail', '-f']
   ];
 
-  for (const [cmd, tool, flag] of refusals) {
+  for (const [cmd, , flag] of refusals) {
     it(`${cmd} refuses ${flag} honestly`, () => {
       const res = run(cmd);
       expect(res.status).not.toBe(0);

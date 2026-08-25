@@ -137,7 +137,7 @@ const SKIP = new Set(['help', 'man', 'submit', 'clear', 'cls']);
 /**
  * Returns a one-line coach explanation for an executed command line, or null.
  */
-export function explainCommand(input, res, platform = 'linux', prevCwd = '/', packExplainers = {}) {
+export function explainCommand(input, res, _platform = 'linux', prevCwd = '/', packExplainers = {}) {
   const trimmed = (input || '').trim();
   if (!trimmed) return null;
 

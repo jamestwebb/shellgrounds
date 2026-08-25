@@ -6,7 +6,6 @@ import { expandWord } from './expand.js';
 import { applyRedirections } from './streams.js';
 import { parseCommandArgs, registry } from '../commands/registry.js';
 import { unknownCommandMessage } from '../unknown-command.js';
-import { ERROR_MARKERS } from '../constants.js';
 import { resolvePath } from '../vfs/path.js';
 import { readFile, writeFile } from '../vfs/ops.js';
 
@@ -172,7 +171,8 @@ function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
     packCommands = {},
     packHelp = {},
     packTools = {},
-    unsimulatedMessage
+    unsimulatedMessage,
+    unsupportedSyntaxMessage
   } = context;
 
   const inferredHome = isWindows
@@ -186,7 +186,15 @@ function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
 
   const tokenized = tokenizeCommandLine(input, isWindows);
   if (tokenized.error) {
-    const errorMsg = isWindows ? `'${input.trim()}' is not recognized.\r\n` : `bash: ${tokenized.error}\n`;
+    // Syntax the tokenizer refused because this shell does not implement it is
+    // not a syntax error the student made, so it does not get bash's
+    // syntax-error voice. A pack replaces the wording through
+    // context.unsupportedSyntaxMessage, the same seam unsimulatedMessage uses
+    // for a real command the simulator does not run; with none supplied the
+    // tokenizer's own engine wording stands.
+    const errorMsg = tokenized.unsupportedSyntax
+      ? `${unsupportedSyntaxMessage || tokenized.error}${isWindows ? '\r\n' : '\n'}`
+      : (isWindows ? `'${input.trim()}' is not recognized.\r\n` : `bash: ${tokenized.error}\n`);
     return {
       output: errorMsg,
       stdout: '',

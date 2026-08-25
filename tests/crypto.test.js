@@ -8,8 +8,7 @@ import {
   createSessionToken,
   verifySessionToken,
   md5,
-  sha256Sync,
-  toBase32
+  sha256Sync
 } from '../packages/engine/crypto-utils.js';
 
 describe('Cryptographic Engine & Session Integrity', () => {

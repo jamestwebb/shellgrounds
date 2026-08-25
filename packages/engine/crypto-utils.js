@@ -384,7 +384,7 @@ export function verifySessionToken(sessionSecret, token) {
       return { handle, expiry, packId };
     }
     return null;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

@@ -3,7 +3,7 @@
 
 import { resolvePath, findVfsKey, dirname, basename } from '../../vfs/path.js';
 import {
-  stat, readFile, writeFile, mkdir, rmdir, unlink, chmod, chown, copyFile, moveFile, touch, formatMode, hasPermission
+  stat, readFile, writeFile, mkdir, unlink, chmod, chown, copyFile, moveFile, touch, formatMode, hasPermission
 } from '../../vfs/ops.js';
 import { md5, sha256Sync } from '../../crypto-utils.js';
 import { parseCommandArgs } from '../registry.js';
@@ -670,7 +670,7 @@ export const grepCmd = {
     ],
     examples: ['grep error access.log', 'grep -i "vault" secrets.txt', 'grep -r "admin" /var/log']
   },
-  run({ flags, operands, cwd, fs, stdin, user }) {
+  run({ flags, operands, cwd, fs, stdin, _user }) {
     if (operands.length === 0 && !(typeof flags.e === 'string' && flags.e.length > 0)) {
       return { stdout: '', stderr: 'Usage: grep [OPTION]... PATTERNS [FILE]...\nTry \'grep --help\' for more information.\n', status: 2 };
     }
@@ -1882,7 +1882,7 @@ export const fileCmd = {
     options: ['-b, --brief   do not prepend filenames to output lines', '-i, --mime    output MIME type strings'],
     examples: ['file mystery_file', 'file -b evidence.img']
   },
-  run({ flags, operands, cwd, fs, user }) {
+  run({ flags, operands, cwd, fs, _user }) {
     if (operands.length === 0) {
       return { stdout: '', stderr: 'Usage: file [-b] [file...]\n', status: 1 };
     }
@@ -3407,7 +3407,203 @@ export const findCmd = {
   }
 };
 
-// 47. man & help
+// 47. dd
+//
+// The operands dd accepts here, and the ones it knowingly does not.
+//
+// A real operand this simulator has not built gets the same answer
+// realFlags.js gives a real option it has not built: "real, but not simulated
+// here". Telling a student that `conv=noerror` is unrecognized would teach
+// them something false about dd, and a learner cannot tell an incomplete
+// simulator from their own mistake unless the simulator says which it is.
+const DD_OPERANDS = new Set(['if', 'of', 'bs', 'skip', 'count']);
+const DD_REAL_OPERANDS = new Set([
+  'ibs', 'obs', 'cbs', 'seek', 'conv', 'iflag', 'oflag', 'status'
+]);
+
+// GNU dd's own suffix table. K is 1024 and kB is 1000, and they are different
+// numbers, so the lookup is case sensitive on purpose.
+const DD_MULTIPLIERS = {
+  c: 1,
+  w: 2,
+  b: 512,
+  kB: 1000, K: 1024, KiB: 1024,
+  MB: 1000 ** 2, M: 1024 ** 2, MiB: 1024 ** 2,
+  GB: 1000 ** 3, G: 1024 ** 3, GiB: 1024 ** 3
+};
+
+/** Parses a dd operand value such as 512, 4K or 1MB. Returns null if invalid. */
+export function parseDdNumber(text) {
+  const m = /^(\d+)(.*)$/.exec(String(text));
+  if (!m) return null;
+  const base = Number(m[1]);
+  if (!m[2]) return base;
+  const mult = DD_MULTIPLIERS[m[2]];
+  return mult ? base * mult : null;
+}
+
+/**
+ * The byte count in dd's last summary line.
+ *
+ * GNU prints the plain count on its own below 1000 bytes, and adds the SI and
+ * the IEC readings above it: `1024 bytes (1.0 kB, 1.0 KiB) copied`. Both
+ * readings round the way every other size in this simulator rounds — one
+ * decimal below ten units, whole numbers above.
+ */
+export function ddByteSummary(bytes) {
+  const scale = (base, units) => {
+    let value = bytes;
+    let unit = 0;
+    while (value >= base && unit < units.length - 1) {
+      value /= base;
+      unit++;
+    }
+    if (unit === 0) return `${Math.round(value)} ${units[0]}`;
+    return value < 10 ? `${value.toFixed(1)} ${units[unit]}` : `${Math.round(value)} ${units[unit]}`;
+  };
+
+  const noun = bytes === 1 ? 'byte' : 'bytes';
+  if (bytes < 1000) return `${bytes} ${noun} copied`;
+
+  const si = scale(1000, ['B', 'kB', 'MB', 'GB', 'TB']);
+  const iec = scale(1024, ['B', 'KiB', 'MiB', 'GiB', 'TiB']);
+  return `${bytes} ${noun} (${si}, ${iec}) copied`;
+}
+
+/**
+ * dd is the only command here that copies a REGION of a file rather than all
+ * of it, which is what makes it the tool for lifting a partition out of a disk
+ * image at a known offset. A course that needs to do that and has no dd ends
+ * up inventing a command of its own, and a student who learns an invented
+ * command has learned something that exists on no real machine.
+ *
+ * skip= counts BLOCKS of bs bytes, NOT bytes. That is the whole lesson of the
+ * operand: `skip=2048 bs=512` starts at byte 1048576. A version that skipped
+ * 2048 bytes would still print a summary, still write a file, and be wrong
+ * every single time — the worst kind of simulation defect, because nothing
+ * about it looks broken.
+ *
+ * The summary goes to stderr, exactly where real dd puts it, so `dd ... | wc`
+ * pipes the data and not the report. It stops after the byte count, where real
+ * dd goes on to print the elapsed time and a transfer rate: this simulator has
+ * no clock and no device, and an invented "2.1 MB/s" would be a measurement of
+ * nothing at all.
+ */
+export const ddCmd = {
+  name: 'dd',
+  platforms: ['linux'],
+  flags: {},
+  usage: 'dd [if=FILE] [of=FILE] [bs=BYTES] [skip=N] [count=N]',
+  man: {
+    name: 'dd - convert and copy a file',
+    synopsis: 'dd [if=FILE] [of=FILE] [bs=BYTES] [skip=N] [count=N]',
+    description: 'Copy a file, reading and writing in blocks of BYTES bytes. skip and count are counted in BLOCKS of bs bytes, not in bytes, which is how dd lifts one region out of a much larger image. Without if= it reads standard input; without of= it writes standard output. The record and byte counts are written to standard error.',
+    options: [
+      'if=FILE    read from FILE instead of standard input',
+      'of=FILE    write to FILE instead of standard output',
+      'bs=BYTES   read and write up to BYTES bytes at a time (default 512)',
+      'skip=N     skip N blocks of bs bytes at the start of the input',
+      'count=N    copy only N blocks of bs bytes'
+    ],
+    examples: [
+      'dd if=disk.img of=partition.img bs=512 skip=2048',
+      'dd if=disk.img bs=512 count=1',
+      'dd if=disk.img bs=512 skip=2048 count=1 | xxd'
+    ]
+  },
+  run({ operands, cwd, fs, stdin, user }) {
+    const settings = { if: null, of: null, bs: 512, skip: 0, count: null };
+
+    for (const op of operands) {
+      const eq = op.indexOf('=');
+      const key = eq === -1 ? op : op.slice(0, eq);
+      const value = eq === -1 ? null : op.slice(eq + 1);
+
+      if (DD_REAL_OPERANDS.has(key)) {
+        return {
+          stdout: '',
+          stderr: `dd: ${key}= is real, but it is not simulated here (see the Reference tab).\n`,
+          status: 1
+        };
+      }
+
+      if (eq === -1 || !DD_OPERANDS.has(key)) {
+        return {
+          stdout: '',
+          stderr: `dd: unrecognized operand '${op}'\nTry 'dd --help' for more information.\n`,
+          status: 1
+        };
+      }
+
+      if (key === 'if' || key === 'of') {
+        settings[key] = value;
+        continue;
+      }
+
+      const num = parseDdNumber(value);
+      // bs=0 is rejected by real dd as well: a block has to have a size.
+      if (num === null || (key === 'bs' && num === 0)) {
+        return {
+          stdout: '',
+          stderr: `dd: invalid number: '${value}'\n`,
+          status: 1
+        };
+      }
+      settings[key] = num;
+    }
+
+    // With no if=, dd reads standard input, and with no of= it writes standard
+    // output. That is not an error and must not be reported as one: `dd
+    // if=disk.img bs=512 count=1 | xxd` is the ordinary way to look at a boot
+    // sector.
+    let content;
+    if (settings.if === null) {
+      content = stdin || '';
+    } else {
+      const resolved = resolvePath(cwd, settings.if, false);
+      const res = readFile(fs, resolved, false, { user });
+      if (!res.ok) {
+        // readFile reports "<reason>: <path>"; dd reports "failed to open '<name>': <reason>".
+        const reason = String(res.error).replace(/:\s*[^:]*$/, '');
+        return {
+          stdout: '',
+          stderr: `dd: failed to open '${settings.if}': ${reason}\n`,
+          status: 1
+        };
+      }
+      content = res.content;
+    }
+
+    const start = settings.skip * settings.bs;
+    const limit = settings.count === null ? content.length : start + settings.count * settings.bs;
+    // A skip past the end of a regular file is not an error: the read simply
+    // returns nothing, and dd reports 0+0 records.
+    const data = start >= content.length ? '' : content.slice(start, limit);
+
+    const full = Math.floor(data.length / settings.bs);
+    const partial = data.length % settings.bs === 0 ? 0 : 1;
+    const summary = `${full}+${partial} records in\n${full}+${partial} records out\n${ddByteSummary(data.length)}\n`;
+
+    if (settings.of === null) {
+      return { stdout: data, stderr: summary, status: 0 };
+    }
+
+    const outPath = resolvePath(cwd, settings.of, false);
+    const written = writeFile(fs, outPath, data, false, { user });
+    if (!written.ok) {
+      const reason = String(written.error).replace(/:\s*[^:]*$/, '');
+      return {
+        stdout: '',
+        stderr: `dd: failed to open '${settings.of}': ${reason}\n`,
+        status: 1
+      };
+    }
+
+    return { stdout: '', stderr: summary, status: 0, fs: written.fs };
+  }
+};
+
+// 48. man & help
 export const manCmd = {
   name: 'man',
   platforms: ['linux'],
@@ -3470,5 +3666,5 @@ export const ALL_LINUX_COMMANDS = [
   md5sumCmd, sha256sumCmd, mkdirCmd, rmdirCmd, touchCmd, cpCmd, mvCmd, rmCmd, chmodCmd,
   chownCmd, statCmd, duCmd, dfCmd, echoCmd, testCmd, trueCmd, falseCmd, whichCmd, historyCmd,
   envCmd, exportCmd, psCmd, killCmd, jobsCmd, sudoCmd, viCmd, nanoCmd, tarCmd, gzipCmd,
-  clearCmd, findCmd, manCmd, helpCmd
+  clearCmd, findCmd, ddCmd, manCmd, helpCmd
 ];

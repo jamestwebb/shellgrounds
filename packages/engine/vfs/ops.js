@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Virtual Filesystem Operations: read, write, mkdir, unlink, chmod, chown, stat
 
-import { normalizePath, resolvePath, findVfsKey, dirname, basename } from './path.js';
+import { normalizePath, findVfsKey, dirname, basename } from './path.js';
 import { md5, sha256Sync } from '../crypto-utils.js';
 
 /**
  * Parses numeric or symbolic mode string into octal number
  * Examples: '755' -> 0o755, '644' -> 0o644, 'u+x' -> modifies currentMode
  */
-export function parseMode(modeStr, currentMode = 0o644, isDir = false) {
+export function parseMode(modeStr, currentMode = 0o644, _isDir = false) {
   if (typeof modeStr === 'number') {
     return modeStr;
   }
