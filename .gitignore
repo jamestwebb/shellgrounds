@@ -3,4 +3,27 @@ dist/
 .env
 .netlify/
 *.log
+
+# Local tooling state. These were tracked in defiance of this file for months:
+# a rule nothing enforces is a rule that quietly stops being true.
 .termai/
+
+# Working material — third-party audits, research and review notes. Kept on
+# disk, deliberately out of the repository: they record findings AS REPORTED,
+# before verification, and several did not survive it. Published, they read as
+# claims about the current state, which they are not.
+docs/research/
+
+# Netlify's Edge Functions lockfile. This project has no edge functions and
+# netlify.toml declares none; `netlify dev` writes the file regardless.
+deno.lock
+
+# Editors and operating systems
+.DS_Store
+.vscode/
+.idea/
+
+# Test, coverage and browser-automation output
+coverage/
+test-results/
+playwright-report/
