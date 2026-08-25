@@ -17,6 +17,8 @@
 <p align="center">
   <a href="#deploy-it-for-your-class">Deploy it</a> ·
   <a href="docs/FAQ.md">FAQ</a> ·
+  <a href="docs/CAMPAIGNS.md">Campaigns</a> ·
+  <a href="docs/TEACHING.md">Teaching with it</a> ·
   <a href="packs/AUTHORING.md">Write a campaign</a> ·
   <a href="docs/PACK-FORMAT.md">Pack format</a> ·
   <a href="docs/ACCESSIBILITY.md">Accessibility</a>
@@ -103,120 +105,24 @@ If you deployed this site before it was renamed from The Gauntlet, you may have 
 value into `SHELLGROUNDS_STORE` and delete the old one.
 
 ---
-
 ## What your students get
 
-Three packs ship with the site — **104 challenges in total**. Students switch packs from
-the header, and each one is a full campaign with its own machine, its own story, and its own
-badges. Nothing is shared between them, so a student can finish one and start another
-without losing anything.
+Three campaigns ship with the site — **106 challenges** in total. Students switch between
+them from the header, and each is a full campaign with its own machine, its own story and
+its own badges.
 
-### Linux Fundamentals: The Night Shift
+| Campaign | Size | Platform | Start here if |
+|---|---|---|---|
+| **Linux Fundamentals: The Night Shift** — overnight operator at an observatory | 46 challenges · 4 acts | Linux | your class has never used a terminal. It begins at `pwd` and ends with a student writing a pipeline. |
+| **Windows CMD Essentials: Lost & Found** — identify an unclaimed laptop | 30 challenges · 3 acts | Windows | you teach Windows administration. Real `cmd.exe`, not bash wearing a `C:\` prompt. |
+| **Forensics CLI 101: The Aurora Case** — a case worked from the bench to a carved disk image | 30 challenges · 6 acts | Both, over WSL | your students already have the basics. Written for a cyber-forensics course. |
 
-**44 challenges · 4 acts · Linux · no prior experience assumed**
+**[Read what each act teaches →](docs/CAMPAIGNS.md)**
 
-You are the overnight operator at the Meridian Observatory. The day crew left the dome in a
-state, the night log needs reading, and nobody is coming to help until dawn. This is the
-one to start a class on: it begins at `pwd` and ends with a student writing a pipeline.
-
-| Act | What it teaches |
-|---|---|
-| 🔭 I — Opening the Dome | Paths, `ls`, `cd`, reading files, wildcards |
-| 📜 II — Reading the Night Log | `grep`, `wc`, `sort`, `head`/`tail`, `cut`, and the first pipe |
-| 🔐 III — Keys to the Dome | `mkdir`, `cp`, `mv`, `rm`, `chmod`, octal modes, `sudo` |
-| 🌅 IV — Handover at Dawn | `find`, `sed`, `awk`, `tee`, `diff`, redirection, `&&` and `||`, exit status |
-
-### Windows CMD Essentials: Lost & Found
-
-**30 challenges · 3 acts · Windows · no prior experience assumed**
-
-A laptop arrives at a university lost-property desk with no name on it. Your job is to find
-out whose it is, tidy it up, and fill in the property form — using `cmd.exe` and nothing
-else. Real CMD, not bash wearing a `C:\` prompt.
-
-| Act | What it teaches |
-|---|---|
-| 🔎 I — Whose Machine Is This? | `CD`, `DIR` and its switches, `TYPE`, `TREE`, `WHERE` |
-| 📁 II — Tidy It Up | `COPY`, `MOVE`, `REN`, `DEL`, `MD`/`RD`, `SET` and `%VAR%` |
-| 🧾 III — Fill In the Form | `FINDSTR`, pipes, `SYSTEMINFO`, `TASKLIST`, `IPCONFIG`, `CERTUTIL` hashing |
-
-### Forensics CLI 101: The Aurora Case
-
-**30 challenges · 6 acts · Linux and Windows · assumes the basics**
-
-A digital-forensics case worked from the command line, from first arrival at the bench to
-carving a file out of a disk image. Written for a cyber-forensics course, but it teaches
-general CLI skill through the case rather than the other way round. Students who have done
-one of the two packs above will be comfortable here; students who have not will struggle.
-
-| Act | What it teaches |
-|---|---|
-| 🧭 I — First on Scene | Bearings: prompt, paths, what is really in a directory |
-| 📜 II — Reading the Evidence | `cat`, `file`, magic bytes, `md5sum`, chain of custody |
-| 🔎 III — Following the Trail | `grep`, `find`, `man`, and the WSL `/mnt/c` bridge |
-| 🔧 IV — The Pipeline | Pipes, redirection, filters, multi-stage analysis |
-| 🏁 V — Closing the Case | Partition tables, carrying a sector offset, carving a container |
-| 🪟 VI — The Seized Laptop | The same work in Windows CMD: `dir /a`, `findstr`, `attrib`, `certutil` |
-
-### Choosing which packs your class sees
-
-By default students see all three. To run one campaign at a time, set `ENABLED_PACKS` to a
-comma-separated list of ids:
-
-```
-ENABLED_PACKS=linux-fundamentals
-ENABLED_PACKS=linux-fundamentals,windows-cmd-essentials
-```
-
-The ids are `linux-fundamentals`, `windows-cmd-essentials`, and `forensics-cli-101`. Each
-enabled pack is its own contest with its own leaderboard, so running two at once does not make
-students compete across different material. A pack you switch off disappears from the
-switcher, and the site refuses to grade its challenges even for a student who saved the
-link from last term.
-
-You do not have to use the variable at all. **Sign in as the instructor and open the
-Packs tab** — the same choice is there as a row of switches, it applies immediately, and it
-needs no redeploy. `ENABLED_PACKS` is only the starting point for a site nobody has
-configured yet; once you save from the screen, the screen wins.
-
-Scores are never affected. Switching a pack off hides it and stops the site grading its
-challenges; switching it back on brings every score, solve and hint back exactly as it was.
-
-### Competition, or a class working together
-
-Under **Packs** in the instructor view you also choose what your class sees:
-
-- **A shared picture** (the default). Every find by anyone turns over one square of an
-  image from the campaign. Names appear, nothing is ranked, and the picture finishes well
-  before the last student does — so nobody is ever visibly holding up the class.
-- **A leaderboard.** The familiar ranked board, by points.
-
-Either way you keep the full ranking and the gradebook in the instructor console, because
-marks have to come from somewhere. This decides what the *class* is shown.
-
-The shared picture is the default deliberately. A public ranking pushes students toward
-looking competent rather than becoming competent, and for a first-year who is already
-frightened of the terminal, being shown as 23rd of 24 confirms the thing they feared. Those
-are the students the free first hint and the no-timers rule exist to protect. But you know
-your class and some cohorts genuinely want a board, which is why it is one click away.
-
-**You can also write your own.** A pack is a folder of JSON, or one `.pack.json` file you
-can email to another teacher. See [`docs/PACK-FORMAT.md`](docs/PACK-FORMAT.md) to author
-one and `node bin/shellgrounds.js new <name>` to start from a working scaffold.
-
-Design decisions worth knowing before you teach with it:
-
-- **Every student gets different flags**, derived from their handle. Copying a classmate's
-  answer does not work.
-- **The first hint on each challenge is free.** Later hints cost a few points. Nothing is
-  ever locked behind a hint.
-- **A student can skip one challenge per act.** No single challenge can trap anybody.
-- **There are no timers and no streaks.** Speed pressure punishes exactly the students the
-  hints exist to protect.
-- **The simulation is honest.** Run a command Shellgrounds does not simulate and it tells
-  you what that command really does, instead of pretending it does not exist.
-
----
+**[Running it with a class →](docs/TEACHING.md)** — choosing which campaigns your class
+sees, whether they get a shared picture or a leaderboard, and the design decisions behind
+both: different finds per student, a free first hint on every challenge, one skip per act,
+and no timers anywhere.
 
 ## Running it on your own machine
 
