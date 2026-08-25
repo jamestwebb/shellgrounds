@@ -119,9 +119,9 @@ sits next to the field.
 | `reveal` | string | no | — | The picture a class uncovers together, one square per find. Same image rules as `cover`. §3.2. |
 | `revealCaption` | string | no | — | The one line printed under `reveal` when the last square turns over. Names what the class uncovered. Must not contain an answer. §3.2. |
 | `briefing` | object | no, but write one | — | What a student reads once, before their first command. §3.1. |
-| `linux` | object | if used | — | `{ home, user, host, shell }` — see below. |
-| `windows` | object | if used | — | `{ home, user, shell }` — see below. |
-| `theme` | object | no | platform default | `{ accent, titleBar, sidebarTone }`. |
+| `linux` | object | if used | — | `{ home, user, host }` — see below. |
+| `windows` | object | if used | — | `{ home, user, host }` — see below. |
+| `theme` | object | no | platform default | `{ accent }` — one colour, with a contrast floor. |
 | `messages` | object | no | built-in text | What the terminal says when it cannot do something. |
 | `courseTools` | object | no | `{}` | Real tools you name but do not simulate. |
 | `acts` | array | **yes** | — | §4. |
@@ -224,8 +224,7 @@ a time.
 |---|---|---|---|
 | `home` | `/home/student` | `C:\Users\Student` | The student's home directory. **It must exist in your filesystem.** It is also where a challenge starts when it does not say otherwise. |
 | `user` | `student` | `Student` | Who the student is logged in as. File permissions are decided against this name, so a file owned by `root` with mode `0400` is unreadable to them — which is how you build a permissions lesson. |
-| `host` | `sandbox` | — | The machine name in the prompt: `student@sandbox:~$`. |
-| `shell` | `bash` | `cmd` | Which shell is being simulated. |
+| `host` | `sandbox` | `LF-2291` | The machine name in the prompt: `student@sandbox:~$`. |
 
 The home directory and the user should agree. If `home` is `/home/student` then
 `user` should be `student`; otherwise the student cannot create files in their
@@ -235,9 +234,25 @@ own home directory and half your challenges fail for a reason nobody can see.
 
 | Field | Example | What it does |
 |---|---|---|
-| `accent` | `"#22c55e"` | A CSS colour used for highlights. |
-| `titleBar` | `"SANDBOX TTY1"` | The text across the top of the terminal window. |
-| `sidebarTone` | `"green"` | A colour family for the challenge list: `emerald`, `green`, `sky`, `amber`, and so on. |
+| `accent` | `"#22c55e"` | The pack's own colour on the class reveal screen: the wash behind a pack that ships no picture, and the rule beside the caption under a finished one. |
+
+Write `accent` as a hex colour, `#rgb` or `#rrggbb`. It is drawn on the reveal
+screen's near-black ground, and the validator measures it: below **3:1** against
+`#0a0a09` it is an error, because WCAG 2.1 AA asks 3:1 of a graphical element
+that carries meaning. A colour written any other way — a CSS name, `rgb(...)` —
+is refused for the same reason: its contrast cannot be measured before it ships.
+
+#### Fields that used to be here
+
+`theme.titleBar`, `theme.sidebarTone`, `linux.shell` and `windows.shell` are no
+longer part of the format. Every shipped pack declared them and nothing ever
+read one: the prompt is built from `user` and `host`, and the terminal's colours
+belong to the student, who picks from six schemes that are contrast-tested at
+4.5:1. A pack-supplied colour passes through no such check.
+
+`shellgrounds validate` lists any that are still in your `pack.json` under
+**REMOVED FIELDS STILL DECLARED**. Deleting them changes nothing a student sees,
+which is the point.
 
 ### `messages`
 
@@ -274,9 +289,9 @@ An act is a chapter. Every challenge belongs to exactly one.
 |---|---|---|---|---|
 | `id` | integer | **yes** | — | Act number. Challenges refer to it. Number them `1, 2, 3…`. |
 | `name` | string | **yes** | — | Heading shown above the challenge list. |
-| `tagline` | string | no | — | One line under the heading. |
+| `tagline` | string | no, but write it | — | One line under the heading, saying in plain words what this act contains: *"Filter, count, sort and pipe what the observatory recorded"*. Act names are evocative and therefore opaque — a student cannot tell what "First on Scene" is a term of. This is the line that tells them. |
 | `icon` | string | no | — | An emoji for the act. |
-| `glyph` | string | no | — | A small decorative string, e.g. `"─·─"`. |
+| `glyph` | string | no | — | A small decorative string, e.g. `"─·─"`. **Not rendered.** It used to occupy the slot the `tagline` now has. |
 | `unlockThreshold` | number 0–1 | no | open | The fraction of the **previous** act a student must finish before this one opens. |
 
 ### How `unlockThreshold` is actually applied
@@ -329,12 +344,14 @@ An array. Order in the array is the order the student sees.
 | `act` | integer | **yes** | — | Which act it belongs to. |
 | `title` | string | **yes** | — | Shown in the challenge list. |
 | `points` | number | **yes** | — | Score for solving it. 10–15 early, 20–30 in the middle, 40+ for a capstone. |
-| `brief` | string | **yes** | — | What the student is asked to do. See `packs/AUTHORING.md` for how much to give away — it changes by act. |
+| `brief` | string | **yes** | — | **The scene**: where the student is, and why this matters. Shown under the heading THE SITUATION. See `packs/AUTHORING.md` for how much to give away — it changes by act. |
+| `objective` | string | no, but write it | the `brief` | **The task**: one sentence saying what to do. Shown first, under the heading YOUR TASK, and it is the line a stuck student comes back to. 200 characters. State the goal, never the command. Without it the brief is shown in its place, unlabelled scene and all. |
 | `setup.cwd` | string | no | the platform `home` | The directory the student starts in. **It must exist in the filesystem.** |
 | `success` | object | **yes** | — | How the challenge is marked. §8. |
 | `hints` | array | no | `[]` | §7. |
 | `successMessage` | string | no | — | Shown after they solve it. Use it to teach the point, not to congratulate. |
-| `teaches` | array of strings | no | `[]` | Free-text tags describing what this challenge teaches. Shown to instructors. |
+| `teaches` | array of strings | no | `[]` | Free-text tags describing what this challenge teaches. Read by the validator to work out where each idea is first met. §6.2. |
+| `builtOn` | array of strings | no | `[]` | Ids of the challenges this one assumes a student has already done. Each must exist in this pack, come earlier in the course, and be in an act at or before this one. §6.2. |
 | `acceptedVariants` | array of strings | no | — | Every command line you consider a correct answer. §6.1. |
 | `platform` | `"linux"` \| `"windows"` | no | first platform | Only for a pack that covers both. |
 | `commandCheckExempt` | boolean | no | `false` | Turns off the "commands quoted in the brief must run" check for this challenge. |
@@ -363,6 +380,48 @@ If you write no `acceptedVariants`, the validator falls back to the first
 backtick-quoted command in the brief, so solvability can still be proven. That
 fallback is not held to the same bar — a command in a brief is an illustration,
 not a promise.
+
+### 6.2 `teaches` and `builtOn` — the shape of the course
+
+These two fields are the only ones that say anything about a challenge's place
+among the others, and they are read by the validator as a course rather than
+counted.
+
+`teaches` is a list of free-text tags. The validator walks the pack in course
+order — act first, then array order — and works out, for each tag, where a
+student first meets it and whether it ever gets a challenge of its own. Three
+findings come out of that, and none of them fails the run:
+
+- **TOO MUCH AT ONCE** — this challenge introduces more than two ideas that
+  appear nowhere earlier. A student who meets three unfamiliar things at once
+  cannot tell which of them they got wrong.
+- **A NEW IDEA INSIDE A SYNTHESIS** — a challenge that combines three or more
+  ideas and slips in one the course has never taught. Combining what a student
+  knows is a fair test; the extra one, met cold, is not.
+- **TAUGHT AFTER IT WAS NEEDED** — a tag whose own lesson (a challenge that
+  teaches two tags or fewer) comes after a challenge that already required it.
+
+So keep the tags honest and keep them small. Two per challenge is a lesson;
+five is a capstone; a tag on a challenge that only uses the idea in passing is
+what puts a false "first met here" in the report.
+
+```json
+"teaches": ["grep -v", "inverted-matching"],
+"builtOn": ["lt-2-grep"]
+```
+
+`builtOn` names the challenges this one assumes. It is validated: every id must
+exist in the pack, come earlier in the course, and sit in an act at or before
+this challenge's — a dependency a student cannot have reached is an error, not a
+finding. A pack that averages under one stated dependency per act is reported as
+**NOTHING BUILDS ON ANYTHING**, which is not an accusation. Some courses really
+are drill books. It is worth knowing which yours is.
+
+> **`builtOn` is not shown to a student yet.** It is written, validated and
+> documented here, and no screen renders it. That is the exact shape of defect
+> this project has just spent a day removing, so it is written down rather than
+> left to be discovered: the sidebar line that says "this builds on X" is still
+> owed. See `tests/nothing-written-is-unread.test.js`.
 
 ---
 
@@ -998,6 +1057,9 @@ node bin/shellgrounds.js validate --json     # machine-readable, for CI
 | **Act progression** | A student who skipped one challenge in the previous act can still unlock the next one. This is the deadlock that reached production. |
 | **Commands quoted in briefs** | Every backticked command in a brief or a hint actually runs from the challenge's starting directory. |
 | **Pack file format** | For a `.pack.json`: version, structure, required fields, and the no-code guard. |
+| **`builtOn` targets** | Every id in a `builtOn` exists in the pack, comes earlier in the course, and is in an act at or before this one. A dependency a student cannot have reached is a line drawn to nowhere. |
+| **A tool the course calls unreal** | No challenge is answered with a command the pack's own `courseTools` map declares as *real, not simulated here*. A course that tells a student a tool does not exist and then requires it has made the challenge unsolvable as written. |
+| **`theme.accent` contrast** | The pack's accent colour reaches 3:1 against the reveal screen's background, and is written in a form whose contrast can be measured. |
 
 ### Findings — reported with a count, but the run stays green
 
@@ -1009,6 +1071,17 @@ is how sixty of them went unnoticed.
 |---|---|---|
 | **BROKEN ACCEPTED VARIANTS** | A line in `acceptedVariants` does not pass the challenge's own check. The message says whether the command failed outright or ran and was rejected. | Either fix the command or widen the success condition. Do not delete the variant if students will type it. |
 | **GRADES KEYSTROKES ONLY** | The challenge checks nothing but `commandMatches`. | Add an output or filesystem assertion, usually via `allOf`. See §8. |
+| **CORRECT ANSWERS REFUSED** | A rewriting of one of your own accepted answers does the job and is rejected by your `commandMatches` pattern. | Widen the pattern. Each line here is a student who did the work and was marked wrong. |
+| **PATTERNS NOTHING CAN CHECK** | A `commandMatches` with no `acceptedVariants`, so nothing can try it any other way. | Add one working answer. |
+| **TAUGHT BUT NEVER DEFINED** | A `teaches` tag that neither the engine's glossary nor `manifest.glossary` explains. | Define it in `manifest.glossary`. §3.3. |
+| **NO TASK LINE** | The challenge has no `objective`. | Write the one sentence. §6. |
+| **TOO MUCH AT ONCE** | More than two ideas are first met in one challenge. | Split it, or move a tag to the challenge that really teaches it. §6.2. |
+| **A NEW IDEA INSIDE A SYNTHESIS** | A challenge combining three or more ideas slips in one the course never taught. | Teach it first, or drop it from this challenge. §6.2. |
+| **TAUGHT AFTER IT WAS NEEDED** | An idea gets its own lesson after a challenge already required it. | Move the lesson earlier. §6.2. |
+| **THE SCENE NEVER NEEDED THE TOOL** | The challenge is graded on a command that takes a file or a path, and the brief names nothing that is on the machine. | Name the thing in the room. If the brief still works with the filename removed, the scenario did not need the tool. |
+| **NOTHING BUILDS ON ANYTHING** | The pack states fewer than one `builtOn` dependency per act. | Add them where a challenge genuinely needs an earlier one. §6.2. |
+| **REMOVED FIELDS STILL DECLARED** | The manifest carries a field the format no longer has. | Delete it. §3. |
+| **IMPLEMENTED BUT CALLED UNREAL** | Printed once per run, not per pack: a command the engine simulates is still listed in `REAL_LINUX` / `REAL_WINDOWS` as real-but-not-simulated. | Remove it from `packages/engine/unknown-command.js`. Nothing in a pack causes this. |
 
 ### The validator's own tests
 

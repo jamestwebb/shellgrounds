@@ -17,7 +17,7 @@
 
 import { md5, sha256Sync } from '../crypto-utils.js';
 import { normalizePath } from '../vfs/path.js';
-import { validatePresentation } from './presentation.js';
+import { validatePresentation, MAX_OBJECTIVE_LENGTH } from './presentation.js';
 
 /** Bump when a change would stop an older loader reading a newer file. */
 export const PACK_FORMAT_VERSION = 1;
@@ -605,6 +605,30 @@ export function validatePackFileStructure(raw) {
       else seen.add(c.id);
       if (!c?.title) push(`${where} has no "title".`);
       if (!c?.brief) push(`${where} has no "brief".`);
+      if (c?.objective !== undefined) {
+        if (typeof c.objective !== 'string' || c.objective.trim().length === 0) {
+          push(`${where} has an "objective" that is not text.`);
+        } else if (c.objective.length > MAX_OBJECTIVE_LENGTH) {
+          push(`${where} has an ${c.objective.length}-character "objective"; the limit is `
+            + `${MAX_OBJECTIVE_LENGTH}. It is the one line saying what to do, not the brief again.`);
+        }
+      }
+      // `builtOn` names the challenges a student must already have done. The
+      // ids are checked against the pack, and for order, by packValidator; here
+      // it only has to BE a list of ids, because a file that carries a string
+      // where an array belongs would crash the reader rather than fail a check.
+      if (c?.builtOn !== undefined) {
+        if (!Array.isArray(c.builtOn)) {
+          push(`${where} has a "builtOn" that is not an array of challenge ids.`);
+        } else {
+          for (const dep of c.builtOn) {
+            if (typeof dep !== 'string' || dep.trim().length === 0) {
+              push(`${where} has a "builtOn" entry that is not a challenge id.`);
+              break;
+            }
+          }
+        }
+      }
       if (!Number.isInteger(c?.act)) push(`${where} has no whole-number "act".`);
       else if (actIds.size && !actIds.has(c.act)) push(`${where} is in act ${c.act}, but no act has that id.`);
       if (typeof c?.points !== 'number' || c.points < 0) push(`${where} needs a "points" number of 0 or more.`);

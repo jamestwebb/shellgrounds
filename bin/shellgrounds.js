@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
 import { PACKS } from '../packs/index.js';
-import { validatePack, checkGlobalChallengeIds } from '../packages/engine/validate/packValidator.js';
+import { validatePack, checkGlobalChallengeIds, checkCommandHonesty } from '../packages/engine/validate/packValidator.js';
 import { resolvePackTarget, registryPacks } from '../packages/engine/validate/packSource.js';
 import { PackFormatError } from '../packages/engine/validate/packFile.js';
 import { runPipeline } from '../packages/engine/shell/exec.js';
@@ -88,6 +88,15 @@ async function cmdValidate(args) {
   }
   const idCheck = checkGlobalChallengeIds(idCheckInput);
 
+  // ── Commands the engine implements and still calls unreal ─────────────────
+  // Engine-wide, not pack-specific, so it runs once beside the id check. A
+  // command lands in the registry and its entry in unknown-command.js is left
+  // behind; the message is now dead, but it is the message a student would get
+  // if anything ever stopped resolving the command, and it says the opposite of
+  // the truth. This is also the staleness that hides a newly implemented
+  // command from the person who implemented it.
+  const honesty = checkCommandHonesty();
+
   const reports = [];
   for (const { pack, packFile } of loaded) {
     reports.push(await validatePack(pack, { verbose, packFile }));
@@ -97,7 +106,7 @@ async function cmdValidate(args) {
 
   if (isJson) {
     console.log(JSON.stringify(
-      targets ? { globalChallengeIds: idCheck, packs: reports } : reports,
+      targets ? { globalChallengeIds: idCheck, commandHonesty: honesty, packs: reports } : reports,
       null,
       2
     ));
@@ -115,13 +124,28 @@ async function cmdValidate(args) {
   if (!idCheck.pass) {
     for (const c of idCheck.collisions) console.log(`  ❌ ${c}`);
   }
+  if (!honesty.pass) {
+    console.log(`IMPLEMENTED BUT CALLED UNREAL: ${honesty.stale.length} of ${honesty.checked} commands are simulated and still listed as not simulated`);
+    console.log('  Remove each from REAL_LINUX / REAL_WINDOWS in packages/engine/unknown-command.js.');
+    const shownStale = verbose ? honesty.stale : honesty.stale.slice(0, 10);
+    console.log(`  · ${shownStale.map((c) => `${c.name} (${c.platform})`).join(', ')}`);
+    if (!verbose && honesty.stale.length > shownStale.length) {
+      console.log(`  · …and ${honesty.stale.length - shownStale.length} more (--verbose lists all)`);
+    }
+  }
   console.log(`${THIN}\n`);
 
   let totalBlind = 0;
   let totalUnfair = 0;
   let totalUncheckable = 0;
   let totalUndefined = 0;
+  let totalUnframed = 0;
   let totalBadVariants = 0;
+  let totalTooMuch = 0;
+  let totalCold = 0;
+  let totalLate = 0;
+  let totalSceneless = 0;
+  let totalRemoved = 0;
 
   for (const rep of reports) {
     const statusSymbol = rep.valid ? '✅ PASS' : '❌ FAIL';
@@ -202,6 +226,22 @@ async function cmdValidate(args) {
       }
     }
 
+    // ── Tasks nobody stated as a task ─────────────────────────────────────
+    // The brief is a scene. Somewhere in it is the instruction, and nothing
+    // marks which sentence that is, so a student scanning for what to do reads
+    // three sentences of story and stops reading. One labelled line fixes it.
+    const unframed = rep.unframedTasks || [];
+    totalUnframed += unframed.length;
+    if (unframed.length > 0) {
+      console.log(`\nNO TASK LINE: ${unframed.length} challenges never say plainly what to do`);
+      console.log('  Add an "objective" to each: one sentence, the goal not the command.');
+      const shown = verbose ? unframed : unframed.slice(0, 8);
+      for (const u of shown) console.log(`  · ${u.id} (act ${u.act}) — ${u.title}`);
+      if (!verbose && unframed.length > shown.length) {
+        console.log(`  · …and ${unframed.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
     // ── Patterns nothing can check ────────────────────────────────────────
     // The check above can only rewrite an answer the pack already accepts. A
     // commandMatches with no acceptedVariants is therefore invisible to it --
@@ -219,6 +259,80 @@ async function cmdValidate(args) {
       }
     }
 
+    // ── Ideas that arrive at the wrong moment ─────────────────────────────
+    // The `teaches` tags read as a course rather than counted. Every one of
+    // these took a specialist reading all 104 challenges to find; none of them
+    // is visible from inside a single challenge, which is why nobody had.
+    const tooMuch = rep.tooMuchAtOnce || [];
+    totalTooMuch += tooMuch.length;
+    if (tooMuch.length > 0) {
+      console.log(`\nTOO MUCH AT ONCE: ${tooMuch.length} ${tooMuch.length === 1 ? 'challenge introduces' : 'challenges introduce'} more than two new ideas`);
+      console.log('  A student meeting three unfamiliar things at once cannot tell which one they got wrong.');
+      const shown = verbose ? tooMuch : tooMuch.slice(0, 8);
+      for (const t of shown) console.log(`  · ${t.id} (act ${t.act}) — new here: ${t.tags.join(', ')}`);
+      if (!verbose && tooMuch.length > shown.length) {
+        console.log(`  · …and ${tooMuch.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
+    const cold = rep.coldInSynthesis || [];
+    totalCold += cold.length;
+    if (cold.length > 0) {
+      console.log(`\nA NEW IDEA INSIDE A SYNTHESIS: ${cold.length} ${cold.length === 1 ? 'challenge combines' : 'challenges combine'} known tools and slip in an unknown one`);
+      console.log('  A challenge that puts four learned things together is a fair test. The fifth, met cold, is not.');
+      const shown = verbose ? cold : cold.slice(0, 8);
+      for (const c of shown) console.log(`  · ${c.id} (act ${c.act}) — ${c.total} ideas, first met here: ${c.tags.join(', ')}`);
+      if (!verbose && cold.length > shown.length) {
+        console.log(`  · …and ${cold.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
+    const late = rep.taughtLate || [];
+    totalLate += late.length;
+    if (late.length > 0) {
+      console.log(`\nTAUGHT AFTER IT WAS NEEDED: ${late.length} ${late.length === 1 ? 'idea gets its' : 'ideas get their'} own lesson after a challenge already required ${late.length === 1 ? 'it' : 'them'}`);
+      console.log('  Move the lesson earlier. The student who met it cold has already decided they cannot do this.');
+      const shown = verbose ? late : late.slice(0, 8);
+      for (const l of shown) {
+        console.log(`  · ${l.tag} — needed in ${l.neededIn} (act ${l.neededAct}), taught in ${l.dedicatedIn} (act ${l.dedicatedAct})`);
+      }
+      if (!verbose && late.length > shown.length) {
+        console.log(`  · …and ${late.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
+    // ── A scene with nothing in it ────────────────────────────────────────
+    const sceneless = rep.sceneWithoutObject || [];
+    totalSceneless += sceneless.length;
+    if (sceneless.length > 0) {
+      console.log(`\nTHE SCENE NEVER NEEDED THE TOOL: ${sceneless.length} of ${rep.checks.sceneObjects.checked} ${sceneless.length === 1 ? 'brief names' : 'briefs name'} nothing that is on the machine`);
+      console.log('  The answer takes a file or a path; the story names none. Name the thing in the room.');
+      const shown = verbose ? sceneless : sceneless.slice(0, 8);
+      for (const s of shown) console.log(`  · ${s.id} (act ${s.act}) — the answer names ${s.operands.map((o) => `'${o}'`).join(', ')}, the brief does not`);
+      if (!verbose && sceneless.length > shown.length) {
+        console.log(`  · …and ${sceneless.length - shown.length} more (--verbose lists all)`);
+      }
+    }
+
+    // ── Fields the format no longer has ───────────────────────────────────
+    const removed = rep.removedFields || [];
+    totalRemoved += removed.length;
+    if (removed.length > 0) {
+      console.log(`\nREMOVED FIELDS STILL DECLARED: ${removed.length} manifest ${removed.length === 1 ? 'field is' : 'fields are'} no longer part of the format`);
+      console.log('  Nothing reads them and nothing will. Delete them from pack.json.');
+      for (const f of removed) console.log(`  · ${f.field} — ${f.why}`);
+    }
+
+    // ── A course of separate drills ───────────────────────────────────────
+    // Not a defect in any one challenge, which is exactly why it survives
+    // every review that reads one challenge at a time.
+    if (rep.builtOnGap) {
+      const g = rep.builtOnGap;
+      console.log(`\nNOTHING BUILDS ON ANYTHING: ${g.links} stated dependencies across ${g.acts} acts`);
+      console.log('  Add "builtOn": ["earlier-challenge-id"] where a challenge genuinely needs an earlier one.');
+      console.log('  Without it the course is a list of drills that happen to be in an order.');
+    }
+
     if (rep.warnings.length > 0) {
       console.log('\nWarnings:');
       for (const warn of rep.warnings) console.log(`  ⚠️ ${warn}`);
@@ -226,13 +340,21 @@ async function cmdValidate(args) {
     console.log(`${THIN}\n`);
   }
 
-  if (reports.length > 1 && (totalBadVariants || totalBlind)) {
+  const anyFinding = totalBadVariants || totalBlind || totalUnfair || totalUncheckable
+    || totalUndefined || totalUnframed || totalTooMuch || totalCold || totalLate || totalSceneless || totalRemoved;
+  if (reports.length > 1 && anyFinding) {
     console.log('Across all packs checked:');
     console.log(`  broken accepted variants: ${totalBadVariants}`);
     console.log(`  correct answers refused:   ${totalUnfair}`);
     console.log(`  uncheckable patterns:     ${totalUncheckable}`);
     console.log(`  taught but undefined:     ${totalUndefined}`);
+    console.log(`  challenges with no task line: ${totalUnframed}`);
     console.log(`  keystroke-only challenges: ${totalBlind}`);
+    console.log(`  more than two new ideas at once: ${totalTooMuch}`);
+    console.log(`  new idea inside a synthesis: ${totalCold}`);
+    console.log(`  taught after it was needed: ${totalLate}`);
+    console.log(`  briefs naming nothing on the machine: ${totalSceneless}`);
+    console.log(`  removed fields still declared: ${totalRemoved}`);
     console.log(`${THIN}\n`);
   }
 

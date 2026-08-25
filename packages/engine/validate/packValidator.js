@@ -13,7 +13,8 @@ import { ERROR_MARKERS } from '../constants.js';
 import { findVfsKey, resolvePath } from '../vfs/path.js';
 import { hasPermission } from '../vfs/ops.js';
 import { validatePackFileStructure, PACK_FORMAT_VERSION } from './packFile.js';
-import { validatePresentation } from './presentation.js';
+import { REAL_LINUX, REAL_WINDOWS } from '../unknown-command.js';
+import { validatePresentation, removedFieldsIn } from './presentation.js';
 import { auditChallenge, splitPredicate } from './solutionSpace.js';
 import { undefinedTerms } from '../glossary.js';
 import { compileSafe, probePattern, PROBE_BUDGET_MS } from './safe-regex.js';
@@ -124,6 +125,233 @@ function buildReachableCorpus(filesystems, help, commands) {
   return parts.join('\n');
 }
 
+// ── First contact: what order a course meets its own ideas in ───────────────
+//
+// Every challenge declares `teaches`, a list of free-text tags. Until now the
+// validator counted them and threw the rest away, which meant the one question
+// the tags can answer went unasked: WHEN does a student first meet each idea,
+// and is that a moment built to teach it?
+//
+// A specialist read all 104 shipped challenges to find these by hand. The three
+// shapes below are what they found, and they are mechanical, so nobody should
+// ever have to read a whole course to find them again.
+//
+// These are FINDINGS. A pack with all three still ships; the run stays green.
+// Pedagogy is a judgement, and a validator that failed a run over one would be
+// a validator authors learn to route around.
+
+/** A challenge teaching this many tags or fewer is a lesson ABOUT them. */
+const DEDICATED_MAX_TAGS = 2;
+
+/** More new ideas than this in one challenge and the student is drinking from a hose. */
+const FIRST_CONTACT_LIMIT = 2;
+
+/** This many tags at once is a synthesis: several known things used together. */
+const SYNTHESIS_MIN_TAGS = 3;
+
+/** Course order: act first, then the order the author wrote them in. */
+function inCourseOrder(challenges) {
+  return challenges
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => ((a.c.act ?? 0) - (b.c.act ?? 0)) || (a.i - b.i))
+    .map((x) => x.c);
+}
+
+/**
+ * Walks the course in the order a student takes it and reports where an idea
+ * arrives at a bad moment.
+ *
+ * Tuning, measured against all three shipped packs (104 challenges):
+ *   tooMuchAtOnce   12  — at the "about a dozen" ceiling, so the limit stays 2.
+ *   coldInSynthesis  8  — after excluding what tooMuchAtOnce already named.
+ *   taughtLate       3  — one line per tag, naming the first challenge that
+ *                         needed it.
+ * A rule that fires on much more of a reviewed course is describing the course
+ * rather than a defect in it.
+ */
+export function analyseConceptFlow(challenges) {
+  const order = inCourseOrder(challenges);
+  const tagsOf = (c) => (Array.isArray(c.teaches) ? c.teaches.filter((t) => typeof t === 'string') : []);
+
+  const firstAt = new Map();      // tag -> index where a student first meets it
+  const dedicatedAt = new Map();  // tag -> index of the challenge that is ABOUT it
+  order.forEach((c, idx) => {
+    const tags = tagsOf(c);
+    for (const tag of tags) {
+      if (!firstAt.has(tag)) firstAt.set(tag, idx);
+      if (tags.length <= DEDICATED_MAX_TAGS && !dedicatedAt.has(tag)) dedicatedAt.set(tag, idx);
+    }
+  });
+
+  const tooMuchAtOnce = [];
+  const coldInSynthesis = [];
+  order.forEach((c, idx) => {
+    const tags = tagsOf(c);
+    const fresh = tags.filter((t) => firstAt.get(t) === idx);
+    if (fresh.length > FIRST_CONTACT_LIMIT) {
+      tooMuchAtOnce.push({ id: c.id, act: c.act, title: c.title, tags: fresh });
+      // Deliberately not also reported below. Every challenge with three new
+      // tags is by definition a challenge with three tags and one of them new,
+      // so reporting both would print the same challenge under two headings
+      // and double the apparent size of the problem.
+      return;
+    }
+    if (tags.length >= SYNTHESIS_MIN_TAGS && fresh.length > 0) {
+      coldInSynthesis.push({ id: c.id, act: c.act, title: c.title, tags: fresh, total: tags.length });
+    }
+  });
+
+  // A tag used inside a synthesis before the course ever stopped to teach it.
+  // One line per tag, naming the earliest place it was needed: the fix is to
+  // move that one lesson, not to edit every challenge that leans on it.
+  const taughtLate = [];
+  const reported = new Set();
+  order.forEach((c, idx) => {
+    if (tagsOf(c).length < SYNTHESIS_MIN_TAGS) return;
+    for (const tag of tagsOf(c)) {
+      const d = dedicatedAt.get(tag);
+      if (d === undefined || d <= idx || reported.has(tag)) continue;
+      reported.add(tag);
+      taughtLate.push({
+        tag,
+        neededIn: c.id,
+        neededAct: c.act,
+        dedicatedIn: order[d].id,
+        dedicatedAct: order[d].act
+      });
+    }
+  });
+
+  return { tagCount: firstAt.size, tooMuchAtOnce, coldInSynthesis, taughtLate };
+}
+
+// ── The scene that never needed the tool ────────────────────────────────────
+//
+// A brief is a scene. If the challenge is graded on a command that takes an
+// object — a file, a directory, a path — then the scene has to contain that
+// object, or the story is decoration over a drill. `w2-set` asked a student to
+// set a variable in a house with no rooms in it: nothing in the brief named
+// anything that exists on the machine they were sitting at.
+//
+// The check only fires when the challenge's OWN answer names an object. A
+// command that takes no operand (`pwd`, `cls`, `tasklist`) has no thing in the
+// room to name, and demanding a filename from it would be nonsense.
+
+/** Tokens that are grammar rather than an object: flags, self-references, variables. */
+function operandsOf(line, isWindows) {
+  const out = [];
+  for (const segment of String(line).split(/\|\||&&|[|;&]/)) {
+    const words = segment.trim().split(/\s+/).slice(1);
+    for (const raw of words) {
+      const w = raw.replace(/^["']|["']$/g, '');
+      if (!w) continue;
+      if (w.startsWith('-')) continue;                    // a flag
+      if (isWindows && w.startsWith('/')) continue;       // a flag, on cmd.exe
+      if (/^[$%]/.test(w)) continue;                      // a variable, not a file
+      if (['.', '..', './', '.\\', '*', '~'].includes(w)) continue;  // "here", not a thing
+      if (/^>+$/.test(w)) continue;
+      out.push(w);
+    }
+  }
+  return out;
+}
+
+/** Does this word name something that is actually on the machine? */
+function namesSomethingReal(token, fs, cwd, home, isWindows) {
+  const t = token.replace(/^[`"'(]+/, '').replace(/[`"'.,;:!?)]+$/, '');
+  if (t.length < 2) return false;
+  // A bare extension names a class of object the same way a glob does: "every
+  // file ending in `.sh`" is the thing in the room when a .sh file is in it.
+  if (/^\.[A-Za-z0-9]{1,6}$/.test(t)) {
+    return Object.keys(fs).some((k) => k.toLowerCase().endsWith(t.toLowerCase()));
+  }
+  if (/[*?]/.test(t)) {
+    // A glob names a class of object. It counts if the class has a member.
+    const rx = new RegExp(
+      '^' + t.split(/[*?]/).map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$',
+      isWindows ? 'i' : ''
+    );
+    return Object.keys(fs).some((k) => rx.test(k.split(/[\\/]/).pop()));
+  }
+  try {
+    return !!findVfsKey(fs, resolvePath(cwd, t, isWindows, home), isWindows);
+  } catch {
+    return false;
+  }
+}
+
+/** A token that looks like a file or a path, whether or not it exists yet. */
+const looksLikeAPath = (t, isWindows) =>
+  (isWindows ? /[\\]/.test(t) : /\//.test(t)) || /^[\w~-][\w.~-]*\.[A-Za-z0-9]{1,6}$/.test(t);
+
+// ── The tool a course says is not here, and then asks for ───────────────────
+//
+// Two ways a pack can require something it has already told the student does
+// not exist, and they have different homes.
+//
+//   The pack's own contradiction: a name in `manifest.courseTools` — the map
+//   that prints "a real tool, not simulated here" — used as the answer to one
+//   of its own challenges. That is checked per pack and it fails the run.
+//
+//   The engine's staleness: a command the registry now implements while
+//   `unknown-command.js` still lists it as real-but-not-simulated. That list
+//   is dead data the moment the command lands, and dead data is how a newly
+//   implemented command stays invisible to the person who implemented it.
+
+/** The command name at the head of each segment of a command line. */
+export function headWords(line) {
+  const out = [];
+  for (const segment of String(line).split(/\|\||&&|[|;&]/)) {
+    const first = segment.trim().split(/\s+/)[0];
+    if (!first) continue;
+    // `/usr/bin/dd` and `dd` are the same tool to a student reading a course.
+    const name = first.split(/[\\/]/).pop().replace(/^["']|["']$/g, '');
+    if (name) out.push(name);
+  }
+  return out;
+}
+
+/** Every commandMatches pattern in a success condition, allOf/anyOf included. */
+export function commandMatchPatterns(cfg, out = []) {
+  if (!cfg || typeof cfg !== 'object') return out;
+  const type = cfg.predicate || cfg.kind;
+  if (type === 'allOf' || type === 'anyOf') {
+    for (const p of cfg.predicates || []) commandMatchPatterns(p, out);
+  } else if (type === 'commandMatches' && typeof cfg.pattern === 'string') {
+    out.push(cfg.pattern);
+  }
+  return out;
+}
+
+/**
+ * The literal command name a pattern starts with, or null when it starts with
+ * something that is not a name. Only the leading literal is read — inside a
+ * group, only its first branch — because the point is to name the tool an
+ * answer begins with, not to work out everything the pattern would accept.
+ */
+export function patternHead(pattern) {
+  const stripped = String(pattern).replace(/^(\^|\(\?:|\(|\\b|\\s\*)+/, '');
+  const m = /^[A-Za-z][A-Za-z0-9_.-]*/.exec(stripped);
+  return m ? m[0] : null;
+}
+
+/**
+ * Commands the engine implements and `unknown-command.js` still calls real but
+ * unsimulated. Engine-wide rather than pack-specific, so the CLI runs it once
+ * beside the challenge-id check rather than repeating it per pack.
+ */
+export function checkCommandHonesty() {
+  const stale = [];
+  let checked = 0;
+  for (const [platform, real] of [['linux', REAL_LINUX], ['windows', REAL_WINDOWS]]) {
+    for (const cmd of registry.getAll(platform)) {
+      checked++;
+      if (real.has(cmd.name)) stale.push({ name: cmd.name, platform });
+    }
+  }
+  return { pass: stale.length === 0, checked, stale };
+}
+
 export async function validatePack(packObj, options = {}) {
   const { verbose = false, packFile = null } = options;
   const { id, manifest, challenges, help = {}, commands = {}, createFs } = packObj;
@@ -146,6 +374,15 @@ export async function validatePack(packObj, options = {}) {
     unfairRejections: [],
     uncheckablePatterns: [],
     undefinedTerms: [],
+    unframedTasks: [],
+    // Phase 3 findings. Same rule as the two above: named, counted, and NOT
+    // failures. A course whose ideas arrive in an awkward order still teaches.
+    tooMuchAtOnce: [],
+    coldInSynthesis: [],
+    taughtLate: [],
+    sceneWithoutObject: [],
+    builtOnGap: null,
+    removedFields: [],
     checks: {
       packFormat: { pass: true, checked: false, formatVersion: packObj.formatVersion ?? null },
       vfsPaths: { pass: true, tested: 0 },
@@ -155,6 +392,10 @@ export async function validatePack(packObj, options = {}) {
       flagPlaceholders: { pass: true, placeholders: 0, mapped: 0 },
       actProgression: { pass: true, actsCount: manifest.acts.length, gatedActsChecked: 0 },
       briefCommands: { pass: true, commandsTested: 0 },
+      conceptFlow: { pass: true, tags: 0, tooMuchAtOnce: 0, coldInSynthesis: 0, taughtLate: 0 },
+      builtOn: { pass: true, links: 0, acts: 0, perAct: {} },
+      sceneObjects: { pass: true, checked: 0, missing: 0 },
+      toolHonesty: { pass: true, toolsDeclared: 0, answersChecked: 0 },
       manPageFlags: { pass: true, flagsChecked: 0 },
       presentation: { pass: true, checked: false, hasDescription: false, hasIcon: false, hasCover: false, hasBriefing: false },
       coverageReport: {}
@@ -208,6 +449,11 @@ export async function validatePack(packObj, options = {}) {
     results.checks.presentation.hasBriefing = !!manifest.briefing?.body;
     for (const e of p.errors) fail('presentation', e);
     results.warnings.push(...p.warnings);
+    // Fields the format dropped and packs still carry. A finding with a
+    // heading, not a warning: the last three dead fields sat in every pack for
+    // months precisely because the only thing that mentioned them was a
+    // warning in a stream of warnings.
+    results.removedFields = removedFieldsIn(manifest);
   }
 
   // ── CHECK 0: single-file pack format ───────────────────────────────────────
@@ -284,7 +530,6 @@ export async function validatePack(packObj, options = {}) {
     const isWin = plat === 'windows';
     const user = userFor(isWin);
     const cwd = challenge.setup?.cwd || homeFor(isWin);
-    const startFs = getPreparedFs(plat);
 
     actPoints[challenge.act] = (actPoints[challenge.act] || 0) + (challenge.points || 0);
     if (Array.isArray(challenge.teaches)) challenge.teaches.forEach(t => teachesConcepts.add(t));
@@ -543,6 +788,165 @@ export async function validatePack(packObj, options = {}) {
     brokenAcceptedVariants: results.checks.acceptedVariants.failed
   };
 
+  // ── CHECK 8: first contact with each idea ───────────────────────────────────
+  // Reads the `teaches` tags the coverage report used to count and throw away.
+  {
+    const flow = analyseConceptFlow(challenges);
+    results.tooMuchAtOnce = flow.tooMuchAtOnce;
+    results.coldInSynthesis = flow.coldInSynthesis;
+    results.taughtLate = flow.taughtLate;
+    results.checks.conceptFlow = {
+      pass: flow.tooMuchAtOnce.length === 0 && flow.coldInSynthesis.length === 0 && flow.taughtLate.length === 0,
+      tags: flow.tagCount,
+      tooMuchAtOnce: flow.tooMuchAtOnce.length,
+      coldInSynthesis: flow.coldInSynthesis.length,
+      taughtLate: flow.taughtLate.length
+    };
+  }
+
+  // ── CHECK 9: builtOn, the dependency an author states out loud ──────────────
+  //
+  // `teaches` says what a challenge covers. `builtOn` says what a student must
+  // already have done to stand a chance here, and it is the only field that
+  // makes the shape of a course machine-readable rather than a reading
+  // exercise. A dangling or forward-pointing id is a hard error: it would draw
+  // a student a line to a challenge they cannot have reached.
+  //
+  // The average is reported, not failed. A pack may legitimately be a flat
+  // drill book; it should just have to see that it is one.
+  {
+    const order = inCourseOrder(challenges);
+    const positionOf = new Map(order.map((c, i) => [c.id, i]));
+    const actOf = new Map(order.map((c) => [c.id, c.act]));
+    let links = 0;
+    const perAct = {};
+
+    for (const c of challenges) {
+      if (c.builtOn === undefined) continue;
+      if (!Array.isArray(c.builtOn)) {
+        fail('builtOn', `Challenge '${c.id}' has a "builtOn" that is not an array of challenge ids.`);
+        continue;
+      }
+      const here = positionOf.get(c.id);
+      for (const dep of c.builtOn) {
+        if (typeof dep !== 'string' || !dep) {
+          fail('builtOn', `Challenge '${c.id}' lists a "builtOn" entry that is not a challenge id.`);
+          continue;
+        }
+        if (dep === c.id) {
+          fail('builtOn', `Challenge '${c.id}' lists itself in "builtOn".`);
+          continue;
+        }
+        if (!positionOf.has(dep)) {
+          fail('builtOn', `Challenge '${c.id}' says it builds on '${dep}', which is not a challenge in this pack. `
+            + 'A builtOn id names a challenge in the same pack — ids are unique across the site, but a '
+            + 'student only ever works through one course at a time.');
+          continue;
+        }
+        if (positionOf.get(dep) >= here) {
+          fail('builtOn', `Challenge '${c.id}' says it builds on '${dep}', which comes later in the course. `
+            + 'A student reaching this challenge has not done that one yet.');
+          continue;
+        }
+        if ((actOf.get(dep) ?? 0) > (c.act ?? 0)) {
+          fail('builtOn', `Challenge '${c.id}' (act ${c.act}) says it builds on '${dep}', which is in act `
+            + `${actOf.get(dep)}. A dependency must be in an act at or before this one.`);
+          continue;
+        }
+        links++;
+        perAct[c.act] = (perAct[c.act] || 0) + 1;
+      }
+    }
+
+    const actCount = Math.max(1, (manifest.acts || []).length);
+    results.checks.builtOn = { pass: results.checks.builtOn.pass, links, acts: actCount, perAct };
+    if (links / actCount < 1) {
+      results.builtOnGap = { links, acts: actCount, perAct };
+    }
+  }
+
+  // ── CHECK 10: does the brief name anything in the room? ─────────────────────
+  //
+  // Only for a challenge graded on the command, and only when the challenge's
+  // own answer names an object. `cls` and `pwd` take no operand, so there is
+  // nothing for their scene to name and asking for one would be noise.
+  for (const c of challenges) {
+    if (c.success?.kind === 'flag') continue;
+    if (!predicateKinds(c.success).has('commandMatches')) continue;
+
+    const plat = c.platform || platforms[0] || 'linux';
+    const isWin = plat === 'windows';
+    const fsv = filesystems[plat] || filesystems[platforms[0]];
+    if (!fsv) continue;
+    const home = homeFor(isWin);
+    const cwd = c.setup?.cwd || home;
+
+    const solutions = Array.isArray(c.acceptedVariants) && c.acceptedVariants.length
+      ? c.acceptedVariants
+      : [c.brief?.match(/`([^`]+)`/)?.[1]].filter(Boolean);
+    if (!solutions.length) continue;
+
+    // Every accepted answer must name an object, not just one of them. If the
+    // challenge can be solved with a bare command, the scene owes nobody a
+    // filename: `ls` on its own is a complete answer to "what is in here".
+    const operandSets = solutions.map((s) => operandsOf(s, isWin));
+    if (!operandSets.every((ops) => ops.length > 0)) continue;
+
+    results.checks.sceneObjects.checked++;
+    const named = new Set(operandSets.flat());
+    const words = `${c.brief || ''} ${c.objective || ''}`.split(/[\s,;()]+/).filter(Boolean);
+    const grounded = words.some((w) => {
+      if (namesSomethingReal(w, fsv, cwd, home, isWin)) return true;
+      // A path the challenge CREATES, or one it proves is absent, does not
+      // resolve yet and still names the thing in the room — provided the
+      // pack's own answer uses the same word.
+      const t = w.replace(/^[`"'(]+/, '').replace(/[`"'.,;:!?)]+$/, '');
+      return looksLikeAPath(t, isWin) && named.has(t);
+    });
+
+    if (!grounded) {
+      results.checks.sceneObjects.missing++;
+      results.checks.sceneObjects.pass = false;
+      results.sceneWithoutObject.push({
+        id: c.id,
+        act: c.act,
+        title: c.title,
+        operands: [...named].slice(0, 4)
+      });
+    }
+  }
+
+  // ── CHECK 11: a tool the course itself called unreal ────────────────────────
+  //
+  // `courseTools` is an honesty map: "tcpdump is a real thing, it is not
+  // simulated here". Requiring one of those names as an answer makes the
+  // course contradict itself, and the student meets a wall the pack built and
+  // then forgot about. This one FAILS, because there is no version of it that
+  // is merely untidy: the challenge cannot be solved as written.
+  {
+    const courseTools = manifest.courseTools || {};
+    const declared = new Set(Object.keys(courseTools).filter((k) => !k.startsWith('//')));
+    results.checks.toolHonesty.toolsDeclared = declared.size;
+    if (declared.size) {
+      for (const c of challenges) {
+        const heads = new Set();
+        for (const v of c.acceptedVariants || []) for (const h of headWords(v)) heads.add(h);
+        for (const pat of commandMatchPatterns(c.success)) {
+          const h = patternHead(pat);
+          if (h) heads.add(h);
+        }
+        results.checks.toolHonesty.answersChecked += heads.size;
+        for (const h of heads) {
+          if (!declared.has(h)) continue;
+          fail('toolHonesty', `Challenge '${c.id}' is answered with '${h}', but manifest.courseTools `
+            + `declares '${h}' as a real tool this simulator does NOT provide. The course tells the `
+            + 'student it does not exist here and then requires it. Remove it from courseTools, or '
+            + 'stop grading on it.');
+        }
+      }
+    }
+  }
+
   if (verbose) {
     console.log(`[${id}] valid=${results.valid} errors=${results.errors.length} warnings=${results.warnings.length}`);
     results.errors.forEach(e => console.log('  ERROR:', e));
@@ -596,6 +1000,15 @@ export async function validatePack(packObj, options = {}) {
   // shell; anything left is this course's own vocabulary, and only this course
   // can write it.
   results.undefinedTerms = undefinedTerms(packObj);
+
+  // A challenge whose task is never stated as a task. The brief is a scene and
+  // the instruction is a sentence somewhere inside it, so a student scanning
+  // for "what do I have to do" finds prose and gives up on reading it. Only
+  // the pack can write this line: the engine does not know what this course
+  // asked for.
+  results.unframedTasks = challenges
+    .filter(c => typeof c.objective !== 'string' || c.objective.trim().length === 0)
+    .map(c => ({ id: c.id, act: c.act, title: c.title }));
 
   return results;
 }

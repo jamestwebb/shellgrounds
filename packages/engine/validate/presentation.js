@@ -93,6 +93,110 @@ export const MAX_REVEAL_CAPTION_LENGTH = 240;
  */
 export const MAX_DEFINITION_LENGTH = 320;
 
+/**
+ * The one line that says what the student has to DO.
+ *
+ * A brief is a scene: it says where you are, why it matters, and somewhere
+ * inside it, what to do. Students read the scene and cannot find the task,
+ * because nothing marks which sentence is the instruction. The objective is
+ * that sentence pulled out and labelled, and it is the thing a student comes
+ * back to after a failed attempt.
+ *
+ * One sentence, and short enough to read without moving your eyes twice. If it
+ * needs two, the challenge is asking for two things and should be two
+ * challenges -- or the second sentence is context, and context is the brief's
+ * job.
+ *
+ * It states the GOAL, not the keystrokes. "Print the full path of the
+ * directory you are standing in" is a task. "Run `pwd`" is an answer, and an
+ * answer printed above the terminal is a challenge nobody has to think about.
+ */
+export const MAX_OBJECTIVE_LENGTH = 200;
+
+/**
+ * `theme.accent` is the one colour a pack still chooses, and it is the only one
+ * that survived a deliberate cull.
+ *
+ * `theme.titleBar`, `theme.sidebarTone`, `linux.shell` and `windows.shell` were
+ * carried by every shipped pack and read by nothing: the prompt is built from
+ * user and host, and chrome colour belongs to the student's own terminal scheme
+ * rather than to the course. They are removed from the format; a pack that
+ * still declares one is warned rather than failed, because deleting a key from
+ * somebody's pack.json is their edit to make.
+ *
+ * `accent` stays because netlify/functions/reveal.js genuinely reads it: a pack
+ * with no reveal picture gets a wash of its own accent instead, and the caption
+ * under the finished picture takes it as a border. Both are graphical elements
+ * that carry meaning, so WCAG 2.1 1.4.11 asks 3:1 against what they sit on —
+ * and what they sit on is the reveal screen's near-black ground.
+ */
+export const REVEAL_GROUND = '#0a0a09';
+export const MIN_ACCENT_CONTRAST = 3;
+
+/**
+ * Fields that were part of the manifest and are not any more, with the reason.
+ *
+ * They are reported by `shellgrounds validate` under a heading of their own
+ * rather than pushed into the warning stream, for the reason every finding in
+ * this project is: a warning among warnings is a thing nobody deletes. The
+ * shipped packs still carry these keys, and each pack's own author removes
+ * them — the validator's job is to say so, once, in a place that is read.
+ */
+export const REMOVED_MANIFEST_FIELDS = {
+  'theme.titleBar':
+    'Nothing renders it. A pack cannot set chrome text, because the terminal chrome belongs to '
+    + 'the student\'s own scheme.',
+  'theme.sidebarTone':
+    'Nothing reads it. A pack cannot set chrome colour: students choose from six schemes that '
+    + 'are contrast-tested at 4.5:1, and a pack-supplied tone is not.',
+  'linux.shell':
+    'Nothing reads it. The prompt is built from `user` and `host`.',
+  'windows.shell':
+    'Nothing reads it. The prompt is built from `user` and `host`.'
+};
+
+/** Which of the removed fields a manifest still declares. */
+export function removedFieldsIn(manifest = {}) {
+  const found = [];
+  for (const [dotted, why] of Object.entries(REMOVED_MANIFEST_FIELDS)) {
+    const [head, tail] = dotted.split('.');
+    if (manifest?.[head] && typeof manifest[head] === 'object' && manifest[head][tail] !== undefined) {
+      found.push({ field: `manifest.${dotted}`, why });
+    }
+  }
+  return found;
+}
+
+/** #rgb or #rrggbb to {r,g,b}, or null for anything this cannot measure. */
+function parseHexColour(value) {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(value).trim());
+  if (!m) return null;
+  const hex = m[1].length === 3 ? [...m[1]].map((ch) => ch + ch).join('') : m[1];
+  return {
+    r: parseInt(hex.slice(0, 2), 16),
+    g: parseInt(hex.slice(2, 4), 16),
+    b: parseInt(hex.slice(4, 6), 16)
+  };
+}
+
+const relativeLuminance = ({ r, g, b }) => {
+  const f = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+
+/** WCAG 2.1 contrast ratio between two hex colours, or null if either is unreadable. */
+export function contrastRatio(a, b) {
+  const ca = parseHexColour(a);
+  const cb = parseHexColour(b);
+  if (!ca || !cb) return null;
+  const la = relativeLuminance(ca);
+  const lb = relativeLuminance(cb);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
 const isNonEmptyString = (v) => typeof v === 'string' && v.trim().length > 0;
 
 /**
@@ -217,6 +321,32 @@ export function validatePresentation(manifest = {}) {
       + 'told only that they finished it. One line naming what they uncovered turns the picture '
       + 'into the end of your scenario instead of decoration.'
     );
+  }
+
+  // ── theme ────────────────────────────────────────────────────────────────
+  // One field, one floor. See the note above REVEAL_GROUND for what left and why.
+  if (manifest.theme !== undefined) {
+    const t = manifest.theme;
+    if (typeof t !== 'object' || t === null || Array.isArray(t)) {
+      errors.push('manifest.theme must be an object.');
+    } else {
+      if (t.accent !== undefined) {
+        const ratio = contrastRatio(t.accent, REVEAL_GROUND);
+        if (ratio === null) {
+          errors.push(
+            `manifest.theme.accent is ${JSON.stringify(t.accent)}. Write it as a hex colour `
+            + '(#22c55e), because it is drawn on the near-black reveal screen and its contrast '
+            + 'has to be measurable before it ships.'
+          );
+        } else if (ratio < MIN_ACCENT_CONTRAST) {
+          errors.push(
+            `manifest.theme.accent ${t.accent} has ${ratio.toFixed(1)}:1 contrast against the `
+            + `reveal screen's background ${REVEAL_GROUND}; WCAG 2.1 AA asks ${MIN_ACCENT_CONTRAST}:1 `
+            + 'for a graphical element that carries meaning. Pick a lighter shade of the same hue.'
+          );
+        }
+      }
+    }
   }
 
   // A pack's own vocabulary: its commands, and the words its course uses that

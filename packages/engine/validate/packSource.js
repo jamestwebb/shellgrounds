@@ -10,7 +10,7 @@
 // matters: today a teacher cannot see their pack validate until someone edits
 // packs/index.js for them.
 
-import { readFile, readdir, stat as fsStat } from 'node:fs/promises';
+import { readFile, stat as fsStat } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PACKS } from '../../../packs/index.js';

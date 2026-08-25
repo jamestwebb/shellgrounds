@@ -20,9 +20,11 @@ detail of every field and every check, see **`docs/PACK-FORMAT.md`**.
 - [Hiding a flag](#hiding-a-flag)
 - [Sharing the pack](#sharing-the-pack)
 - [Fading scaffolding: do not give away the answer for free](#fading-scaffolding-do-not-give-away-the-answer-for-free)
+- [The task and the scene are two different fields](#the-task-and-the-scene-are-two-different-fields)
 - [Writing the brief](#writing-the-brief)
+- [Name the act, then say what it is](#name-the-act-then-say-what-it-is)
 - [Writing hints](#writing-hints)
-- [Two findings the validator will report at you](#two-findings-the-validator-will-report-at-you)
+- [Findings the validator will report at you](#findings-the-validator-will-report-at-you)
 - [What is still hard](#what-is-still-hard)
 
 ---
@@ -507,16 +509,107 @@ not satisfy the success condition.
 
 ---
 
+## The task and the scene are two different fields
+
+A challenge carries two pieces of writing, and they do different jobs. Getting
+them the wrong way round is the most common thing wrong with a first pack.
+
+    "objective": "Print how many packets in `logs/net.log` were not allowed.",
+    "brief":     "Your report needs a number, not a listing. Nobody reads a
+                  hundred lines of traffic to find out it was ninety-seven."
+
+`objective` is **the task**. One sentence, starting with a verb, saying what
+must be true when the student is done. The screen shows it first, under the
+heading YOUR TASK, and it is what a student reads again after a failed attempt.
+
+`brief` is **the scene**. Where they are, what is at stake, why anybody would
+want this. It is shown below the task, under THE SITUATION.
+
+This split exists because a pack was tested on a real student and the product
+failed in a way nothing in the code could see. The screen showed a title, a
+definition of `pwd`, and three sentences of story with the instruction sitting
+in the middle of them. The student read all of it, could not find the task, and
+typed nothing. Every word needed was on screen. Not one of them was labelled as
+the thing to do.
+
+A pack that writes no `objective` still works — its `brief` is shown in the
+task box instead — but it gets the framing without the framing being true, and
+`validate` will list it under **NO TASK LINE**.
+
+### Writing the objective
+
+- **Start with the verb.** "Print", "Find", "Save", "Compute".
+- **State the goal, not the keystrokes.** *"Print the full path of the
+  directory you are standing in"* is a task. *"Run `pwd`"* is an answer, and an
+  answer printed above the terminal is a challenge nobody has to think about.
+- **Name the target.** The file, the directory, the number wanted. Making a
+  student guess the target is not difficulty, it is a maze.
+- **One sentence.** If it needs two, either the challenge is asking two things
+  and should be two challenges, or the second sentence is scene and belongs in
+  the brief. The limit is 200 characters and it is generous.
+
 ## Writing the brief
 
-- Address the student directly and say what outcome you want.
-- Name the file or directory involved. Making them guess the target is not
-  difficulty, it is a maze.
+- Set the scene: where they are, and why this is worth doing. The instruction
+  itself belongs in `objective`.
 - Say what the tool is for when a tool is genuinely new. Recall works only for
   something the student has met before; `awk` in act 4 needs its purpose named
   even when its syntax does not.
 - Keep it to two or three sentences. Long briefs get skimmed, and a skimmed
   brief is a student who types blind.
+- If your brief is one imperative sentence and nothing else, you have written
+  an objective, not a brief. Move it, and write the scene it was missing.
+- Name the thing in the room. If the brief still works with the filename
+  removed, the scenario did not need the tool.
+
+That last one is checked. When a challenge is graded on a command and every
+answer you accept names a file or a path, the brief has to name something that
+is really on that machine — the file, the directory it is in, or the kind of
+file with a `*.log` or a `.sh`. A brief that names none of them is a drill
+wearing a story, and `validate` prints it under **THE SCENE NEVER NEEDED THE
+TOOL**. Commands that take no object — `pwd`, `cls`, `tasklist` — are never
+asked for one.
+
+## Saying what a challenge stands on
+
+`teaches` says what a challenge covers. `builtOn` says what a student must
+already have done to have a chance at it:
+
+    "id":       "lt-3-boss",
+    "act":      3,
+    "teaches":  ["pipes", "sort", "uniq"],
+    "builtOn":  ["lt-2-grep", "lt-2-pipe"]
+
+Every id must be a challenge in this pack, earlier in the course, and in an act
+at or before this one. That is checked and it is an error, not a finding: a
+dependency a student cannot have reached is a line drawn to nowhere.
+
+Write one where a challenge genuinely leans on an earlier one — a boss on the
+skills its act taught, a second half on the file the first half made. Do not
+write one for every challenge that merely comes after another; a dependency
+that is always true says nothing. A pack that states fewer than one per act is
+reported under **NOTHING BUILDS ON ANYTHING**, which is a question rather than
+an accusation: is this a course, or a drill book?
+
+> **Nothing shows it to a student yet.** The field is written, checked and
+> documented, and no screen renders it. That is exactly the defect this project
+> spent a day removing elsewhere, so it is said out loud here instead of being
+> left to be found: the sidebar line is still owed.
+
+## Name the act, then say what it is
+
+Every act has a `name` and a `tagline`, and the tagline is not decoration:
+
+    "name":    "Act II: Reading the Night Log",
+    "tagline": "Filter, count, sort and pipe what the observatory recorded"
+
+An act name earns attention by being evocative, which is the same thing as
+being opaque. "First on Scene" is a good chapter title and tells a student
+nothing about what they are about to spend a term on. The tagline is the line
+that tells them, and it is shown directly under the name.
+
+Write it as what the student will be able to do, not as what happens in the
+story.
 
 ## Writing hints
 
@@ -529,10 +622,64 @@ not satisfy the success condition.
 
 ---
 
-## Two findings the validator will report at you
+## Findings the validator will report at you
+
+### NO TASK LINE
+
+Challenges with no `objective`. The engine shows the brief in the task box for
+these, so nothing is broken — but the student is reading a scene under a
+heading that promises an instruction. Write the sentence.
+
+
+### TOO MUCH AT ONCE, A NEW IDEA INSIDE A SYNTHESIS, TAUGHT AFTER IT WAS NEEDED
+
+```
+TOO MUCH AT ONCE: 6 challenges introduce more than two new ideas
+  · l2-sort (act 2) — new here: sort, sort -k, sort -n
+A NEW IDEA INSIDE A SYNTHESIS: 4 challenges combine known tools and slip in an unknown one
+  · l2-boss (act 2) — 5 ideas, first met here: uniq
+TAUGHT AFTER IT WAS NEEDED: 2 ideas get their own lesson after a challenge already required them
+  · && — needed in l3-rm (act 3), taught in l4-list-and (act 4)
+```
+
+These three read your `teaches` tags in course order and say where an idea
+arrives at a bad moment. None of them can be seen from inside one challenge,
+which is why they went unnoticed until somebody read all 104 at once.
+
+The fix is usually a move rather than a rewrite: split the challenge that
+introduces three things, teach the one idea a boss challenge assumes, or bring
+a lesson forward past the challenge that already needed it. If a tag is on a
+challenge that only touches the idea in passing, take the tag off — a false
+"first met here" is a finding you cannot fix any other way.
+
+### THE SCENE NEVER NEEDED THE TOOL
+
+```
+THE SCENE NEVER NEEDED THE TOOL: 2 of 9 briefs name nothing that is on the machine
+  · w2-set (act 2) — the answer names 'MY_VAR=123', the brief does not
+```
+
+See *Writing the brief*. Name the file, the directory, or the pattern of
+filename the student is going after.
+
+### NOTHING BUILDS ON ANYTHING
+
+```
+NOTHING BUILDS ON ANYTHING: 0 stated dependencies across 4 acts
+```
+
+No challenge in the pack says what it stands on. See *Saying what a challenge
+stands on*.
+
+### REMOVED FIELDS STILL DECLARED
+
+Your `pack.json` carries a field the format no longer has —
+`theme.titleBar`, `theme.sidebarTone`, `linux.shell` or `windows.shell`. Every
+shipped pack wrote all of them and nothing ever read one. Delete them; nothing a
+student sees will change.
 
 These do not stop your pack working. They are printed under their own heading
-with a count, because both of them quietly damage a course.
+with a count, because every one of them quietly damages a course.
 
 ### BROKEN ACCEPTED VARIANTS
 
@@ -633,11 +780,17 @@ out by writing a challenge and watching it fail validation. There is no single
 list yet; `help` inside the terminal is the closest thing. When a real tool your
 subject needs is missing, add it to `courseTools` in `pack.json` with a one-line
 description, so a student who types it is told what it is for rather than
-"command not found".
+"command not found". Having said a tool is not simulated, do not then grade a
+challenge on it: the validator fails a pack whose accepted answer starts with a
+name its own `courseTools` declares unreal, because that challenge cannot be
+solved as written.
 
-**Nothing checks your pedagogy except the scaffolding lint.** The validator can
-prove a challenge is solvable. It cannot tell you the challenge is boring, or
-that act 3 is a cliff, or that you taught `awk` before you taught pipes. Get a
+**Most of your pedagogy is still unchecked.** The validator can prove a
+challenge is solvable, and it now reads your `teaches` tags in course order, so
+it will tell you that act 3 introduces three things at once or that you taught
+`&&` after the challenge that needed it. It still cannot tell you the challenge
+is boring, that the story stopped making sense in act 2, or that the whole act
+is a cliff — and its reading of the course is only as honest as your tags. Get a
 colleague to play it start to finish before you give it to a class.
 
 ---

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Declarative Validation Predicates for Challenges and Verification
 
-import { findVfsKey, resolvePath, normalizePath } from '../vfs/path.js';
+import { resolvePath, normalizePath } from '../vfs/path.js';
 import { stat, readFile } from '../vfs/ops.js';
 import { md5, sha256Sync } from '../crypto-utils.js';
 import { compileSafe, testSafe } from './safe-regex.js';
@@ -39,7 +39,8 @@ export function evaluatePredicate(predicateConfig, context = {}) {
     cwd = '/',
     commandText = '',
     stdout = '',
-    stderr = '',
+    // No predicate reads stderr on its own; `output` carries both streams the
+    // way a terminal shows them. Named here would be a promise nothing keeps.
     output = '',
     status = 0,
     isWindows = false,

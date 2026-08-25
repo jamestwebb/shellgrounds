@@ -133,3 +133,229 @@ describe('Pack validator rejects broken content', () => {
     expect(errorText(r)).toMatch(/nowhere/);
   });
 });
+
+// ── Phase 3: the checks that read a course rather than a challenge ──────────
+//
+// Everything above breaks one shipped pack and asserts the validator notices.
+// These build the smallest pack that can possibly trip one rule, because the
+// question here is not "does the pack pass" but "can this rule fire at all".
+// A synthetic pack also pins the tuning: if someone loosens a threshold, the
+// example that was chosen to sit just over it stops being reported.
+
+import { expandFilesystem } from '../packages/engine/validate/packFile.js';
+import { checkCommandHonesty } from '../packages/engine/validate/packValidator.js';
+import { registry } from '../packages/engine/commands/registry.js';
+import { REAL_LINUX, REAL_WINDOWS } from '../packages/engine/unknown-command.js';
+
+const SYNTH_FS = () => expandFilesystem({
+  platform: 'linux',
+  root: '/',
+  tree: {
+    home: {
+      children: {
+        student: {
+          children: {
+            'notes.txt': { content: 'hello from the notes\n' },
+            'log.txt': { content: 'ERROR one\nERROR two\n' }
+          }
+        }
+      }
+    }
+  }
+});
+
+/** A challenge that passes every existing check, so only the new one speaks. */
+const solvable = (id, act, extra = {}) => ({
+  id,
+  act,
+  title: `Challenge ${id}`,
+  points: 10,
+  brief: 'The notes.txt in your home directory has the answer in it.',
+  objective: 'Print the contents of notes.txt.',
+  setup: { cwd: '/home/student' },
+  teaches: ['cat'],
+  acceptedVariants: ['cat notes.txt'],
+  success: {
+    predicate: 'allOf',
+    predicates: [
+      { predicate: 'commandMatches', pattern: '^cat\\s+notes\\.txt$' },
+      { predicate: 'outputContains', text: 'hello' }
+    ]
+  },
+  ...extra
+});
+
+const syntheticPack = ({ challenges, manifest = {} } = {}) => ({
+  id: 'synth-pack',
+  manifest: {
+    id: 'synth-pack',
+    name: 'Synthetic Pack',
+    version: '1.0.0',
+    platforms: ['linux'],
+    icon: '🧪',
+    description: 'A pack built by a test to trip exactly one check.',
+    linux: { home: '/home/student', user: 'student', host: 'box' },
+    acts: [{ id: 1, name: 'Act I' }, { id: 2, name: 'Act II' }],
+    badges: [],
+    ...manifest
+  },
+  challenges,
+  help: {},
+  commands: {},
+  createFs: SYNTH_FS
+});
+
+describe('Pack validator reads the course, not only the challenge', () => {
+  it('reports a challenge that introduces more than two ideas at once', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [
+        solvable('sy-1-a', 1, { teaches: ['cat', 'sorting', 'redirection'] }),
+        solvable('sy-1-b', 1)
+      ]
+    }));
+    expect(r.tooMuchAtOnce.map(t => t.id)).toEqual(['sy-1-a']);
+    expect(r.tooMuchAtOnce[0].tags).toEqual(['cat', 'sorting', 'redirection']);
+    // A finding, never a failure: this pack still ships.
+    expect(r.valid).toBe(true);
+  });
+
+  it('reports a new idea smuggled into a synthesis, and does not double-count it', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [
+        solvable('sy-1-a', 1, { teaches: ['cat'] }),
+        solvable('sy-1-b', 1, { teaches: ['pipes'] }),
+        solvable('sy-2-boss', 2, { teaches: ['cat', 'pipes', 'uniq'] })
+      ]
+    }));
+    expect(r.coldInSynthesis.map(c => c.id)).toEqual(['sy-2-boss']);
+    expect(r.coldInSynthesis[0].tags).toEqual(['uniq']);
+    // Three tags with one new is a synthesis, not a firehose.
+    expect(r.tooMuchAtOnce).toEqual([]);
+  });
+
+  it('reports an idea whose own lesson comes after the challenge that needed it', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [
+        solvable('sy-1-a', 1, { teaches: ['cat'] }),
+        solvable('sy-1-boss', 1, { teaches: ['cat', 'pipes', 'uniq'] }),
+        solvable('sy-2-uniq', 2, { teaches: ['uniq', 'de-duplication'] })
+      ]
+    }));
+    expect(r.taughtLate).toHaveLength(1);
+    expect(r.taughtLate[0]).toMatchObject({
+      tag: 'uniq', neededIn: 'sy-1-boss', dedicatedIn: 'sy-2-uniq'
+    });
+  });
+
+  it('catches a builtOn that names a challenge which does not exist', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1), solvable('sy-1-b', 1, { builtOn: ['sy-1-ghost'] })]
+    }));
+    expect(r.valid).toBe(false);
+    expect(errorText(r)).toMatch(/sy-1-ghost/);
+  });
+
+  it('catches a builtOn that points forwards through the course', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1, { builtOn: ['sy-2-b'] }), solvable('sy-2-b', 2)]
+    }));
+    expect(r.valid).toBe(false);
+    expect(errorText(r)).toMatch(/comes later in the course/);
+  });
+
+  it('catches a builtOn on a challenge in a later act', async () => {
+    // Earlier in the array, later in the course: act order wins, and the act
+    // rule has to be checked separately or a mis-ordered file slips through.
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-2-a', 2), solvable('sy-1-b', 1, { builtOn: ['sy-2-a'] })]
+    }));
+    expect(r.valid).toBe(false);
+    expect(errorText(r)).toMatch(/sy-2-a/);
+  });
+
+  it('reports a pack where nothing builds on anything, and stays quiet when things do', async () => {
+    const flat = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1), solvable('sy-1-b', 1), solvable('sy-2-c', 2)]
+    }));
+    expect(flat.builtOnGap).toMatchObject({ links: 0, acts: 2 });
+
+    const joined = await validatePack(syntheticPack({
+      challenges: [
+        solvable('sy-1-a', 1),
+        solvable('sy-1-b', 1, { builtOn: ['sy-1-a'] }),
+        solvable('sy-2-c', 2, { builtOn: ['sy-1-b'] })
+      ]
+    }));
+    expect(joined.errors).toEqual([]);
+    expect(joined.checks.builtOn.links).toBe(2);
+    expect(joined.builtOnGap).toBe(null);
+  });
+
+  it('reports a brief that names nothing the student can touch', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1, {
+        brief: 'Something in your home directory has the answer in it.',
+        objective: 'Print what it says.'
+      })]
+    }));
+    expect(r.sceneWithoutObject.map(s => s.id)).toEqual(['sy-1-a']);
+    // The default brief names notes.txt, which is really there, so it passes.
+    const named = await validatePack(syntheticPack({ challenges: [solvable('sy-1-a', 1)] }));
+    expect(named.sceneWithoutObject).toEqual([]);
+    expect(named.checks.sceneObjects.checked).toBe(1);
+  });
+
+  it('does not ask for a filename when the answer takes no object', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-pwd', 1, {
+        brief: 'You have lost track of where you are standing.',
+        objective: 'Print the directory you are in.',
+        acceptedVariants: ['pwd'],
+        success: {
+          predicate: 'allOf',
+          predicates: [
+            { predicate: 'commandMatches', pattern: '^pwd\\s*$' },
+            { predicate: 'outputContains', text: '/home/student' }
+          ]
+        }
+      })]
+    }));
+    expect(r.checks.sceneObjects.checked).toBe(0);
+    expect(r.sceneWithoutObject).toEqual([]);
+  });
+
+  it('FAILS a pack that requires a tool it told the student is not simulated', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1)],
+      manifest: { courseTools: { cat: 'a real tool for printing files' } }
+    }));
+    expect(r.valid).toBe(false);
+    expect(errorText(r)).toMatch(/courseTools/);
+    expect(errorText(r)).toMatch(/sy-1-a/);
+  });
+
+  it('finds the same contradiction in a commandMatches pattern with no variants', async () => {
+    const r = await validatePack(syntheticPack({
+      challenges: [solvable('sy-1-a', 1, {
+        acceptedVariants: undefined,
+        brief: 'Print `cat notes.txt` to read the notes.'
+      })],
+      manifest: { courseTools: { cat: 'a real tool for printing files' } }
+    }));
+    expect(r.valid).toBe(false);
+    expect(errorText(r)).toMatch(/courseTools/);
+  });
+
+  it('never reports a command as stale unless it really is in both lists', () => {
+    const honesty = checkCommandHonesty();
+    expect(honesty.checked).toBeGreaterThan(0);
+    for (const { name, platform } of honesty.stale) {
+      const real = platform === 'windows' ? REAL_WINDOWS : REAL_LINUX;
+      expect(real.has(name), `${name} is not in the ${platform} honesty list`).toBe(true);
+      expect(registry.get(name, platform), `${name} is not implemented for ${platform}`).toBeTruthy();
+    }
+    // The pass flag has to follow the list, or the report can say "clean" while
+    // holding findings — which is the shape of every bug this file exists for.
+    expect(honesty.pass).toBe(honesty.stale.length === 0);
+  });
+});
