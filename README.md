@@ -25,10 +25,8 @@
 </p>
 
 **A free command-line training ground for high school and university technology educators.**
-For CS, IT and cybersecurity programs that need students fluent at a shell — without a
-lab of virtual machines to build, patch and rebuild every term. Students open a web page,
-pick a handle, and learn real bash and Windows CMD by solving small challenges. Setup
-takes about twenty minutes — [start here](#deploy-it-for-your-class).
+Real bash and Windows CMD, in a browser, with no lab of virtual machines to build, patch
+and rebuild every term. [Set it up in twenty minutes →](#deploy-it-for-your-class)
 
 **Key features**
 
