@@ -16,7 +16,7 @@
 //      obvious way back. The screen refuses it in place, with the reason,
 //      rather than letting the save fail.
 
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Layers, Check, AlertTriangle, RefreshCw, Save, Info, Monitor, Terminal
 } from 'lucide-react';

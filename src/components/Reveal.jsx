@@ -15,7 +15,7 @@
 //   Erase people. Every tile remembers who uncovered it, and hovering says so.
 //   Recognition without ranking is the whole point: names, no order.
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Users, Sparkles, Clock } from 'lucide-react';
 import { fetchReveal } from '../utils/api';
 import { getPack } from '../../packs/index.js';
@@ -133,6 +133,20 @@ export const Reveal = ({ packId, handle }) => {
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
         </button>
       </div>
+
+      {/* ── The same numbers, said in words ─────────────────────────────────
+          The grid below is 200-odd unlabelled tiles: nothing to a screen
+          reader, because a div with no role or text carries no information
+          at all. Turning every tile into a button would trade that silence
+          for 200 tab stops, which is worse. The numbers behind the grid are
+          already in the response, so this says them once, in a live region,
+          before the grid a sighted student would read visually. See A2 in
+          docs/ACCESSIBILITY.md. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {complete
+          ? `The whole picture is uncovered. ${finds} of ${target} finds, ${contributors} people contributing.`
+          : `${pct} percent uncovered, ${finds} of ${target} finds, ${contributors} people contributing.`}
+      </p>
 
       {/* ── The picture ──────────────────────────────────────────────────── */}
       <div

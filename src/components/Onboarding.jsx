@@ -14,7 +14,6 @@
 // because a student on a shared lab machine gets a different browser every
 // week and would otherwise be welcomed to Shellgrounds every single time.
 
-import React from 'react';
 import {
   Terminal, Shell as ShellIcon, Trophy, Lightbulb, ArrowRight, Check, Users, Monitor
 } from 'lucide-react';

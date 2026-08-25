@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Badge unlock celebration overlay with confetti burst
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, Star, Award, ChevronRight } from 'lucide-react';
+import { Trophy, Star, ChevronRight } from 'lucide-react';
 import { sounds } from '../utils/audio';
 
 export const BadgeCelebration = ({ badge, onClose }) => {
@@ -18,7 +18,7 @@ export const BadgeCelebration = ({ badge, onClose }) => {
           origin: { y: 0.6 },
           colors: ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981']
         });
-      } catch (e) {
+      } catch {
         // Fallback gracefully if canvas is blocked
       }
     }

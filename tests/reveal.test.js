@@ -6,7 +6,7 @@
 // happen are: sending scores, sending an ordering, or naming who is behind.
 // Those are easy to add by accident and hard to notice, so they are pinned.
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { freshStore, call, get, post, register, SETUP_CODE } from './functions.helpers.js';
 import {
   buildReveal, tileOrder, revealTarget, revealGrid, GRID_LADDER, MIN_TARGET, MAX_TARGET

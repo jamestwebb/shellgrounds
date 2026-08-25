@@ -1,24 +1,48 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
-// Desktop Keyboard Guard for screens under 768px width
+// Desktop Keyboard Guard for small touchscreens
 
-import React, { useState, useEffect } from 'react';
-import { Keyboard, Laptop, AlertCircle } from 'lucide-react';
-import { BrandMark } from './BrandMark';
+import { useState, useEffect } from 'react';
+import { Keyboard } from 'lucide-react';
 
+// ── Width alone caught the wrong user (fails 1.4.10 Reflow) ────────────────
+//
+// Browser zoom shrinks the *effective* CSS viewport: a 1280px monitor at 400%
+// reports 320px, same as a phone. Gating on `window.innerWidth < 768` alone
+// therefore caught a low-vision student zoomed in on a desktop, with a real
+// keyboard attached, and told them to go and find one -- exactly the user
+// this screen was never meant to stop, and a bypass button does not undo
+// having been told you are on the wrong device first. See A1 in
+// docs/ACCESSIBILITY.md.
+//
+// `(pointer: coarse)` is the thing actually being detected: touch input, no
+// hover, no fine positioning -- which a phone or tablet has and a zoomed-in
+// desktop with a mouse does not, whatever the reported width says. Requiring
+// BOTH the narrow viewport and a coarse pointer means a magnifier user keeps
+// their fine pointer and never sees this screen at all; the existing bypass
+// stays, for the rare device this heuristic still gets wrong.
 export const KeyboardGuard = () => {
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [bypassed, setBypassed] = useState(false);
 
   useEffect(() => {
-    const checkScreen = () => {
-      setIsSmallScreen(window.innerWidth < 768);
+    const coarsePointer = window.matchMedia('(pointer: coarse)');
+    const check = () => {
+      setBlocked(window.innerWidth < 768 && coarsePointer.matches);
     };
-    checkScreen();
-    window.addEventListener('resize', checkScreen);
-    return () => window.removeEventListener('resize', checkScreen);
+    check();
+    window.addEventListener('resize', check);
+    // The pointer type itself does not change with a resize -- a tablet
+    // rotated or a window resized keeps the same input hardware -- but it CAN
+    // change without one: a Bluetooth mouse paired to a tablet, or unpaired
+    // from one, mid-session. `change` is the event for that.
+    coarsePointer.addEventListener('change', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      coarsePointer.removeEventListener('change', check);
+    };
   }, []);
 
-  if (!isSmallScreen || bypassed) return null;
+  if (!blocked || bypassed) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-term-void text-neutral-200 flex items-center justify-center p-6 font-mono text-center select-none">

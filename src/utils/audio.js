@@ -58,7 +58,7 @@ class SoundManager {
       gain.connect(this.ctx.destination);
       osc.start();
       osc.stop(this.ctx.currentTime + 0.04);
-    } catch (e) {
+    } catch {
       // Ignore audio failure
     }
   }
@@ -89,7 +89,7 @@ class SoundManager {
       gain.connect(this.ctx.destination);
       osc.start(now);
       osc.stop(now + 0.07);
-    } catch (e) {
+    } catch {
       // Ignore audio failure
     }
   }
@@ -116,7 +116,7 @@ class SoundManager {
         osc.start(now + idx * 0.08);
         osc.stop(now + idx * 0.08 + 0.25);
       });
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }
@@ -141,7 +141,7 @@ class SoundManager {
       gain.connect(this.ctx.destination);
       osc.start(now);
       osc.stop(now + 0.2);
-    } catch (e) {
+    } catch {
       // Ignore
     }
   }

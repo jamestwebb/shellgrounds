@@ -7,7 +7,7 @@
 // packs a teacher writes later — and it updates as the student creates and
 // removes directories.
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { FolderOpen, Folder, FileText, CornerDownRight, Home } from 'lucide-react';
 
 const SEP = (isWindows) => (isWindows ? '\\' : '/');

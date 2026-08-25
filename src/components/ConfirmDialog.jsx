@@ -7,8 +7,8 @@
 //
 // `window.confirm` is genuinely accessible. It traps focus, Escape cancels it,
 // a screen reader announces it, and focus returns where it started when it
-// closes. The two hand-rolled overlays already in this codebase
-// (SimulationBoundary, PackSelector) do none of those things: they set
+// closes. The hand-rolled overlays already in this codebase (PackSelector, and
+// SimulationBoundary until it became a tab) do none of those things: they set
 // role="dialog" and aria-modal and stop there, so a keyboard user can Tab
 // straight out of them into the page behind. Swapping a native confirm for a
 // third copy of that would have been a downgrade wearing better styling.
@@ -22,7 +22,7 @@
 // focus when the dialog opens. A confirm defaults to OK, and this dialog
 // spends something the student cannot get back.
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * A modal yes/no question.

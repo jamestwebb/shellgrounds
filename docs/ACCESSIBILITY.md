@@ -4,6 +4,10 @@ Reviewed 23 August 2026 against **WCAG 2.1 Level AA**, the standard US public
 schools and public universities are held to. Findings are measured where they
 can be measured and marked as unverified where they cannot.
 
+**Updated 25 August 2026.** A1 through A6, A6b closed; see each finding below
+for what changed and where. A7 and A8 remain open and unverified — closing
+them needs a person, not another static pass. Section 6 tracks what is left.
+
 ---
 
 ## 1. Why this applies to a free teaching site
@@ -85,6 +89,12 @@ device.
 — or drop the overlay to a dismissable banner. `(pointer: coarse)` is the
 property actually being detected.
 
+**Closed.** `KeyboardGuard.jsx` now gates on `window.matchMedia('(pointer:
+coarse)').matches` as well as the width check, both required to block. A
+zoomed-in desktop reports a narrow width but keeps a fine pointer, so it no
+longer trips the guard; a phone or tablet still does. The existing bypass
+button stays, for whatever device this heuristic still gets wrong.
+
 ### A2 — The class picture is invisible and unreachable *(fails 1.1.1, 2.1.1, 4.1.2)*
 
 `src/components/Reveal.jsx:160-176`. Every tile is a `<div>`. Attribution — who
@@ -101,6 +111,16 @@ uncovered, 143 of 200 finds, 9 people contributing" — in a live region costs
 almost nothing and delivers most of the value. Make tiles `<button>`s only if
 attribution is worth the tab stops; a list beneath the grid may serve better.
 
+**Closed, for the summary.** `Reveal.jsx` now carries a `role="status"
+aria-live="polite"` paragraph, visually hidden (`sr-only`) and placed just
+above the grid, saying exactly that: percent uncovered, finds out of target,
+contributors. The 200-odd tiles themselves are still plain `<div>`s and stay
+that way on purpose — turning each into a tab stop was rejected in the
+original finding as worse than the silence it would fix. Per-tile attribution
+(`title="@handle — challengeId"`) is therefore still unreachable by keyboard
+or screen reader; that half of the finding is not closed, and a list of
+finders beneath the grid remains the likely fix if it turns out to matter.
+
 ### A3 — Solved-but-stale is signalled by colour alone *(fails 1.4.1)*
 
 `src/components/ChallengeSidebar.jsx:315`. A challenge worth revisiting is
@@ -112,6 +132,13 @@ Introduced by this codebase today, which is a fair illustration of how easily
 it happens.
 
 **Fix:** change the glyph as well as the colour, or add text.
+
+**Closed, and it stayed closed.** `ChallengeSidebar.jsx` already differs by
+glyph — `RotateCcw` for solved-but-stale, `CheckCircle2` for solved-and-fresh
+— each with its own `aria-label`, and the "worth a revisit" button below it
+carries different wording as well as a different colour. Re-checked on this
+pass, since this was flagged as a regression risk in the finding itself; it
+had not regressed.
 
 ### A4 — Four text colours fail the contrast minimum *(fails 1.4.3)*
 
@@ -131,6 +158,18 @@ at 2.42 is the feed's timestamps and is the worst single value in the palette.
 **Fix:** raise `neutral-500` → `neutral-400` (7.49, passes) and `neutral-600` →
 `neutral-500` at minimum. This is a find-and-replace, not a redesign.
 
+**Closed, without the find-and-replace.** `tailwind.config.js` now overrides
+the two ramp steps directly — `neutral-500` → `#a3a3a3` (7.49:1 against
+term-gray), `neutral-600` → `#8a8a8a` (5.47:1 against term-gray, 4.56:1 in the
+tightest case the chrome actually uses, `term-sidebar-raised`) — so every
+existing use and every future one is fixed in one file, with no class names
+touched anywhere. `tests/chrome-contrast.test.js` now holds this line: it
+scans every same-string `bg-`/`text-`/`placeholder-` pair in `App.jsx` and
+`src/components/*.jsx` and fails if any of them drops back under 4.5:1,
+including a new colour nobody thought to check against the ramp by hand. It
+is a new discipline for the chrome, not just this one fix — see the file's own
+header for what it does and does not cover.
+
 ### A5 — No status messages are announced *(fails 4.1.3)*
 
 Solving a challenge, a wrong answer, a revealed hint and the "Still right"
@@ -143,6 +182,14 @@ The terminal itself **does** have `aria-live="polite"`
 feedback — the part that says whether you got it right — that is silent.
 
 **Fix:** one `role="status"` container for feedback.
+
+**Closed.** Both feedback containers in `ChallengeSidebar.jsx` — the practice
+box's result line, and the flag-submission result below the input — now carry
+`role="status" aria-live="polite"`, so a wrong answer, "Still right", and a
+find are all announced the moment they render, the same way the terminal's own
+output already was. Hint reveals were not wired into this: the fix in the
+finding above scoped itself to grading feedback specifically, and a hint
+appearing is a separate kind of event that was left for its own pass.
 
 ### A6b — Two overlays claim to be modal and do not behave like one
 
@@ -163,12 +210,33 @@ when it is not.
 semantics and focus restoration without a line of trap code. The same component
 is what these two should become.
 
+**Closed, for both of the remaining two.** `SimulationBoundary` was made a tab
+rather than an overlay — it sits in the main tab row next to Terminal and The
+shore, with no modal claim to keep, which is a stronger fix than trapping
+focus in a dialog it never needed to be. `PackSelector.jsx` now follows
+`ConfirmDialog.jsx` directly: a real `<dialog>` with `showModal()`, the same
+Escape-to-cancel wiring, the same backdrop-click handling, and focus lands on
+its close button when it opens. Its slate palette and emoji icons are gone
+too, replaced with the `term-*` tokens and lucide icons every other screen
+already uses — it was the last screen that had not caught up. Each pack row
+is now a real `<button>`, not an `onClick` div with a second `<button>`
+nested inside it (which was invalid HTML, and meant the row was never
+reachable by keyboard at all, on top of the trap this finding named).
+
 ### A6 — No skip link, and one landmark short
 
 `App.jsx` has `<header>` and `<main>` but no `<nav>`, and no skip link. The tab
 order therefore runs the whole header and the act list before reaching the
 terminal, on every page load. Not a 2.1 AA failure on its own — 2.4.1 Bypass
 Blocks is met by the landmarks — but it is a daily tax on a keyboard user.
+
+**Closed.** `App.jsx` now opens with a "Skip to terminal" link — the first
+focusable element on the page, off-screen at rest and pulled into view on
+focus — pointing at `#main-content`, which `<main>` now carries along with
+`tabIndex={-1}` so the skip actually moves focus rather than only scrolling.
+The tab row (Terminal / The shore / Reference / Instructor) is wrapped in
+`<nav aria-label="Sections">`, so the header now has a `<nav>` landmark
+alongside `<header>` and `<main>`.
 
 ### A7 — The terminal input has no visible focus *(risks 2.4.7)*
 
@@ -203,8 +271,12 @@ and because these are the things not to break:
 - **The terminal is a labelled live region** — `role="region"`,
   `aria-label="Interactive CLI Terminal"`, `aria-live="polite"`, and the input
   carries `aria-label="Shell input"`.
-- **Most text passes comfortably** — 19 of 23 measured pairs pass 4.5:1, most
-  of them above 10:1.
+- **Chrome text now passes as a matter of course, not luck.** The 19-of-23
+  figure below is what the original hand-measurement found; it is superseded
+  by `tests/chrome-contrast.test.js`, which checks every same-string
+  `bg`/`text`/`placeholder` pair across `App.jsx` and `src/components/*.jsx` —
+  well past 23 pairs — and holds all of them at 4.5:1 going forward, not just
+  the ones somebody happened to measure by hand.
 - **Headings are used, and `<h1>` exists on every screen.**
 - **No drag interactions, no CAPTCHA, no time limits** — three whole classes of
   barrier that simply do not arise here, and two WCAG 2.2 AA criteria met for
@@ -229,19 +301,32 @@ and because these are the things not to break:
 
 ## 6. Order to fix in
 
-1. **A4 contrast** — a find-and-replace, and it removes the largest count of
-   individual failures in one commit.
-2. **A3 colour-only signal** — one glyph.
-3. **A5 status messages** — one container.
-4. **A2 the reveal** — a text summary gets most of the value cheaply.
-5. **A1 reflow** — needs a decision about what is really being detected.
-6. **A8 screen reader testing** — the expensive one, and the only one that
-   tells you whether any of the above worked.
+1. ~~**A4 contrast**~~ — closed. `tailwind.config.js` overrides the ramp;
+   `tests/chrome-contrast.test.js` holds the line.
+2. ~~**A3 colour-only signal**~~ — already closed on arrival; re-checked, not
+   regressed.
+3. ~~**A5 status messages**~~ — closed. Both feedback containers in
+   `ChallengeSidebar.jsx` are now `role="status" aria-live="polite"`.
+4. ~~**A2 the reveal**~~ — closed for the summary line; the per-tile
+   attribution half is still open, see the finding.
+5. ~~**A1 reflow**~~ — closed. `KeyboardGuard.jsx` now requires a coarse
+   pointer as well as a narrow width.
+6. ~~**A6 skip link and landmark**~~ — closed. Skip link, `<nav>`, done in
+   `App.jsx`.
+7. ~~**A6b two overlays claiming to be modal**~~ — closed. `SimulationBoundary`
+   is a tab; `PackSelector` is a real `<dialog>`, restyled to match the rest
+   of the product.
+8. **A8 screen reader testing** — the expensive one, still not done, and the
+   only one that tells you whether any of the above actually worked for the
+   person it was written for.
+9. **A7 terminal focus** — still unverified whether the caret alone satisfies
+   a reviewer; low cost either way, so it can ride along with A8.
 
-A **VPAT 2.5** should not be written until at least 1–5 are done and a person
-has tested with a screen reader. An ACR that claims "Supports" on the strength
-of a static review is worse than no ACR, because a procurement officer will
-rely on it.
+A **VPAT 2.5** should not be written until a person has tested with a screen
+reader (A8) — the static findings above being closed narrows what that person
+will find broken, but does not stand in for them. An ACR that claims
+"Supports" on the strength of a static review is worse than no ACR, because a
+procurement officer will rely on it.
 
 ---
 

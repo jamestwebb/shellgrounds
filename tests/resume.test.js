@@ -62,6 +62,25 @@ describe('a returning student lands where they stopped', () => {
     expect(resumeSelection(challenges, all).id).toBe('w');
   });
 
+  // A content pass can move a challenge to an earlier act -- linux-fundamentals
+  // moved l4-list-and from act 4 to act 3, to put the && lesson ahead of the
+  // boss fight that needs it. The solved map is keyed by challenge id, written
+  // before the move, and never touched by it. resumeSelection must keep
+  // skipping that id on its own -- the act number is not part of the lookup.
+  it('still skips a solved challenge after its act changes', () => {
+    const original = [
+      { id: 'a', act: 1, platform: 'linux' },
+      { id: 'b', act: 1, platform: 'linux' },
+      { id: 'c', act: 2, platform: 'linux' },
+      { id: 'd', act: 2, platform: 'linux' }
+    ];
+    const moved = original.map(c => (c.id === 'c' ? { ...c, act: 1 } : c));
+    const solved = { a: {}, b: {}, c: {} };
+
+    expect(resumeSelection(original, solved).id).toBe('d');
+    expect(resumeSelection(moved, solved).id).toBe('d');
+  });
+
   it('survives a pack with one challenge, and an empty one', () => {
     expect(resumeSelection([{ id: 'only', act: 1 }], { only: {} }).id).toBe('only');
     expect(resumeSelection([], {})).toBeUndefined();

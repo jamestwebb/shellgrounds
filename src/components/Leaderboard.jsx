@@ -1,10 +1,9 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Public Leaderboard view with time-windowing and badge achievements
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  Trophy, Medal, Award, RefreshCw, Search, Calendar,
-  TrendingUp, Shield, Clock, Zap, CheckCircle2, User
+  Trophy, RefreshCw, Search, Shield
 } from 'lucide-react';
 import { fetchLeaderboard } from '../utils/api';
 import { PACKS } from '../../packs/index.js';
@@ -20,7 +19,6 @@ const badgesForPack = (packId) =>
 export const Leaderboard = ({ currentHandle, packId = null, packName = null }) => {
   const [windowFilter, setWindowFilter] = useState('all'); // 'all' | 'week'
   const [leaderboard, setLeaderboard] = useState([]);
-  const [totalPlayers, setTotalPlayers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [error, setError] = useState(null);
@@ -31,8 +29,9 @@ export const Leaderboard = ({ currentHandle, packId = null, packName = null }) =
     try {
       const res = await fetchLeaderboard(filter, packId);
       setLeaderboard(res.leaderboard || []);
-      setTotalPlayers(res.totalPlayers || 0);
-    } catch (err) {
+      // The API returns a player count and this screen has never shown it.
+      // Reading it into state that nothing rendered only made that look wired.
+    } catch {
       setError('Could not load the board. That is usually the network, not you.');
     } finally {
       setLoading(false);

@@ -1,14 +1,13 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Shellgrounds — learn the command line, one find at a time
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  Terminal as TerminalIcon, Trophy, MapPin, Shield, LogOut,
-  Volume2, VolumeX, Monitor, Moon, Sun, Award, Zap, HelpCircle, BookOpen, Package, Layers,
-  Sparkles
+  Terminal as TerminalIcon, Trophy, Shield, LogOut,
+  Volume2, VolumeX, BookOpen, Package, Sparkles, ChevronDown
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
-import { Boot } from './components/Boot';
+import { Boot, hasSeenBoot, rememberBootSeen } from './components/Boot';
 import { Welcome, ChoosePack, PackBriefing } from './components/Onboarding';
 import { Gate } from './components/Gate';
 import { Terminal } from './components/Terminal';
@@ -17,7 +16,6 @@ import { Leaderboard } from './components/Leaderboard';
 import { Reveal } from './components/Reveal';
 import { SystemMap } from './components/SystemMap';
 import { AdminOverview } from './components/AdminOverview';
-import { CommandReference } from './components/CommandReference';
 import { BadgeCelebration } from './components/BadgeCelebration';
 import { KeyboardGuard } from './components/KeyboardGuard';
 import SimulationBoundary from './components/SimulationBoundary';
@@ -34,6 +32,7 @@ import {
 } from './utils/api';
 import { replaceFlagTokens, injectFlagsIntoVFS } from './utils/vfs-injector';
 import { explainCommand } from '../packages/engine/coach.js';
+import { badgesEarned } from '../packages/engine/badges.js';
 import { sounds } from './utils/audio';
 import { readStoredTheme, storeTheme } from './utils/terminalThemes.js';
 import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
@@ -80,8 +79,17 @@ export default function App() {
   // Navigation & Session States
   const [viewState, setViewState] = useState('boot');
   const [activeTab, setActiveTab] = useState('terminal'); // 'terminal' | 'leaderboard' | 'map' | 'admin' | 'reference'
+  // ── The curtain only goes up once ────────────────────────────────────────
+  //
+  // Welcome and the pack briefing are each shown once and then stay out of the
+  // way, which is the rule this product states about its own explanations. The
+  // boot sequence was the exception: two and a half seconds of startup checks
+  // on every single mount, including every reload during a lesson.
+  //
+  // Read once, at first render, so the decision is made before anything paints
+  // and nobody watches the full sequence begin and then get cut short.
+  const [bootBrief] = useState(() => hasSeenBoot());
   const [session, setSession] = useState(null);
-  const [loadingSession, setLoadingSession] = useState(true);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
 
   // Active Pack Configuration
@@ -124,15 +132,21 @@ export default function App() {
   const [flagMap, setFlagMap] = useState({});
   const [unlockedHints, setUnlockedHints] = useState({});
   const [solvesMap, setSolvesMap] = useState({});
-  const [earnedBadges, setEarnedBadges] = useState([]);
+  // The badge just earned, if the last solve earned one. Held here rather than
+  // read from the leaderboard, because a badge that a student only discovers
+  // later, from a ranking, is not a reward for anything they can remember doing.
   const [newBadge, setNewBadge] = useState(null);
 
   // Modals
-  const [showBoundaryModal, setShowBoundaryModal] = useState(false);
   const [showPackModal, setShowPackModal] = useState(false);
 
   // Settings
-  const [scanlines, setScanlines] = useState(true);
+  // Scanlines were state with no way to change them: nothing ever called the
+  // setter, so this was a setting in name only. It is a constant until
+  // something offers the student a control -- and a control is worth adding,
+  // because a flickering overlay is exactly the kind of effect some readers
+  // need to be able to turn off.
+  const scanlines = true;
   // The student's terminal colour scheme. Read from this browser on first
   // render rather than in an effect, so nobody sees the default flash past
   // before their own choice is applied.
@@ -222,7 +236,6 @@ export default function App() {
     async function init() {
       const token = getAuthToken();
       if (!token) {
-        setLoadingSession(false);
         setViewState('gate');
         return;
       }
@@ -285,7 +298,6 @@ export default function App() {
         console.warn('Session init failed:', err);
         setViewState('gate');
       } finally {
-        setLoadingSession(false);
       }
     }
     init();
@@ -346,6 +358,33 @@ export default function App() {
     }
   };
 
+  // ── Standing where the challenge says it starts ─────────────────────────
+  //
+  // Every challenge declares `setup.cwd`. The validator proves the directory
+  // exists, the format documents it, and it was applied in exactly one place:
+  // restoring a session. Selecting a challenge did not apply it.
+  //
+  // So a student who had walked around -- which is the whole of act one --
+  // arrived at "Tonight's paperwork lives in `Documents`. Run `cd Documents`"
+  // already standing in Documents, where that command errors. The brief was
+  // right, the student was right, and the challenge was unreachable.
+  //
+  // The move is announced. A prompt that silently changes directory underneath
+  // somebody is a worse lesson than the one it fixes.
+  const standAtStartOf = (challenge, plat = platform) => {
+    const start = challenge?.setup?.cwd;
+    if (!start || start === cwd) return;
+    const fs = plat === 'windows' ? windowsFs : linuxFs;
+    // A pack that has moved a directory should not strand anyone in a path
+    // that is no longer there; the self-healing effect above handles that.
+    if (!cwdExists(fs, start)) return;
+    setCwd(start);
+    setTerminalHistory(prev => [
+      ...prev,
+      { type: 'output', text: `» This task starts in ${start}`, isDim: true }
+    ]);
+  };
+
   // Command Execution in Terminal
   const handleExecuteCommand = (cmdText, meta = {}) => {
     if (meta.isTabList) {
@@ -379,9 +418,38 @@ export default function App() {
       installedPackages,
       packCommands: currentPack.commands,
       packHelp: currentPack.help,
+      // The sentence a student reads when they type a real command this
+      // simulator does not implement. The engine has taken this parameter
+      // since it was written, all three packs write the field, the validator
+      // checks it and the format documents it -- and nothing ever handed it
+      // over, so every course shipped the engine's generic wording instead of
+      // its own. The pack owns what this course says; the engine owns the
+      // fallback for a pack that says nothing.
+      unsimulatedMessage: currentPack.manifest.messages?.unsimulated,
+      // The same seam, for the same reason, twice more.
+      //
+      // `courseTools` is the pack's honesty map: the tools this course names in
+      // its briefs and does not simulate, each with a sentence saying what it
+      // is for. A forensics student who types `mmls` -- a tool their own course
+      // told them about -- was answered "command not found", which is not true
+      // and which the pack had already written the true answer for. It reads as
+      // "you typed it wrong", so they retype it.
+      packTools: currentPack.manifest.courseTools,
+      // And the wording for shell syntax this simulator does not parse. The
+      // engine reads it from here; without it every course fell back to the
+      // engine's generic sentence instead of its own.
+      unsupportedSyntaxMessage: currentPack.manifest.messages?.unsupportedSyntax,
       user: isWin ? (currentPack.manifest.windows?.user || 'Student') : (currentPack.manifest.linux?.user || 'student')
     });
 
+    // An install has to survive to the NEXT command line, or "install it,
+    // then run it" is two commands that cannot both be true. runPipeline has
+    // returned installedPackage since it was written; nothing ever read it, so
+    // the Set stayed empty for the whole session and every pack tool had to
+    // pretend it was already installed.
+    if (res.installedPackage) {
+      setInstalledPackages(prev => new Set(prev).add(res.installedPackage));
+    }
     if (res.newCwd) setCwd(res.newCwd);
     if (res.env) setShellEnv(res.env);
     if (res.fs) {
@@ -445,6 +513,25 @@ export default function App() {
     }
   };
 
+  // ── Earning a badge, out loud ───────────────────────────────────────────
+  //
+  // Thirteen badges across the three packs, each one the reward for finishing
+  // an act, and the only place a student could ever find out they had one was
+  // the leaderboard -- a different tab, opened later, if at all. The overlay
+  // that says so has existed and been imported the whole time; nothing called
+  // the setter that shows it.
+  //
+  // The rule itself lives in packages/engine/badges.js, so the browser and the
+  // leaderboard function agree about what has been earned. Diffing before
+  // against after is what makes this the MOMENT of earning rather than a
+  // standing fact: a student who already holds the badge must not be
+  // congratulated again every time they practise a challenge in that act.
+  const celebrateNewBadges = useCallback((beforeIds, afterIds) => {
+    const held = new Set(badgesEarned(currentPack, beforeIds).map(b => b.id));
+    const gained = badgesEarned(currentPack, afterIds).find(b => !held.has(b.id));
+    if (gained) setNewBadge(gained);
+  }, [currentPack]);
+
   const handleChallengeSuccess = async (challenge, proofCommand = '') => {
     // Redoing something already solved used to return here in silence. A
     // student typed the right answer and the terminal said nothing back, which
@@ -486,6 +573,10 @@ export default function App() {
           isSuccess: true
         }
       ]);
+      // Practice mode keeps its solves in the browser and never asks the
+      // server, so if the celebration were wired to the submit response
+      // instead, every badge in practice mode would go unannounced.
+      celebrateNewBadges(Object.keys(solvesMap), [...Object.keys(solvesMap), challenge.id]);
       return;
     }
 
@@ -510,6 +601,7 @@ export default function App() {
             isSuccess: true
           }
         ]);
+        celebrateNewBadges(Object.keys(solvesMap), [...Object.keys(solvesMap), challenge.id]);
       }
     } catch (err) {
       console.warn('Auto-submit failed:', err);
@@ -532,6 +624,10 @@ export default function App() {
           ...prev,
           { type: 'output', text: `[★] FOUND IT (+${c.points} XP): ${c.title}\n${nextSolveMessage()}`, isSuccess: true }
         ]);
+        // Typing the find is a solve like any other, so the act it completes
+        // pays out like any other. Wiring the celebration only to the command
+        // path would have made a whole class of solve silent again.
+        celebrateNewBadges(Object.keys(solvesMap), [...Object.keys(solvesMap), c.id]);
       }
       return;
     }
@@ -552,6 +648,10 @@ export default function App() {
           ...prev,
           { type: 'output', text: `[★] FOUND IT (+${res.points} XP)\n${[res.successMessage, nextSolveMessage()].filter(Boolean).join('\n')}`, isSuccess: true }
         ]);
+        celebrateNewBadges(
+          Object.keys(solvesMap),
+          [...Object.keys(solvesMap), res.challengeId || selectedChallengeId]
+        );
       }
     } catch (err) {
       sounds.playError();
@@ -635,7 +735,16 @@ export default function App() {
 
   // Active view routing
   if (viewState === 'boot') {
-    return <Boot onComplete={() => setViewState(session ? 'app' : 'gate')} packName={currentPack.manifest.name} />;
+    return (
+      <Boot
+        brief={bootBrief}
+        onComplete={() => {
+          rememberBootSeen();
+          setViewState(session ? 'app' : 'gate');
+        }}
+        packName={currentPack.manifest.name}
+      />
+    );
   }
 
   if (viewState === 'gate') {
@@ -664,6 +773,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-term-void text-neutral-200 flex flex-col font-mono select-none">
+      {/* First focusable element on the page. Without it, a keyboard user
+          tabs through the whole header and the act list on every load before
+          ever reaching the terminal -- not a 2.1 AA failure on its own since
+          the landmarks below satisfy 2.4.1 Bypass Blocks, but a daily tax on
+          a keyboard user. See A6 in docs/ACCESSIBILITY.md.
+          Off-screen at rest, the same way as any skip link, and pulled onto
+          screen on focus so a sighted keyboard user can see where they are. */}
+      <a
+        href="#main-content"
+        className="absolute left-2 top-2 z-50 -translate-y-16 focus:translate-y-0 transition-transform
+                   bg-term-green text-term-black text-xs font-bold px-3 py-2 rounded
+                   focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-white"
+      >
+        Skip to terminal
+      </a>
+
       <KeyboardGuard />
 
       {/* Navigation Header */}
@@ -676,19 +801,36 @@ export default function App() {
             </span>
           </div>
 
-          {/* Pack Indicator & Selector */}
+          {/* Course indicator, and the way back to the other courses.
+              This was the pack's name in a bordered box with a tooltip, which
+              is what a STATUS reads like, so students who wanted another
+              course looked for it everywhere except here. The three things
+              that make a control look like a control: a word saying what the
+              value is ("Course"), a chevron saying it opens, and a name the
+              screen reader announces as an action rather than as a pack. */}
           <button
             onClick={() => setShowPackModal(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-300 hover:bg-slate-800 hover:border-slate-600 transition"
-            title="Switch challenge pack"
+            aria-haspopup="dialog"
+            aria-label={`Course: ${currentPack.manifest.name}. Choose a different course`}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700
+                       text-xs text-slate-300 hover:bg-slate-800 hover:border-emerald-500/60 hover:text-white
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+                       focus-visible:outline-term-green transition cursor-pointer max-w-[16rem]"
+            title="Choose a different course"
           >
-            <Package size={13} className="text-emerald-400" />
-            <span className="font-semibold">{currentPack.manifest.name}</span>
+            <Package size={13} className="text-emerald-400 shrink-0" />
+            <span className="text-slate-400 hidden lg:inline">Course:</span>
+            <span className="font-semibold truncate">{currentPack.manifest.name}</span>
+            <ChevronDown size={13} className="text-slate-400 shrink-0" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center space-x-1 sm:space-x-2">
+        {/* Tab Navigation. The only <nav> landmark in the chrome -- App.jsx
+            had <header> and <main> and nothing between them, so a screen
+            reader had no way to jump straight to "the other places to be"
+            the way 2.4.1 Bypass Blocks intends. See A6 in
+            docs/ACCESSIBILITY.md. */}
+        <nav aria-label="Sections" className="flex items-center space-x-1 sm:space-x-2">
           <button
             onClick={() => setActiveTab('terminal')}
             className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -713,10 +855,19 @@ export default function App() {
               : <><Sparkles size={14} /> <span className="hidden sm:inline">The shore</span></>}
           </button>
 
+          {/* A reference is read in the middle of doing something, and read
+              again. It used to open as an overlay that had to be dismissed
+              before anything could be typed, so it sits in the tab row now and
+              looks like what it is: another place to be, one click from the
+              terminal and back. */}
           <button
-            onClick={() => setShowBoundaryModal(true)}
-            className="px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40 border border-cyan-500/30"
-            title="What this terminal simulates, and every command in it"
+            onClick={() => setActiveTab('reference')}
+            className={`px-3 py-1.5 rounded text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'reference'
+                ? 'bg-term-green text-term-black shadow-[0_0_10px_rgba(34,197,94,0.3)]'
+                : 'text-neutral-400 hover:text-white hover:bg-term-gray'
+            }`}
+            title="Every command this terminal simulates, and what it does not"
           >
             <BookOpen size={14} /> <span className="hidden sm:inline">Reference</span>
           </button>
@@ -733,7 +884,7 @@ export default function App() {
               <Shield size={14} /> <span className="hidden sm:inline">Instructor</span>
             </button>
           )}
-        </div>
+        </nav>
 
         {/* Right Status Controls */}
         <div className="flex items-center space-x-2 sm:space-x-3">
@@ -762,8 +913,12 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content Body */}
-      <main className="flex-1 flex overflow-hidden relative">
+      {/* Main Content Body. tabIndex={-1} makes the fragment target of the
+          skip link above programmatically focusable: a <main> is not
+          focusable on its own, and a skip link that scrolls the target into
+          view without moving focus there has not actually skipped anything
+          for a keyboard or screen reader user. */}
+      <main id="main-content" tabIndex={-1} className="flex-1 flex overflow-hidden relative">
         <div className={`flex-1 overflow-hidden ${activeTab === 'terminal' ? 'flex' : 'hidden'}`}>
           {/* Left Rail: Challenge Navigation & Briefing */}
           <ChallengeSidebar
@@ -776,15 +931,15 @@ export default function App() {
             onSelectChallenge={(id) => {
               setSelectedChallengeId(id);
               const challenge = currentPack.challenges.find(c => c.id === id);
-              if (challenge?.platform && challenge.platform !== platform) {
-                handleSwitchPlatform(challenge.platform, id);
-              }
+              const target = challenge?.platform || platform;
+              // Order matters: switching platform resets the directory to that
+              // platform's home, so the challenge's own start goes after it.
+              if (target !== platform) handleSwitchPlatform(target, id);
+              standAtStartOf(challenge, target);
             }}
             solvesMap={solvesMap}
             totalScore={totalScore}
             onSubmitFlag={handleFlagSubmit}
-            platform={platform}
-            onSwitchPlatform={handleSwitchPlatform}
             unlockedHints={unlockedHints}
             onOpenHint={handleOpenHint}
             isAdmin={!!session?.isAdmin}
@@ -796,7 +951,13 @@ export default function App() {
               platform={platform}
               cwd={cwd}
               user={platform === 'windows' ? (currentPack.manifest.windows?.user || 'Student') : (currentPack.manifest.linux?.user || 'student')}
-              host={platform === 'windows' ? 'Desktop' : (currentPack.manifest.linux?.host || 'sandbox')}
+              // Both sides read the pack. The Windows branch used to be the
+              // literal 'Desktop', so windows-cmd-essentials -- which names its
+              // seized machine `lostfound` -- put someone else's hostname on
+              // every prompt of the course.
+              host={platform === 'windows'
+                ? (currentPack.manifest.windows?.host || 'Desktop')
+                : (currentPack.manifest.linux?.host || 'sandbox')}
               terminalHistory={terminalHistory}
               currentInput={currentInput}
               setCurrentInput={setCurrentInput}
@@ -841,17 +1002,18 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'reference' && (
+          <SimulationBoundary defaultPlatform={platform} />
+        )}
+
         {activeTab === 'admin' && session?.isAdmin && (
           <AdminOverview packId={activePackId} />
         )}
       </main>
 
-      {/* Simulation Boundary Reference Modal */}
-      <SimulationBoundary
-        isOpen={showBoundaryModal}
-        onClose={() => setShowBoundaryModal(false)}
-        defaultPlatform={platform}
-      />
+      {/* The moment a badge is earned. Dismissing it clears the badge, which is
+          what stops it reappearing on the next render. */}
+      <BadgeCelebration badge={newBadge} onClose={() => setNewBadge(null)} />
 
       {/* Content Pack Selector Modal */}
       <PackSelector

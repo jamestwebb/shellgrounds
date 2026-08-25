@@ -3,7 +3,7 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
 import { FIND_TOKEN_PREFIX, FIND_TOKEN_OPEN } from '../../packages/engine/constants.js';
-import { Terminal as TerminalIcon, CornerDownLeft, Sparkles, Trash2, MapPin, Palette } from 'lucide-react';
+import { Terminal as TerminalIcon, Sparkles, Trash2, MapPin, Palette } from 'lucide-react';
 import { getTabCompletions } from '../engine/complete';
 import { sounds } from '../utils/audio';
 import { themeVars, getTheme, TERMINAL_THEMES } from '../utils/terminalThemes.js';

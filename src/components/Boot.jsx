@@ -2,10 +2,10 @@
 // Boot screen for Shellgrounds. The checks are engine-neutral on purpose:
 // this screen runs for every pack, so it must not speak one pack's fiction.
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Terminal, Cpu, HardDrive, Wifi, Key, Database, Shield,
-  Check, Circle, Play, ArrowDownCircle, Activity
+  Check, Play, ArrowDownCircle, Activity
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { sounds } from '../utils/audio';
@@ -26,7 +26,46 @@ const BOOT_CHECKS = [
   { id: 'ready', label: 'Ready when you are', icon: Activity, duration: 200 },
 ];
 
-export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
+// ── Shown in full once per device ───────────────────────────────────────────
+//
+// Welcome and the pack briefing are each shown once and then get out of the
+// way; that is the rule this product states about its own explanations, and
+// the boot sequence was the one screen exempt from it. Two and a half seconds
+// of startup checks, on every mount, including every reload during a lesson.
+//
+// This flag is kept in localStorage rather than on the server, for two reasons.
+// Boot runs before a session exists, so there is no token to authenticate the
+// seen endpoint with -- the request could not be made at the moment it is
+// needed. And per-device is the right grain anyway: this is a curtain going up
+// on a machine, not a lesson learned by an account. A student on a school
+// machine in the morning and their own laptop at night gets the full sequence
+// once on each, which is correct; the briefing they have read stays read.
+//
+// Every access is wrapped, because a private window, a locked-down school
+// profile, or blocked site data make localStorage throw rather than return
+// nothing, and a start screen that will not render because it could not read a
+// preference is a far worse failure than one animation too many.
+const BOOT_SEEN_KEY = 'shellgrounds.bootSeen';
+
+/** True when this browser has already watched the full sequence. */
+export function hasSeenBoot() {
+  try {
+    return window.localStorage.getItem(BOOT_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function rememberBootSeen() {
+  try {
+    window.localStorage.setItem(BOOT_SEEN_KEY, '1');
+  } catch {
+    /* Not remembered. The full sequence plays again next time, and nothing else
+       about the product changes. */
+  }
+}
+
+export const Boot = ({ onComplete, _userHandle, packName = 'Shellgrounds', brief = false }) => {
   const [completedChecks, setCompletedChecks] = useState([]);
   const [currentCheck, setCurrentCheck] = useState(null);
   const [isReady, setIsReady] = useState(false);
@@ -34,6 +73,7 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    if (brief) return undefined;
     const timers = [];
     let totalDuration = 0;
 
@@ -60,7 +100,7 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
     });
 
     return () => timers.forEach((id) => clearTimeout(id));
-  }, []);
+  }, [brief]);
 
   // App.jsx has passed this prop under both names at different times. Accept
   // either, and never throw on the button that is the only way out of here.
@@ -85,7 +125,28 @@ export const Boot = ({ onComplete, userHandle, packName = 'Shellgrounds' }) => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [canSkip, handleFinish]);
 
+  // The short version. Long enough to be a curtain rather than a flicker, short
+  // enough that nobody waits on it, and Enter still cuts it short.
+  useEffect(() => {
+    if (!brief) return undefined;
+    setCanSkip(true);
+    const id = setTimeout(handleFinish, 700);
+    return () => clearTimeout(id);
+  }, [brief, handleFinish]);
+
   const clockText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  if (brief) {
+    return (
+      <div className="fixed inset-0 bg-term-void text-term-green flex items-center justify-center p-4 font-mono select-none z-50">
+        <div className="flex items-center gap-3 text-sm">
+          <BrandMark size={26} />
+          <span className="text-green-400 font-bold tracking-wider">Shellgrounds</span>
+          <span className="text-neutral-400">opening {packName}…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-term-void text-term-green flex items-center justify-center p-4 font-mono select-none z-50">

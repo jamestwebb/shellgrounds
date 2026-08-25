@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Rational Mystic LLC. PolyForm Noncommercial 1.0.0 — see LICENSE.md
 // Gate view: Handle registration, class password verification, and session resume
 
-import React, { useState, useEffect } from 'react';
-import { Terminal, Shield, Key, AlertCircle, ArrowRight, Check, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Terminal, Key, AlertCircle, ArrowRight, Check, RefreshCw } from 'lucide-react';
 import { BrandMark } from './BrandMark';
 import { checkSFW } from '../engine/sfw-filter';
 import { registerHandle } from '../utils/api';
