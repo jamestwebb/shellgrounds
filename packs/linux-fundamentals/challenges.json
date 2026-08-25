@@ -5,6 +5,7 @@
     "title": "Where Are You Standing?",
     "points": 10,
     "brief": "First thing on shift: put your position on the record. Run `pwd` to print the full path of the directory you are standing in.",
+    "objective": "Print the full path of the directory you are standing in.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -43,6 +44,7 @@
     "title": "What Is In Here?",
     "points": 10,
     "brief": "Look around before you touch anything. Run `ls` to list the files and folders in the directory you are standing in.",
+    "objective": "List the files and folders in the directory you are standing in.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -82,6 +84,7 @@
     "title": "Reveal Hidden Dotfiles",
     "points": 15,
     "brief": "On Linux a filename that begins with a dot is hidden from a plain listing, and the observer before you left something in your home directory with exactly that kind of name. Use `ls -la` to list everything, hidden files included.",
+    "objective": "List everything in your home directory, hidden files included.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -124,6 +127,7 @@
     "title": "Changing Directories",
     "points": 15,
     "brief": "Tonight's paperwork lives in `Documents`. Run `cd Documents` to move into it.",
+    "objective": "Move into the `Documents` directory.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -156,6 +160,7 @@
     "title": "Climbing Up (..)",
     "points": 15,
     "brief": "The symbol `..` always means the parent directory. From `Documents`, run `cd ..` to get back to your home directory.",
+    "objective": "Move from `Documents` back up to your home directory.",
     "setup": {
       "cwd": "/home/student/Documents"
     },
@@ -189,6 +194,7 @@
     "title": "Read the Night Notes",
     "points": 15,
     "brief": "Print the whole of `Documents/notes.txt` with `cat` and find out what tonight's target is.",
+    "objective": "Print the whole of `Documents/notes.txt` on screen.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -220,6 +226,7 @@
     "title": "First Few Lines (head)",
     "points": 15,
     "brief": "`Documents/data.csv` is the duty roster. Show only its first 3 lines with `head` — the column names, and the first two people on it.",
+    "objective": "Show only the first 3 lines of `Documents/data.csv`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -250,6 +257,7 @@
     "title": "Last Few Lines (tail)",
     "points": 15,
     "brief": "Show only the last 2 lines of `Documents/data.csv` with `tail`.",
+    "objective": "Show only the last 2 lines of `Documents/data.csv`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -280,6 +288,7 @@
     "title": "Wildcard Globbing (*)",
     "points": 20,
     "brief": "The observatory website lives in `projects/web`. List every `.js` file in there with a single `*` pattern instead of typing filenames: `ls projects/web/*.js`.",
+    "objective": "List every `.js` file in `projects/web` with a single wildcard pattern.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -323,6 +332,7 @@
     "title": "Multiple Wildcards",
     "points": 20,
     "brief": "List every `.txt` file in `Documents` with one wildcard pattern.",
+    "objective": "List every `.txt` file in `Documents` with a single wildcard pattern.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -366,6 +376,7 @@
     "title": "BOSS: The Handover Note",
     "points": 35,
     "brief": "The observer before you left a note in your home directory, and a plain listing will not show it. Find it, read it, and submit the dome key written inside — it was generated for you alone, so nobody else can hand it to you.",
+    "objective": "Find the hidden note in your home directory, read it, and submit the dome key inside.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -404,6 +415,7 @@
     "title": "Search Patterns with grep",
     "points": 20,
     "brief": "Pull every line out of `Documents/data.csv` that mentions the word `active`. `grep` is the tool that prints the lines matching a pattern.",
+    "objective": "Print every line of `Documents/data.csv` that mentions `active`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -439,6 +451,7 @@
     "title": "Case-Insensitive Grep (-i)",
     "points": 20,
     "brief": "The dome controller writes `logs/app_errors.log`, and it spells trouble three different ways: ERROR, Error and error. Find all three of them in one search.",
+    "objective": "Find every error line in `logs/app_errors.log` in one search, whatever its capitalisation.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -483,6 +496,7 @@
     "title": "Inverting Matches (-v)",
     "points": 25,
     "brief": "`logs/app_errors.log` is mostly INFO noise. Show every line EXCEPT the ones containing INFO.",
+    "objective": "Print every line of `logs/app_errors.log` except the ones containing `INFO`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -526,6 +540,7 @@
     "title": "Line Counting (wc -l)",
     "points": 20,
     "brief": "How many requests did the observatory website serve last night? Count the lines in `Documents/server_access.log`.",
+    "objective": "Count the lines in `Documents/server_access.log`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -567,9 +582,54 @@
   {
     "id": "l2-sort",
     "act": 2,
-    "title": "Sorting Data (sort)",
+    "title": "Sorting Numbers (sort -n)",
+    "points": 20,
+    "brief": "`Documents/dome_temps.log` is one dome temperature reading per line, in the order the controller logged them. Put them in order, coldest first. `sort` reads text by default, and a two-digit reading can land in the wrong place unless it is told the column holds numbers.",
+    "objective": "Sort the readings in `Documents/dome_temps.log` from lowest to highest.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "dome_temps\\.log"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "-6\n0\n1\n4\n7\n9\n12"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "`sort` compares lines as text by default. One find tells it to compare them as numbers instead."
+      },
+      {
+        "cost": 10,
+        "text": "Run `sort -n Documents/dome_temps.log`."
+      }
+    ],
+    "successMessage": "Without the numeric find, 12 sorts before 9, because alphabetically \"1\" comes before \"9\".",
+    "teaches": [
+      "sort",
+      "sort -n"
+    ],
+    "solution": "sort -n Documents/dome_temps.log",
+    "acceptedVariants": [
+      "sort -n Documents/dome_temps.log",
+      "sort -n ./Documents/dome_temps.log"
+    ]
+  },
+  {
+    "id": "l2-sort-field",
+    "act": 2,
+    "title": "Sorting by Field (sort -t / -k)",
     "points": 25,
-    "brief": "`Documents/data.csv` is comma separated, and column 4 is the hours each person logged. Put the roster in order by that column, smallest number first. `sort` has to be told the separator, the column, and that the column holds numbers.",
+    "brief": "`Documents/data.csv` is comma separated, and column 4 is the hours each person logged. Put the roster in order by that column, smallest number first. You already know the find that keeps it numeric; `sort` also needs to be told the separator and which column to use.",
+    "objective": "Put `Documents/data.csv` in order by column 4, smallest number first.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -589,18 +649,16 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Three finds: one sets the field separator, one picks the field number, one forces numeric rather than alphabetical order."
+        "text": "Two more finds: one sets the field separator, one picks the field number. Comma is the separator here, and hours is the fourth field."
       },
       {
         "cost": 10,
         "text": "Run `sort -t, -k4 -n Documents/data.csv`."
       }
     ],
-    "successMessage": "Without the numeric find, 105 sorts before 78, because alphabetically \"1\" comes before \"7\".",
+    "successMessage": "Same numeric find as before, now aimed at one column of a bigger file instead of the whole line.",
     "teaches": [
-      "sort",
-      "sort -k",
-      "sort -n"
+      "sort -k"
     ],
     "solution": "sort -t, -k4 -n Documents/data.csv",
     "acceptedVariants": [
@@ -615,6 +673,7 @@
     "title": "Field Extraction (cut)",
     "points": 25,
     "brief": "From `Documents/data.csv`, print only column 2 (the name) and column 4 (the hours). `cut` slices columns out of delimited text.",
+    "objective": "Print only column 2 and column 4 of `Documents/data.csv`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -659,6 +718,7 @@
     "title": "The Pipeline (grep | wc -l)",
     "points": 30,
     "brief": "How many requests in `Documents/server_access.log` came back with status 401? Do it in one line: find the matching lines, then feed them straight into a counter.",
+    "objective": "Print, in one line, how many requests in `Documents/server_access.log` returned status 401.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -704,6 +764,7 @@
     "title": "Output Redirection (>)",
     "points": 30,
     "brief": "Save every error line from `logs/app_errors.log` — all three spellings — into a new file at `/tmp/critical_errors.txt`. Nothing should appear on the screen.",
+    "objective": "Save every error line from `logs/app_errors.log` into `/tmp/critical_errors.txt`, with nothing on screen.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -753,6 +814,7 @@
     "title": "Append Redirection (>>)",
     "points": 30,
     "brief": "Add the line `Audit log verified` to the END of `/tmp/audit_trail.log` without erasing anything already in it.",
+    "objective": "Add the line `Audit log verified` to the end of `/tmp/audit_trail.log` without erasing what is already there.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -797,6 +859,7 @@
     "title": "Split Output (tee)",
     "points": 35,
     "brief": "Show every `Weather` line from `Documents/data.csv` on screen AND save those same lines to `/tmp/weather_team.txt`, in one command.",
+    "objective": "Show every `Weather` line from `Documents/data.csv` on screen AND save the same lines to `/tmp/weather_team.txt`, in one command.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -840,11 +903,55 @@
     ]
   },
   {
+    "id": "l2-uniq",
+    "act": 2,
+    "title": "Collapsing Repeats (uniq)",
+    "points": 20,
+    "brief": "The dome controller writes its status to `Documents/dome_status.log` every time it polls, whether or not anything changed. Show the run of readings with the repeats collapsed, so only the actual status changes are left.",
+    "objective": "Print `Documents/dome_status.log` with each run of repeated lines collapsed to one.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "dome_status\\.log"
+        },
+        {
+          "predicate": "outputEquals",
+          "text": "sealed\nopen\nsealed"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "`uniq` drops a line that is an exact repeat of the one directly above it. Repeats that are not next to each other are left alone."
+      },
+      {
+        "cost": 10,
+        "text": "Run `uniq Documents/dome_status.log`."
+      }
+    ],
+    "successMessage": "Nine polls became three lines. `uniq` only ever compares a line to its neighbour, never to the whole file.",
+    "teaches": [
+      "uniq"
+    ],
+    "solution": "uniq Documents/dome_status.log",
+    "acceptedVariants": [
+      "uniq Documents/dome_status.log",
+      "cat Documents/dome_status.log | uniq"
+    ]
+  },
+  {
     "id": "l2-boss",
     "act": 2,
     "title": "BOSS: How Many Machines Called?",
     "points": 40,
     "brief": "`Documents/server_access.log` holds one request per line, and the first field of each line is the address that made it. Several addresses appear more than once. Print how many DIFFERENT addresses appear in the file — one number, nothing else.",
+    "objective": "Print how many different addresses appear in `Documents/server_access.log` — one number, nothing else.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -892,6 +999,7 @@
     "title": "Create Empty Files (touch)",
     "points": 20,
     "brief": "Open a scratch file for the night: create an empty file at `/tmp/new_file.txt`.",
+    "objective": "Create an empty file at `/tmp/new_file.txt`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -925,6 +1033,7 @@
     "title": "Make Directories (mkdir -p)",
     "points": 20,
     "brief": "Make a new directory `projects/api`. Use the find that also creates any missing parent, so the command works whether or not `projects` is already there.",
+    "objective": "Create the directory `projects/api`, creating any missing parent as well.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -960,6 +1069,7 @@
     "title": "Copy Files (cp)",
     "points": 20,
     "brief": "Back up tonight's notes: copy `Documents/notes.txt` to `/tmp/notes_backup.txt`.",
+    "objective": "Copy `Documents/notes.txt` to `/tmp/notes_backup.txt`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1002,7 +1112,8 @@
     "act": 3,
     "title": "Recursive Copy (cp -r)",
     "points": 25,
-    "brief": "Copy the whole `projects/web` directory, everything inside it included, to `/tmp/web_backup`.",
+    "brief": "The day crew wants the whole observatory website exactly as it stands tonight — every file in it, not only the ones you happened to touch.",
+    "objective": "Copy the whole `projects/web` directory, everything inside it included, to `/tmp/web_backup`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1045,7 +1156,8 @@
     "act": 3,
     "title": "Move & Rename (mv)",
     "points": 20,
-    "brief": "Rename `projects/scripts/deploy.py` to `deploy_prod.py`, leaving it in the same directory.",
+    "brief": "The deploy script is about to be pointed at the production dome. Its name should say so before somebody runs it by accident at three in the morning.",
+    "objective": "Rename `projects/scripts/deploy.py` to `deploy_prod.py`, leaving it in the same directory.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1080,6 +1192,7 @@
     "title": "Remove Files (rm)",
     "points": 20,
     "brief": "`logs/debug.log` is noise and the day crew wants it gone. Delete it — and on the same line list `logs` again, so you can see for yourself that it went.",
+    "objective": "Delete `logs/debug.log` and, on the same line, list `logs` to see that it went.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1099,7 +1212,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`rm` removes a file. There is no undo and no recycle bin, so checking afterwards is a habit worth having. `&&` runs a second command once the first succeeds."
+        "text": "`rm` removes a file. There is no undo and no recycle bin, so checking afterwards is a habit worth having."
       },
       {
         "cost": 10,
@@ -1109,8 +1222,7 @@
     "successMessage": "Two files left, and you saw it rather than assumed it. Verifying a delete costs one extra command.",
     "teaches": [
       "rm",
-      "file-deletion",
-      "&&"
+      "file-deletion"
     ],
     "solution": "rm logs/debug.log && ls logs",
     "acceptedVariants": [
@@ -1119,47 +1231,12 @@
     ]
   },
   {
-    "id": "l3-chmod-numeric",
-    "act": 3,
-    "title": "Permissions (chmod octal)",
-    "points": 30,
-    "brief": "Lock `Documents/notes.txt` down so the owner can read and write it and nobody else can do anything at all. Set the octal mode.",
-    "setup": {
-      "cwd": "/home/student"
-    },
-    "success": {
-      "predicate": "fileHasMode",
-      "path": "/home/student/Documents/notes.txt",
-      "mode": 384
-    },
-    "hints": [
-      {
-        "cost": 0,
-        "text": "Read is 4, write is 2, execute is 1. Add them up per column: owner, then group, then everybody else."
-      },
-      {
-        "cost": 10,
-        "text": "Run `chmod 600 Documents/notes.txt`."
-      }
-    ],
-    "successMessage": "Mode 600 reads as `-rw-------`: the owner, and nobody else at all.",
-    "teaches": [
-      "chmod",
-      "file-permissions",
-      "octal-modes"
-    ],
-    "solution": "chmod 600 Documents/notes.txt",
-    "acceptedVariants": [
-      "chmod 600 Documents/notes.txt",
-      "chmod 600 ./Documents/notes.txt"
-    ]
-  },
-  {
     "id": "l3-chmod-symbolic",
     "act": 3,
     "title": "Make Executable (chmod +x)",
     "points": 25,
     "brief": "`projects/scripts/deploy.py` cannot be run yet. Give it execute permission.",
+    "objective": "Give `projects/scripts/deploy.py` execute permission.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1202,11 +1279,49 @@
     ]
   },
   {
+    "id": "l3-chmod-numeric",
+    "act": 3,
+    "title": "Permissions (chmod octal)",
+    "points": 30,
+    "brief": "Lock `Documents/notes.txt` down so the owner can read and write it and nobody else can do anything at all. Set the octal mode.",
+    "objective": "Set `Documents/notes.txt` so the owner may read and write it and nobody else may do anything.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "fileHasMode",
+      "path": "/home/student/Documents/notes.txt",
+      "mode": 384
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "Read is 4, write is 2, execute is 1. Add them up per column: owner, then group, then everybody else."
+      },
+      {
+        "cost": 10,
+        "text": "Run `chmod 600 Documents/notes.txt`."
+      }
+    ],
+    "successMessage": "Mode 600 reads as `-rw-------`: the owner, and nobody else at all.",
+    "teaches": [
+      "chmod",
+      "file-permissions",
+      "octal-modes"
+    ],
+    "solution": "chmod 600 Documents/notes.txt",
+    "acceptedVariants": [
+      "chmod 600 Documents/notes.txt",
+      "chmod 600 ./Documents/notes.txt"
+    ]
+  },
+  {
     "id": "l3-stat",
     "act": 3,
     "title": "Inspect Inodes & Timestamps (stat)",
     "points": 20,
     "brief": "Show the size, permissions, inode number and timestamps of `Documents/notes.txt`. A plain `ls -l` does not show all of that.",
+    "objective": "Show the size, permissions, inode number and timestamps of `Documents/notes.txt`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1251,6 +1366,7 @@
     "title": "Superuser Elevation (sudo)",
     "points": 35,
     "brief": "`/etc/shadow` holds the account password hashes and only root may read it, so `cat /etc/shadow` is refused. Read it anyway.",
+    "objective": "Read `/etc/shadow`, which only root may open.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1294,11 +1410,56 @@
     "commandCheckExemptReason": "Intentionally fails: the challenge teaches Permission denied and the sudo escalation that fixes it."
   },
   {
+    "id": "l4-list-and",
+    "act": 3,
+    "title": "Conditional AND (&&)",
+    "points": 30,
+    "brief": "On one line: create the directory `/tmp/test_dir`, then create the file `/tmp/test_dir/file.txt` inside it — but only attempt the file if the directory step succeeded.",
+    "objective": "In one line: create `/tmp/test_dir`, then create `/tmp/test_dir/file.txt` only if the directory step succeeded.",
+    "setup": {
+      "cwd": "/home/student"
+    },
+    "success": {
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "commandMatches",
+          "pattern": "&&"
+        },
+        {
+          "predicate": "fileExists",
+          "path": "/tmp/test_dir/file.txt"
+        }
+      ]
+    },
+    "hints": [
+      {
+        "cost": 0,
+        "text": "One operator runs the second command only when the first one exits successfully."
+      },
+      {
+        "cost": 15,
+        "text": "Run `mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt`."
+      }
+    ],
+    "successMessage": "`&&` reads the exit code for you. It is how a script stops instead of ploughing on after a failure.",
+    "teaches": [
+      "&&",
+      "command-lists"
+    ],
+    "solution": "mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt",
+    "acceptedVariants": [
+      "mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt",
+      "mkdir /tmp/test_dir && touch /tmp/test_dir/file.txt"
+    ]
+  },
+  {
     "id": "l3-boss",
     "act": 3,
     "title": "BOSS: Seal the Night's Records",
     "points": 45,
     "brief": "Before you hand over, put a copy of `logs/auth.log` into a new directory `/tmp/handover`, lock that copy so only its owner may read and write it, and list the directory in long form so the permissions are visible. One line, with the steps joined so that each runs only if the one before it worked.",
+    "objective": "In one line: copy `logs/auth.log` into a new `/tmp/handover`, lock the copy to its owner, and list the directory in long form — each step only if the one before it worked.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1354,6 +1515,7 @@
     "title": "Finding Files by Name",
     "points": 30,
     "brief": "Somewhere below your home directory there is a shell script. List every file whose name ends in `.sh`, at any depth under the directory you are in.",
+    "objective": "List every file whose name ends in `.sh`, at any depth below where you are standing.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1403,6 +1565,7 @@
     "title": "Filtering by Type",
     "points": 30,
     "brief": "List every regular file underneath `projects` — the files themselves, not the directories that hold them.",
+    "objective": "List every regular file under `projects`, and no directories.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1451,6 +1614,7 @@
     "title": "Stream Editing (sed)",
     "points": 35,
     "brief": "Print `Documents/data.csv` with every occurrence of `Optics` replaced by `Astrometry`. The file on disk must not change.",
+    "objective": "Print `Documents/data.csv` with every `Optics` replaced by `Astrometry`, leaving the file on disk unchanged.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1494,6 +1658,7 @@
     "title": "Pattern Scanning (awk)",
     "points": 35,
     "brief": "`/etc/passwd` is colon separated. Print only the username (field 1) and the home directory (field 6) for every account on this machine.",
+    "objective": "Print the username and the home directory of every account in `/etc/passwd`.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1536,6 +1701,7 @@
     "title": "Variable Expansion & Quotes",
     "points": 25,
     "brief": "Print the value your `HOME` variable holds. Quote it the way that still lets the shell expand it.",
+    "objective": "Print the value your `HOME` variable holds, quoted so the shell still expands it.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1579,6 +1745,7 @@
     "title": "Exit Codes ($?)",
     "points": 30,
     "brief": "Every program returns an exit code when it finishes: 0 means success, anything else means failure. Search `/etc/passwd` for `root`, then print the exit code that search returned — both on one line.",
+    "objective": "Search `/etc/passwd` for `root`, then print the exit code that search returned — both on one line.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1617,54 +1784,12 @@
     ]
   },
   {
-    "id": "l4-list-and",
-    "act": 4,
-    "title": "Conditional AND (&&)",
-    "points": 30,
-    "brief": "On one line: create the directory `/tmp/test_dir`, then create the file `/tmp/test_dir/file.txt` inside it — but only attempt the file if the directory step succeeded.",
-    "setup": {
-      "cwd": "/home/student"
-    },
-    "success": {
-      "predicate": "allOf",
-      "predicates": [
-        {
-          "predicate": "commandMatches",
-          "pattern": "&&"
-        },
-        {
-          "predicate": "fileExists",
-          "path": "/tmp/test_dir/file.txt"
-        }
-      ]
-    },
-    "hints": [
-      {
-        "cost": 0,
-        "text": "One operator runs the second command only when the first one exits successfully."
-      },
-      {
-        "cost": 15,
-        "text": "Run `mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt`."
-      }
-    ],
-    "successMessage": "`&&` reads the exit code for you. It is how a script stops instead of ploughing on after a failure.",
-    "teaches": [
-      "&&",
-      "command-lists"
-    ],
-    "solution": "mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt",
-    "acceptedVariants": [
-      "mkdir -p /tmp/test_dir && touch /tmp/test_dir/file.txt",
-      "mkdir /tmp/test_dir && touch /tmp/test_dir/file.txt"
-    ]
-  },
-  {
     "id": "l4-list-or",
     "act": 4,
     "title": "Conditional OR (||)",
     "points": 30,
     "brief": "On one line: try to read `/non_existent_file`, and if that attempt fails, print the message `File was missing`.",
+    "objective": "In one line: try to read `/non_existent_file`, and print `File was missing` if the attempt fails.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1708,6 +1833,7 @@
     "title": "Compare Files (diff)",
     "points": 30,
     "brief": "Compare `projects/web/index.html` against `projects/web/style.css` line by line, in the unified format that patch tools read.",
+    "objective": "Compare `projects/web/index.html` against `projects/web/style.css` in the unified format.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1754,7 +1880,8 @@
     "act": 4,
     "title": "Shell Mastery (history)",
     "points": 25,
-    "brief": "Show every command you have typed this session.",
+    "brief": "Your handover note has to say what you actually did tonight, and the shell has been keeping that list for you the whole shift.",
+    "objective": "Show every command you have typed this session.",
     "setup": {
       "cwd": "/home/student"
     },
@@ -1797,6 +1924,7 @@
     "title": "BOSS: Who Logged the Most Hours?",
     "points": 50,
     "brief": "The last thing the day crew wants before they drive up the mountain. `Documents/data.csv` lists each person's hours in column 4. Print the NAME of the person with the most hours — just the name, on its own, with nothing else around it.",
+    "objective": "Print the NAME of the person with the most hours in `Documents/data.csv` — just the name, nothing else.",
     "setup": {
       "cwd": "/home/student"
     },

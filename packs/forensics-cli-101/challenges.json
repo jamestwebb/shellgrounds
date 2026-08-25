@@ -5,6 +5,7 @@
     "title": "Where Am I?",
     "points": 10,
     "brief": "First rule on the bench: before you touch any evidence, put your position on the record. Print the full path of the directory you are standing in. That line is the first entry in your case log.",
+    "objective": "Print the full path of the directory you are standing in.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -42,6 +43,7 @@
     "title": "Survey the Bench",
     "points": 10,
     "brief": "You cannot examine what you have not inventoried. Find out what this workstation was handed to you with: show the files and directories in the place you are standing.",
+    "objective": "List the files and directories in the directory you are standing in.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -82,6 +84,7 @@
     "title": "Hidden in Plain Sight",
     "points": 15,
     "brief": "The examiner who had this bench before you left something behind, and a plain `ls` does not show it. On Linux, a filename that starts with a dot is invisible to a normal listing. Find the hidden file in your home directory, read it, and submit the find inside.",
+    "objective": "Find the hidden file in your home directory, read it, and submit the find inside.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -112,6 +115,7 @@
     "title": "One Level Down",
     "points": 15,
     "brief": "Your onboarding folder recorded a checkpoint for you. Get inside `training/level_1`, read `checkpoint_alpha.txt`, and submit the find it holds.",
+    "objective": "Get inside `training/level_1`, read `checkpoint_alpha.txt`, and submit the find.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -141,6 +145,7 @@
     "title": "Sideways Move",
     "points": 15,
     "brief": "Now reach `training/level_2` — a SIBLING of level_1, not a child. If you are standing inside level_1, you have to go up before you can go over. Read `checkpoint_beta.txt` and submit the find.",
+    "objective": "Reach `training/level_2` from wherever you are standing, read `checkpoint_beta.txt`, and submit the find.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -175,6 +180,7 @@
     "title": "Warp Speed (Tab Completion)",
     "points": 15,
     "brief": "Typing full paths is slow, and a typo in a path is how the wrong file ends up in a report. Get yourself into your `Documents` directory without typing the whole name — make the shell finish it for you.",
+    "objective": "Get into `Documents` without typing the whole directory name.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -218,6 +224,7 @@
     "title": "Recall the Past (History)",
     "points": 10,
     "brief": "Examiners repeat commands constantly, and retyping is how mistakes creep in. Bring back a command you have already run — the one that printed your position — and run it again without typing it out.",
+    "objective": "Run a command you have already used again, without typing it out.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -255,6 +262,7 @@
     "title": "Read the Case File",
     "points": 15,
     "brief": "Nothing else in this act makes sense until you have read the case file end to end. Put the whole of `Documents/case_1042.txt` on screen: the top says what Aurora Robotics reported, the bottom says what this lab expects of you.",
+    "objective": "Put the whole of `Documents/case_1042.txt` on screen.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -297,6 +305,7 @@
     "title": "The Night Shift",
     "points": 15,
     "brief": "`Documents/access.log` is the workstation timeline recovered from the seized laptop. Its first five entries alone show the machine being opened twice: once in daylight, and once at an hour when nobody was meant to be in the building. Put exactly those first five entries on screen.",
+    "objective": "Put exactly the first five entries of `Documents/access.log` on screen.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -331,6 +340,7 @@
     "title": "The Last Record",
     "points": 20,
     "brief": "A timeline is only as good as its ends. You have read the beginning; the final record is the one the intake sheet refers to, written when the laptop reached this lab. Read the end of `Documents/access.log` and submit the find on the last line.",
+    "objective": "Read the end of `Documents/access.log` and submit the find on the last line.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -360,6 +370,7 @@
     "title": "Don't Trust the Name",
     "points": 20,
     "brief": "Exhibit `evidence/mystery_file` arrived with its extension stripped off. An examiner never identifies a file by its name — the answer is in the first few bytes of the file itself. Work out what this exhibit really is.",
+    "objective": "Work out what `evidence/mystery_file` really is, without trusting its name.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -394,6 +405,7 @@
     "title": "Carving Text Out of a Binary",
     "points": 25,
     "brief": "`evidence/binary_data` is a compiled program, so `cat` gives you screenfuls of garbage. Pull the readable text out of it instead, and submit the recovery token hidden among the strings.",
+    "objective": "Pull the readable text out of `evidence/binary_data` and submit the recovery token.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -423,6 +435,7 @@
     "title": "Integrity Checksum (MD5)",
     "points": 25,
     "brief": "Evidence has to be hashed so the lab can prove nobody altered it — before examination and after. Compute the MD5 hash of `evidence/evidence.img`, then read the image header and submit the acquisition find recorded there.",
+    "objective": "Compute the MD5 hash of `evidence/evidence.img`, then submit the acquisition find from its header.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -452,6 +465,7 @@
     "title": "Secrets in Plain Sight",
     "points": 25,
     "brief": "`Documents/secrets.txt` came off the seized laptop and only one line of it matters to this case. Find the line that carries `vault_passcode` and submit the find on it.",
+    "objective": "Find the line in `Documents/secrets.txt` carrying `vault_passcode`, and submit the find on it.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -480,6 +494,7 @@
     "title": "Case-Insensitive Searching",
     "points": 30,
     "brief": "`Documents/logs.txt` records failures inconsistently: some lines say 'error', some 'ERROR'. A search that only matches one of them misses evidence. Find every error line with a single search, then submit the find one of them carries.",
+    "objective": "Find every error line in `Documents/logs.txt` with one search, whatever its capitalisation, and submit the find.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -508,6 +523,7 @@
     "title": "Needle in /var/log",
     "points": 30,
     "brief": "Aurora's badge readers write to this machine, somewhere under `/var/log`, and you do not know the filename. List every file under `/var/log` whose name ends in `.log`, then read the badge audit and submit the code recorded when badge 4417 was accepted at 02:14.",
+    "objective": "List every `.log` file under `/var/log`, then submit the code recorded when badge 4417 was accepted at 02:14.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -537,6 +553,7 @@
     "title": "The WSL Bridge",
     "points": 40,
     "brief": "This bench runs Linux, but the seized laptop's Windows filesystem is mounted alongside it at `/mnt/c`. Read the evidence intake sheet at `/mnt/c/Users/Examiner/Desktop/CASE_FILES/intake.txt` and submit the verification find on it.",
+    "objective": "Read `/mnt/c/Users/Examiner/Desktop/CASE_FILES/intake.txt` and submit the verification find.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -566,6 +583,7 @@
     "title": "The Bridge, Unassisted",
     "points": 45,
     "brief": "The examiner before you left handover notes on the Windows side, at `C:\\Users\\Examiner\\Documents\\handover_notes.txt`. Reach them from this Linux shell and submit the bridge token inside. Nobody is going to translate the path for you this time.",
+    "objective": "Reach `C:\\Users\\Examiner\\Documents\\handover_notes.txt` from this Linux shell and submit the bridge token.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -594,7 +612,8 @@
     "act": 3,
     "title": "Consult the Manual",
     "points": 30,
-    "brief": "The bench tool `evtrace` has a manual override code, and it is written down in exactly one place: the tool's own manual page. Read the manual, find the code, and submit it.",
+    "brief": "You are about to need `evtrace` to replay everything the exhibits recorded, and left alone it replays one source. Nobody has told you the option that changes that, and a manual page is where a tool says what it can do. This bench also logs every tool it runs against an exhibit by the reference printed in that tool's manual.",
+    "objective": "Open the manual page for `evtrace` and submit the bench reference printed in it.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -604,14 +623,14 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Every serious Linux tool ships a manual page, and one command opens it."
+        "text": "Every real Linux tool ships a manual page, and one command opens it. Read the OPTIONS section while you are in there, because the next challenge needs what is in it."
       },
       {
         "cost": 10,
-        "text": "Run `man evtrace` and read the DESCRIPTION section."
+        "text": "Run `man evtrace`. The bench reference is in DESCRIPTION, and the option that replays every recorded source is in OPTIONS."
       }
     ],
-    "successMessage": "`man` opens the manual page that ships with a tool. Reading the manual before asking is the whole difference between guessing at a tool and using it.",
+    "successMessage": "`man` opens the manual that ships with a tool. You now know that `-a` replays every recorded source, and you did not have to guess it. Reading the manual first is the difference between using a tool and poking at one.",
     "teaches": [
       "man"
     ]
@@ -622,6 +641,7 @@
     "title": "Install the Bench Tool (apt-get)",
     "points": 35,
     "brief": "`evtrace` is not installed on this workstation yet. Install it from the package repository, then replay every recorded source and submit the code the badge reader stream prints.",
+    "objective": "Install `evtrace`, replay every recorded source, and submit the code the badge reader stream prints.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -632,11 +652,11 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Refresh the package lists first, then install. Both steps need administrator rights. The replay-everything find for `evtrace` is `-a`."
+        "text": "Refresh the package lists first, then install the package. Both steps need administrator rights, and each one is its own command line. The manual told you which option replays every source."
       },
       {
         "cost": 10,
-        "text": "Run `sudo apt-get update && sudo apt-get install evtrace -y`, then `evtrace -a`."
+        "text": "Run `sudo apt-get update`, then `sudo apt-get install evtrace -y`, then `evtrace -a`."
       }
     ],
     "successMessage": "`apt-get` is how Debian and Ubuntu machines fetch software. `update` refreshes the catalogue, `install` fetches the package, and `sudo` supplies the rights for both.",
@@ -644,6 +664,9 @@
       "apt-get",
       "sudo",
       "package-management"
+    ],
+    "builtOn": [
+      "act3-man"
     ]
   },
   {
@@ -652,6 +675,7 @@
     "title": "Filter the Noise (Inverted Grep)",
     "points": 40,
     "brief": "`Documents/network_stream.log` is almost all ordinary allowed traffic, and the one line that matters is buried in it. Show only the packets that were NOT allowed, then submit the find on the CRITICAL_DATA_LEAK entry.",
+    "objective": "Show only the packets in `Documents/network_stream.log` that were not allowed, and submit the find on the CRITICAL_DATA_LEAK line.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -681,6 +705,7 @@
     "title": "First Pipeline (grep | wc -l)",
     "points": 45,
     "brief": "Your report needs a number, not a listing: how many packets in `Documents/network_stream.log` were not allowed? Get that count onto the screen and nothing else. A pipeline is the classic way to do it, but this challenge grades the number you produced, so any command that prints the right count scores.",
+    "objective": "Print how many packets in `Documents/network_stream.log` were not allowed, and nothing else.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -717,6 +742,7 @@
     "title": "Extracting Fields (cut and grep)",
     "points": 45,
     "brief": "`Documents/security_events.csv` is comma separated, and the rows tagged `FLAG_EMIT` carry a token in column 6. Isolate those rows, cut out just that column, and submit the token.",
+    "objective": "Isolate the `FLAG_EMIT` rows of `Documents/security_events.csv`, cut out column 6, and submit the token.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -747,6 +773,7 @@
     "title": "Output Redirection (>)",
     "points": 50,
     "brief": "Findings that only exist on screen are not findings. Pull every error line out of `Documents/logs.txt` — however it is capitalised — and save them to a new file at `/tmp/errors.log` instead of printing them. Then read that file back to confirm the capture worked.",
+    "objective": "Save every error line from `Documents/logs.txt` into `/tmp/errors.log`, then read that file back.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -772,7 +799,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`>` sends output into a file instead of the screen. Do not forget the find that makes the search ignore case, or you will miss lines."
+        "text": "`>` sends output into a file instead of the screen. Do not forget the option that makes the search ignore case, or you will miss lines."
       },
       {
         "cost": 10,
@@ -793,9 +820,10 @@
   {
     "id": "act5-scan",
     "act": 5,
-    "title": "Partition Geometry Inspection",
+    "title": "Read the Partition Table",
     "points": 60,
-    "brief": "`evidence/seized_drive.raw` is the raw image of the drive that left the building. Somewhere in it is an encrypted container, and you cannot carve it out until you know which sector it starts at. Read the image's partition table with the bench tool `scan`, and write the container's start offset down — the next challenge asks for it.",
+    "brief": "`evidence/seized_drive.raw` is the raw image of the drive that left the building, and an encrypted container is somewhere inside it. `mmls` is the Sleuth Kit tool that prints a disk image's partition table: where each partition starts, how long it is, and what kind it is. Nothing can be carved until you know which sector the container begins at.",
+    "objective": "Print the partition table of `evidence/seized_drive.raw` and read off the sector the encrypted container starts at.",
     "setup": {
       "cwd": "/home/examiner"
     },
@@ -804,33 +832,33 @@
       "predicates": [
         {
           "predicate": "commandMatches",
-          "pattern": "^scan\\s+[\"']?(?:\\./|~/|/home/examiner/)?(?:evidence/)?seized_drive\\.raw[\"']?\\s*$"
+          "pattern": "^mmls\\s+[\"']?(?:\\./|~/|/home/examiner/)?(?:evidence/)?seized_drive\\.raw[\"']?\\s*$"
         },
         {
           "predicate": "outputContains",
-          "text": "206848"
+          "text": "Start Sector Offset: 41"
         }
       ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`scan` takes the path to the image and nothing else."
+        "text": "`mmls` takes the path to the image and nothing else. Then read the Start column of the row that says Encrypted Container."
       },
       {
         "cost": 10,
-        "text": "Run `scan evidence/seized_drive.raw` and read the Start Sector Offset it reports for partition 2."
+        "text": "Run `mmls evidence/seized_drive.raw`. The container is slot 002, and the Start it reports is the number the next challenge wants."
       }
     ],
-    "successMessage": "The partition table puts partition 2 — the encrypted container — at sector offset 206848. Keep that number where you can find it.",
+    "successMessage": "That is real `mmls`, and it is what an examiner runs first on any image: it says where every partition begins without writing a byte back. The container starts at sector 41. Write that number down.",
     "teaches": [
-      "partition-tables",
+      "mmls",
       "sector-offsets"
     ],
     "acceptedVariants": [
-      "scan evidence/seized_drive.raw",
-      "scan ./evidence/seized_drive.raw",
-      "scan /home/examiner/evidence/seized_drive.raw"
+      "mmls evidence/seized_drive.raw",
+      "mmls ./evidence/seized_drive.raw",
+      "mmls /home/examiner/evidence/seized_drive.raw"
     ]
   },
   {
@@ -838,29 +866,50 @@
     "act": 5,
     "title": "Carve the Container (Finish Line)",
     "points": 120,
-    "brief": "This is the whole case in one exercise. `evidence/seized_drive.raw` hides an encrypted container, and the prototype files walked out inside it. The bench tool `extract` can carve that container, but only if you hand it the exact sector offset where the container begins — and it refuses a wrong one. You recovered that number from the partition table; go back for it if you did not write it down. Carve the container and submit the case find it gives up.",
+    "brief": "This is the whole case in one command line. `dd` copies a REGION of a file rather than all of it: `bs=512` makes each of its blocks one sector, and `skip=` counts how many of those blocks to step over before it starts reading. Hand it the sector `mmls` gave you and it lifts the container out of `evidence/seized_drive.raw`; hand it a different number and it copies the wrong bytes without complaining.",
+    "objective": "Carve the encrypted container out of `evidence/seized_drive.raw` into a new file called `container.img`.",
     "setup": {
       "cwd": "/home/examiner"
     },
+    "// success": "The md5 is the md5 of the container region built in fs.linux.js -- sector 41 to the end of the image, 2048 bytes. Grading the bytes rather than the typed line means every correct carve passes: operands in any order, count= given or left off, even `tail -c 2048`. It also means the region must hold no [[FLAG:...]] placeholder, because that is rewritten per student and the hash would move with it. Change the region, change this number.",
     "success": {
-      "kind": "flag",
-      "flagFile": "act5-capstone"
+      "predicate": "allOf",
+      "predicates": [
+        {
+          "predicate": "fileExists",
+          "path": "/home/examiner/container.img"
+        },
+        {
+          "predicate": "fileHashEquals",
+          "path": "/home/examiner/container.img",
+          "algo": "md5",
+          "hex": "f432e0016c8b0dc7b4c5519a62bb5217"
+        }
+      ]
     },
     "hints": [
       {
         "cost": 0,
-        "text": "`extract` takes the offset with the `-o` find, then the image path. The offset came out of the `scan` output, and the tool will reject anything else."
+        "text": "`dd` reads with `if=`, writes with `of=`, and needs two more things: how big a block is, and how many blocks to step over before it starts. A sector is 512 bytes."
       },
       {
         "cost": 20,
-        "text": "Run `extract -o 206848 evidence/seized_drive.raw`, then submit the case find it prints."
+        "text": "Run `dd if=evidence/seized_drive.raw of=container.img bs=512 skip=41`, then `cat container.img` to read what came out."
       }
     ],
-    "successMessage": "You read partition geometry, carried a number from one tool's output into another tool's argument, and carved out the container. That chain is what forensic work actually looks like. Case 1042 is closed.",
+    "successMessage": "The carved file hashes to the container exactly, which is how an examiner proves a carve is the right bytes and not nearly the right bytes. That is a real `dd` line and it runs unchanged on a real machine — which is the other half of the lesson: `dd` writes wherever `of=` points, with no confirmation and no undo, so one wrong `of=` overwrites the evidence instead of copying it. Case 1042 is closed.",
     "teaches": [
-      "multi-step-forensics",
       "evidence-carving",
-      "flag-chaining"
+      "sector-offsets"
+    ],
+    "builtOn": [
+      "act5-scan"
+    ],
+    "acceptedVariants": [
+      "dd if=evidence/seized_drive.raw of=container.img bs=512 skip=41",
+      "dd if=evidence/seized_drive.raw of=container.img bs=512 skip=41 count=4",
+      "dd bs=512 skip=41 if=evidence/seized_drive.raw of=container.img",
+      "dd if=/home/examiner/evidence/seized_drive.raw of=/home/examiner/container.img bs=512 skip=41"
     ]
   },
   {
@@ -870,6 +919,7 @@
     "title": "Windows Navigation (dir and cd)",
     "points": 15,
     "brief": "You are now working the seized laptop from its own Windows command line. Start the same way you started on Linux: show what is in `C:\\Users\\Examiner`.",
+    "objective": "Show what is in `C:\\Users\\Examiner` from the Windows command line.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },
@@ -913,6 +963,7 @@
     "title": "Hidden File Attributes (attrib)",
     "points": 20,
     "brief": "Windows hides a file with an attribute bit, not with a leading dot, so the Linux trick you learned in Act I will not find it here. Inspect the attributes of `evidence\\mystery_file`, then read it and recover the find.",
+    "objective": "Inspect the attributes of `evidence\\mystery_file`, read the file, and submit the find.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },
@@ -944,6 +995,7 @@
     "title": "Windows String Search (findstr /i)",
     "points": 25,
     "brief": "The laptop's event log extract is at `Documents\\logs.txt`. Find the evidence marker in it, ignoring letter case, and submit the find. There is no `grep` on Windows.",
+    "objective": "Find the evidence marker in `Documents\\logs.txt`, ignoring letter case, and submit the find.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },
@@ -974,6 +1026,7 @@
     "title": "CertUtil Hashing",
     "points": 20,
     "brief": "Finish the chain of custody on the Windows side: compute the MD5 hash of `evidence\\evidence.img`. Windows ships no `md5sum`, so use the tool that is already on every Windows machine.",
+    "objective": "Compute the MD5 hash of `evidence\\evidence.img` with a tool Windows already ships.",
     "setup": {
       "cwd": "C:\\Users\\Examiner"
     },

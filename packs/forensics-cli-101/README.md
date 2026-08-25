@@ -35,7 +35,7 @@ Windows CMD, so students see that the ideas outlive the shell.
 - Search at scale: `grep`, `grep -i`, `grep -v`, `find -name`, `man`.
 - Bridge Linux and Windows through the WSL mount at `/mnt/c`.
 - Build multi-stage pipelines: `|`, `wc -l`, `cut -d -f`, and `>` redirection.
-- Carry a value from one tool's output into another tool's argument (`scan` → `extract -o`).
+- Carry a value from one tool's output into another tool's argument (`mmls` → `dd skip=`).
 - Windows CMD parity: `dir /a`, `type`, `findstr /i`, `attrib`, `certutil`.
 
 ## Notes for the teacher
@@ -45,9 +45,16 @@ Windows CMD, so students see that the ideas outlive the shell.
   command that yields the right answer scores. Where a specific command *is*
   the lesson, the check accepts every reasonable equivalent and still verifies
   the output.
-- The pack ships two invented bench tools, `scan` and `extract`, plus `evtrace`,
-  which Act III installs with a simulated `apt-get`. They exist to teach reading
-  a tool's output and its manual page; they are not real forensic software. The
-  manifest's `courseTools` list names the real tools (Sleuth Kit, Volatility,
-  `exiftool`, and so on) so the simulator can say honestly that it does not
-  implement them.
+- Act V runs on real tools. `mmls` is a Sleuth Kit command and ships with this
+  pack, because a partition table is subject knowledge; `dd` is coreutils and
+  comes from the engine, because it is true of every Linux machine. A student
+  who finishes Act V knows two command lines that work unchanged on a real
+  bench. It used to run on `scan` and `extract -o <offset>`, which exist
+  nowhere, while `courseTools` told the student the real equivalents were not
+  simulated here.
+- The pack still ships two invented bench tools: `map`, and `evtrace`, which Act
+  III installs with a simulated `apt-get`. They exist to teach reading a tool's
+  output and its manual page, and nothing in the course depends on their syntax
+  being real. The manifest's `courseTools` list names the real tools that are
+  genuinely not implemented (Volatility, `exiftool`, the rest of the Sleuth Kit)
+  so the simulator can say so honestly.

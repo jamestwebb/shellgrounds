@@ -1,4 +1,5 @@
 {
+  "// note": "Manual pages for this pack's own commands. `man` looks in the engine's registry first and falls back to here, so for a pack command this file is what a student reads -- the `man` block in commands.js is not consulted. Keep the two saying the same thing.",
   "map": {
     "name": "map - display virtual filesystem topography",
     "synopsis": "map",
@@ -6,30 +7,23 @@
     "options": [],
     "examples": ["map"]
   },
+  "// evtrace": "act3-man sends the student here for a real reason: they need an option they do not know, and OPTIONS is where a tool says what it can do. The find is the bench's tool-use record, which is chain of custody rather than a scavenger-hunt token bolted on.",
   "evtrace": {
     "name": "evtrace - replay recorded evidence activity",
     "synopsis": "evtrace [options]",
-    "description": "Bench utility that replays recorded activity from the exhibits on this workstation.\n\nManual override code: [[FLAG:act3-man]]\n\nQuote this code on the worksheet when you replay a source by hand.",
+    "description": "Bench utility that replays recorded activity from the exhibits on this workstation.\n\nBy default it replays one source. See OPTIONS below for the option that replays every recorded source instead.\n\nThis bench logs every tool it runs against an exhibit by the reference printed in that tool's manual page. The reference for this build is [[FLAG:act3-man]].",
     "options": [
       "-a, --all   replay every recorded source",
       "-v          verbose diagnostic logging"
     ],
     "examples": ["evtrace", "evtrace -a"]
   },
-  "scan": {
-    "name": "scan - forensic partition geometry analyzer",
-    "synopsis": "scan <disk_image>",
-    "description": "Inspect partition geometry and identify sector start offsets.",
+  "// mmls": "Was called `scan`, which exists on no real machine. mmls is Sleuth Kit: subject knowledge, so the pack owns it. Its partner `extract -o` was dd in a costume and is gone; dd is coreutils and belongs to the engine, which now has it.",
+  "mmls": {
+    "name": "mmls - display the partition layout of a volume system",
+    "synopsis": "mmls <image>",
+    "description": "Prints the partition table of a disk image: the sector each partition starts at, the sector it ends at, and what kind of partition it is. It reads the image and writes nothing to it. Part of the Sleuth Kit.\n\nThe start sector it prints is the number `dd skip=` wants, when the block size is one sector.",
     "options": [],
-    "examples": ["scan evidence/seized_drive.raw"]
-  },
-  "extract": {
-    "name": "extract - carve partitions out of disk images",
-    "synopsis": "extract -o <offset> <disk_image>",
-    "description": "Extract and decrypt partition data using specified sector offset.",
-    "options": [
-      "-o OFFSET   starting sector offset of partition"
-    ],
-    "examples": ["extract -o 206848 evidence/seized_drive.raw"]
+    "examples": ["mmls evidence/seized_drive.raw"]
   }
 }

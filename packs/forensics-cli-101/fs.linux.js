@@ -6,6 +6,82 @@
 
 import { buildFS, file } from '../../packages/engine/vfs/builder.js';
 
+// ── The seized drive image ──────────────────────────────────────────────────
+//
+// Act V carves a partition out of this file with real `dd`, so the sectors in
+// it have to be real sectors. `dd bs=512 skip=41` reads from byte 20992 and
+// nowhere else, and if the container is not sitting at byte 20992 the student
+// gets an empty file and no way of telling whether they or the exercise was
+// wrong. So the image is assembled sector by sector here, and the partition
+// table `mmls` prints in commands.js quotes these same numbers.
+//
+// WHY THE DRIVE IS SMALL. It used to be labelled 512MB and was 400 bytes of
+// prose: nothing at any offset, because nothing ever read it at an offset.
+// The invented `extract -o` command that replaced `dd` never looked. A real
+// 512MB image would be 512MB of string in every student's browser and in every
+// validator run, so the geometry is honest at a scale that fits: 45 sectors,
+// 23,040 bytes, every offset in the table an offset that is really there.
+//
+// KEEP IN STEP: packs/forensics-cli-101/commands.js prints these numbers, and
+// packs/forensics-cli-101/challenges.json carries the md5 of the container
+// region as act5-capstone's success condition. Change a region and both follow.
+// tests/exec.linux.test.js carves the image with the offset mmls prints and
+// fails if the two ever disagree.
+const SECTOR_BYTES = 512;
+
+/** One partition region, padded with NULs to a whole number of sectors. */
+function region(text, sectors) {
+  const size = sectors * SECTOR_BYTES;
+  if (text.length > size) {
+    throw new Error(`seized_drive.raw: region needs ${text.length} bytes, has ${sectors} sectors (${size})`);
+  }
+  // Real images are mostly zeros, `strings` steps over them, and the alternative
+  // -- padding with printable filler -- would dump twenty thousand characters of
+  // nothing on a student who runs `cat` on the image.
+  return text.padEnd(size, '\x00');
+}
+
+// Sector 0: the boot sector, holding the partition table mmls reads.
+const DRIVE_MBR = region(
+`[RAW DISK IMAGE: seized_drive.raw \u2014 MBR, volume label PRIVATE]
+Partition Table Scheme: MBR / DOS
+Sector size: 512 bytes
+Partition 1: Type 0x83 (Linux native) / Start sector: 1 / Length: 40
+Partition 2: Type 0x83 (Linux native) / Start sector: 41 / Length: 4
+[Partition 2 holds an encrypted container. The prototype files are inside it.]
+`, 1);
+
+// Sectors 1-40: the decoy. A student who carves this one gets the wrong bytes,
+// which is the whole reason the table has to be read rather than guessed at.
+const DRIVE_SYSTEM_ROOT = region(
+`EXT4 SUPERBLOCK \u2014 PARTITION 1 (SYSTEM ROOT)
+Volume label: aurora-root
+Volume UUID: 1f2e-77b0-4c31-9a05
+This partition holds the operating system the machine booted from.
+Nothing from Case 1042 is in here. The container is the partition after it.
+`, 40);
+
+// Sectors 41-44: the container, and the last sector of the image. Ending the
+// file here means `dd ... skip=41` with no count= still carves exactly this
+// region, so a student is not marked wrong for leaving count= off.
+//
+// No [[FLAG:...]] lives in here on purpose. The flag a student submits is
+// rewritten per student, which would change these bytes, and act5-capstone is
+// scored on the md5 of the carved file.
+export const DRIVE_CONTAINER = region(
+`RECOVERED CONTAINER \u2014 CASE 1042
+EXT4 superblock, volume UUID 8a4f-9e2c-0d17-5b44
+Contents: 412 prototype design files, Aurora Robotics
+Last written: 2026-03-15 02:18
+This is what left the building. Hash the carved file and put that hash in the
+report, so the next examiner can prove they were handed the same bytes.
+`, 4);
+
+/** The sector the encrypted container starts at. mmls prints this number. */
+export const CONTAINER_START_SECTOR = 41;
+
+const SEIZED_DRIVE_IMAGE = DRIVE_MBR + DRIVE_SYSTEM_ROOT + DRIVE_CONTAINER;
+
 export function createLinuxFilesystem() {
   const built = buildFS({
     home: '/home/examiner',
@@ -187,12 +263,8 @@ Acquisition hash: [[FLAG:act2-md5]]
 Integrity verified: SHA-256 matches the chain of custody sheet.
 `, { fileType: 'DOS/MBR boot sector' }),
           'seized_drive.raw': file(
-`[RAW DISK IMAGE: seized_drive.raw — 512MB, volume label PRIVATE]
-Partition Table Scheme: MBR / DOS
-Partition 1: Type 0x83 (Linux native) / Start sector: 2048 / Length: 204800
-Partition 2: Type 0x83 (Linux native) / Start sector: 206848 / Length: 841728
-[Partition 2 holds an encrypted container. The prototype files are inside it.]
-`, { fileType: 'DOS/MBR boot sector, code offset 0x58+2, OEM-ID "MSDOS5.0"' })
+            SEIZED_DRIVE_IMAGE,
+            { fileType: 'DOS/MBR boot sector, code offset 0x58+2, OEM-ID "MSDOS5.0"' })
         }
       },
       'var/log': {

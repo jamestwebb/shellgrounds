@@ -32,6 +32,10 @@
       "term": "carving",
       "what": "Cutting a file out of a larger image by its position, rather than by asking a filesystem for it. It is how you recover something the filesystem no longer lists."
     },
+    "mmls": {
+      "term": "mmls",
+      "what": "`mmls` prints a disk image's partition table: which sector each partition starts at, how long it is, and what kind it is. It reads the image and changes nothing in it."
+    },
     "partition-tables": {
       "term": "a partition table",
       "what": "The map at the start of a disk saying where each partition begins and ends. Read it and you know where to cut."
@@ -73,30 +77,24 @@
   "linux": {
     "home": "/home/examiner",
     "user": "examiner",
-    "host": "fieldlab",
-    "shell": "bash"
+    "host": "fieldlab"
   },
   "windows": {
     "home": "C:\\Users\\Examiner",
-    "user": "Examiner",
-    "shell": "cmd"
+    "user": "Examiner"
   },
   "theme": {
-    "accent": "#10b981",
-    "titleBar": "FIELDLAB TTY1",
-    "sidebarTone": "emerald"
+    "accent": "#10b981"
   },
   "messages": {
     "unsimulated": "That is a real command, but not simulated in this lab. Type `help` to see what works here.",
     "unsupportedSyntax": "That shell syntax is not simulated here."
   },
   "courseTools": {
-    "dd": "a raw imaging tool used for disk acquisition",
     "hexdump": "a hex viewer used to inspect file headers",
     "xxd": "a hex viewer used to inspect file headers",
     "sha1sum": "a hashing tool (this simulator has md5sum and sha256sum)",
     "openssl": "a crypto toolkit used for hashing and certificates",
-    "mmls": "a Sleuth Kit tool for reading partition tables",
     "fsstat": "a Sleuth Kit tool for filesystem details",
     "fls": "a Sleuth Kit tool for listing files, including deleted ones",
     "icat": "a Sleuth Kit tool for extracting file content by inode",

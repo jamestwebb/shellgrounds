@@ -5,6 +5,7 @@
     "title": "Where Am I? (CD)",
     "points": 10,
     "brief": "The laptop is already open at a Command Prompt. In Windows CMD, running `cd` with no arguments prints the directory you are in — run it and see whose profile you have landed in.",
+    "objective": "Print the directory you are standing in.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -45,6 +46,7 @@
     "title": "Directory Listing (DIR)",
     "points": 10,
     "brief": "Run `dir` to list the files and folders of the profile you have landed in.",
+    "objective": "List the files and folders of the profile you have landed in.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -83,6 +85,7 @@
     "title": "Show All Files (DIR /A)",
     "points": 15,
     "brief": "One file in this folder never turns up in a plain `dir`: Windows hides a file with an attribute letter (H for Hidden) rather than with a leading dot. Make `dir` show everything, hidden files included.",
+    "objective": "List everything in this folder, hidden files included.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -127,6 +130,7 @@
     "title": "Bare Listing (DIR /B)",
     "points": 15,
     "brief": "Produce a clean listing of this folder: names only, with no header, no sizes and no summary line. Use `dir`.",
+    "objective": "List this folder as names only — no header, no sizes, no summary line.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -169,6 +173,7 @@
     "title": "Recursive Search (DIR /S)",
     "points": 20,
     "brief": "List `Documents` AND every folder inside it in one go. Use `dir`.",
+    "objective": "List `Documents` and every folder inside it in one command.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -213,6 +218,7 @@
     "title": "Enter Documents (CD)",
     "points": 15,
     "brief": "The owner's paperwork is in `Documents`. Run `cd Documents` to move into it.",
+    "objective": "Move into the `Documents` folder.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -244,6 +250,7 @@
     "title": "Climb to Parent (CD ..)",
     "points": 15,
     "brief": "Run `cd ..` from `Documents` to climb back up to the profile folder.",
+    "objective": "Move from `Documents` back up to the profile folder.",
     "setup": {
       "cwd": "C:\\Users\\Student\\Documents"
     },
@@ -274,6 +281,7 @@
     "title": "Display File Content (TYPE)",
     "points": 15,
     "brief": "Print `Documents\\notes.txt` to the prompt and find out what domain this laptop belongs to. Windows has no `cat`.",
+    "objective": "Print `Documents\\notes.txt` to the prompt.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -307,6 +315,7 @@
     "title": "Directory Tree (TREE)",
     "points": 15,
     "brief": "Show this folder and everything under it as a picture of the hierarchy rather than a flat list.",
+    "objective": "Show this folder and everything under it as a picture of the hierarchy.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -349,6 +358,7 @@
     "title": "Locate Binaries (WHERE)",
     "points": 15,
     "brief": "Find out where on this disk the command interpreter itself lives — the program `cmd`.",
+    "objective": "Find where the program `cmd` lives on this disk.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -392,6 +402,7 @@
     "title": "BOSS: The Four Servers",
     "points": 35,
     "brief": "Somewhere under this profile is a file listing four servers and one recovery code. Nobody will tell you where it is: walk the disk until you find it, print it, and submit the recovery code — it was generated for you alone.",
+    "objective": "Find the file listing four servers, print it, and submit the recovery code inside.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -429,6 +440,7 @@
     "title": "Copy Files (COPY)",
     "points": 20,
     "brief": "Never edit the only copy of anything. Make a duplicate of `Documents\\notes.txt` called `Documents\\notes_backup.txt`.",
+    "objective": "Copy `Documents\\notes.txt` to `Documents\\notes_backup.txt`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -449,7 +461,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `copy`. Source path first, destination second."
+        "text": "One cmd.exe command duplicates a file without touching the original. It takes the existing file first, then the path for the copy."
       },
       {
         "cost": 10,
@@ -472,6 +484,7 @@
     "title": "Move Files (MOVE)",
     "points": 20,
     "brief": "The owner left a to-do list loose on the Desktop. Move `Desktop\\todo.txt` into the `Documents` folder, keeping the same filename.",
+    "objective": "Move `Desktop\\todo.txt` into the `Documents` folder, keeping the same filename.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -492,7 +505,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `move`. Source first, destination second — the same shape as `copy`."
+        "text": "A different command relocates a file instead of duplicating it — same two-argument order as before, but nothing survives at the old path afterward."
       },
       {
         "cost": 10,
@@ -515,6 +528,7 @@
     "title": "Rename Files (REN)",
     "points": 20,
     "brief": "Rename `Desktop\\Shortcut.lnk` to `AppShortcut.lnk`. It must stay on the Desktop.",
+    "objective": "Rename `Desktop\\Shortcut.lnk` to `AppShortcut.lnk`, leaving it on the Desktop.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -525,7 +539,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `ren`. Give it the existing path, then the NEW NAME only — not a second full path."
+        "text": "Renaming is a command of its own, separate from moving a file. Give it the existing path, then only the new name — a bare name, not a second full path, since the file is not going anywhere."
       },
       {
         "cost": 10,
@@ -549,6 +563,7 @@
     "title": "Delete Files (DEL)",
     "points": 20,
     "brief": "`Downloads\\archive.zip` is junk the owner will not want back. Delete it — and on the same line list `Downloads` again so you can see it has gone. In cmd.exe, `&` runs one command after another.",
+    "objective": "Delete `Downloads\\archive.zip` and, on the same line, list `Downloads` to see that it went.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -568,7 +583,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `del`, and `erase` is the same command. There is no Recycle Bin at the command prompt, so check afterwards."
+        "text": "Deleting a file at the cmd.exe prompt takes one command and a path — no confirmation dialog, no Recycle Bin. Chain a listing after it with `&` so you watch the file actually disappear."
       },
       {
         "cost": 10,
@@ -592,6 +607,7 @@
     "title": "Create Directories (MD / MKDIR)",
     "points": 20,
     "brief": "Create a folder called `Backup` in the profile folder, to hold what you are about to put aside.",
+    "objective": "Create a folder called `Backup` in the profile folder.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -602,7 +618,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "cmd.exe accepts either `md` or the longer `mkdir`. They are the same command."
+        "text": "cmd.exe has a short spelling and a long spelling for the same command that creates a folder. Give it the name you want."
       },
       {
         "cost": 10,
@@ -626,6 +642,7 @@
     "title": "Remove Directories (RD / RMDIR)",
     "points": 20,
     "brief": "The owner left an empty `Projects` folder behind and it is not going back with the laptop. Remove it, and on the same line list the profile folder again so you can see it has gone.",
+    "objective": "Remove the empty `Projects` folder and, on the same line, list the profile folder to see that it went.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -645,7 +662,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "cmd.exe accepts either `rd` or the longer `rmdir`, and the folder has to be empty before either will remove it."
+        "text": "The command that removes a folder also comes in a short and a long spelling, and refuses to run if anything is still inside. Chain a listing after it with `&` to see the folder gone."
       },
       {
         "cost": 10,
@@ -669,6 +686,7 @@
     "title": "Inspect File Attributes (ATTRIB)",
     "points": 25,
     "brief": "`Documents\\hidden_config.ini` does not appear in a plain `dir` either. Show which attribute letters are set on it.",
+    "objective": "Show which attribute letters are set on `Documents\\hidden_config.ini`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -688,7 +706,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`attrib` reports a file's attribute letters. H is Hidden, R is Read-only, S is System, A is Archive."
+        "text": "One command reports a file's attribute letters without changing anything — give it the path and read what comes back: H is Hidden, R is Read-only, S is System, A is Archive."
       },
       {
         "cost": 10,
@@ -711,6 +729,7 @@
     "title": "Environment Variables (%VAR%)",
     "points": 20,
     "brief": "cmd.exe wraps an environment variable in percent signs, like `%NAME%`. Print the value that `USERPROFILE` holds on this machine.",
+    "objective": "Print the value that `USERPROFILE` holds on this machine.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -730,7 +749,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`echo` prints text, and the shell substitutes the variable before `echo` ever sees it."
+        "text": "One command just prints whatever text it is given. cmd.exe swaps `%VAR%` for its value before that command ever runs, so it never even sees a variable name."
       },
       {
         "cost": 10,
@@ -753,7 +772,8 @@
     "act": 2,
     "title": "Setting Variables (SET)",
     "points": 25,
-    "brief": "Create an environment variable `MY_VAR` holding the value `123`, then print it back on the same line so you can see it took. `set` prints nothing when it works, and `&` joins two commands.",
+    "brief": "You just read `%USERPROFILE%` back from the environment — now put something of your own into it. Every later write into `Documents` should trace back to this laptop's case, so set a marker before you copy anything else: `MY_VAR` holding `123`, printed back on the same line to prove it took. `set` prints nothing when it works, and `&` joins two commands.",
+    "objective": "Set `MY_VAR` to `123`, then print it back on the same line to prove it took.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -773,14 +793,14 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Write the assignment with no spaces around the equals sign, then echo the variable back inside percent signs."
+        "text": "One new command creates the variable with no spaces around the equals sign. `echo` prints it back the same way you just used, inside percent signs, joined on the same line with `&`."
       },
       {
         "cost": 10,
         "text": "Run `set MY_VAR=123 & echo %MY_VAR%`."
       }
     ],
-    "successMessage": "A silent command is not necessarily a command that worked. Printing the value back is how you find out.",
+    "successMessage": "MY_VAR now holds 123, and printing it back is what proved the assignment actually happened. That is the same check you will run the moment a marker that matters is riding on it.",
     "teaches": [
       "set",
       "environment-variables"
@@ -797,6 +817,7 @@
     "title": "Clear the Console (CLS)",
     "points": 10,
     "brief": "The screen is cluttered with everything you have run so far. Clear it.",
+    "objective": "Clear the screen.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -816,7 +837,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `cls`, short for clear screen."
+        "text": "cmd.exe has one command for wiping the screen, and it takes nothing after it — no path, no switch, just the word on its own."
       },
       {
         "cost": 10,
@@ -838,6 +859,7 @@
     "title": "BOSS: Ready for Collection",
     "points": 40,
     "brief": "Put the paperwork together for the front desk. Make a folder called `Return`, copy `Documents\\notes.txt` into it, and list that folder to prove the copy landed — all on one line, joined with `&`.",
+    "objective": "In one line: make a `Return` folder, copy `Documents\\notes.txt` into it, and list that folder to prove the copy landed.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -861,7 +883,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "Three commands in a row on one line: make the directory, copy the file into it, then list what is inside it."
+        "text": "Three commands in a row on one line: make the directory, copy the file into it, then list what is inside it to prove it landed."
       },
       {
         "cost": 15,
@@ -887,6 +909,7 @@
     "title": "Pattern Search (FINDSTR)",
     "points": 25,
     "brief": "The property form asks what this machine was doing. Show every line in `logs\\eventlog.txt` about a new process being created. Windows has no `grep`.",
+    "objective": "Show every line in `logs\\eventlog.txt` about a new process being created.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -910,7 +933,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe search command is `findstr`. Quote the phrase you are searching for, because it has spaces in it."
+        "text": "cmd.exe's tool for searching inside a file takes the phrase to look for first, then the file to search — quote the phrase, since this one has spaces in it."
       },
       {
         "cost": 10,
@@ -934,7 +957,8 @@
     "act": 3,
     "title": "Case-Insensitive FINDSTR (/I)",
     "points": 25,
-    "brief": "Find every mention of `defender` in `logs\\eventlog.txt`, whatever its capitalisation.",
+    "brief": "The form asks whether the machine's protection was switched on. The event log names the product inconsistently — sometimes capitalised, sometimes not — so a search that matches one spelling misses the rest.",
+    "objective": "Find every mention of `defender` in `logs\\eventlog.txt`, whatever its capitalisation.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -961,7 +985,7 @@
         "text": "Run `findstr /i defender logs\\eventlog.txt`."
       }
     ],
-    "successMessage": "The log says Defender with a capital D. Without `/i` a search for `defender` finds nothing at all.",
+    "successMessage": "The log says Defender with a capital D. Without `/i` a search for `defender` finds nothing at all — content search is case-sensitive by default. Paths and filenames are the opposite: `documents` and `Documents` name the same folder.",
     "teaches": [
       "findstr /i",
       "case-insensitivity"
@@ -979,6 +1003,7 @@
     "title": "Count Lines (FIND /C /V \"\")",
     "points": 30,
     "brief": "Count how many lines `logs\\firewall.log` contains. cmd.exe has no `wc`, so the standard trick is to print the file and pipe it into a counter that counts every line NOT matching an empty pattern.",
+    "objective": "Count how many lines `logs\\firewall.log` contains.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -998,7 +1023,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`type` prints the file, `|` pipes it onward, and `find` counts with `/c`. Adding `/v \"\"` counts the lines that fail to match nothing — that is, all of them."
+        "text": "cmd.exe's line-counting trick reuses a search tool: point it at a pattern so broad that every single line matches, and ask it to report a count of matches instead of the matching text."
       },
       {
         "cost": 10,
@@ -1022,6 +1047,7 @@
     "title": "Process List (TASKLIST)",
     "points": 25,
     "brief": "Record what is running on the machine before you shut it down. Show every process, with its memory use.",
+    "objective": "Show every process running on the machine, with its memory use.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -1041,7 +1067,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe equivalent of Task Manager is a single command: `tasklist`."
+        "text": "cmd.exe's equivalent of Task Manager takes nothing after it — no path, no switch, just the command on its own — and lists every running process with its memory use."
       },
       {
         "cost": 10,
@@ -1064,6 +1090,7 @@
     "title": "Network Configuration (IPCONFIG)",
     "points": 25,
     "brief": "The form has a line for the network the laptop was last on. Show this machine's IPv4 address and adapter configuration.",
+    "objective": "Show this machine's IPv4 address and adapter configuration.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -1083,7 +1110,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "The cmd.exe command is `ipconfig`. Adding `/all` shows a great deal more detail."
+        "text": "One cmd.exe command, run with nothing after it, reports every network adapter on this machine and the address each one holds."
       },
       {
         "cost": 10,
@@ -1107,6 +1134,7 @@
     "title": "System Information (SYSTEMINFO)",
     "points": 25,
     "brief": "The form wants the operating system build and the installed memory. Display the machine's system summary.",
+    "objective": "Display the machine's system summary, with the operating system build and the installed memory.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -1126,7 +1154,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "One command reports the whole system summary: `systeminfo`."
+        "text": "One cmd.exe command, run with nothing after it, dumps the machine's whole system summary — OS build, installed memory, all of it."
       },
       {
         "cost": 10,
@@ -1148,6 +1176,7 @@
     "title": "Cryptographic Hash (CERTUTIL)",
     "points": 35,
     "brief": "The form wants a checksum of `Documents\\data.csv`, so that nobody can alter it between now and collection without it showing. Compute its MD5. Windows has no `md5sum`; the built-in tool is `certutil`.",
+    "objective": "Compute the MD5 checksum of `Documents\\data.csv`.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },
@@ -1167,7 +1196,7 @@
     "hints": [
       {
         "cost": 0,
-        "text": "`certutil` needs a switch that names a file to hash, then the path, then the algorithm name in capitals."
+        "text": "One cmd.exe tool computes a file's hash. It needs a switch that names the file to hash, then the path, then the algorithm name in capitals."
       },
       {
         "cost": 10,
@@ -1191,6 +1220,7 @@
     "title": "BOSS: Name on the Ticket",
     "points": 45,
     "brief": "The last line of the form is the one that matters: which account logged on to this machine successfully. Windows records that as event 4624 in `logs\\eventlog.txt`. Print exactly that one line, and nothing else.",
+    "objective": "Print the one line in `logs\\eventlog.txt` that records a successful logon, and nothing else.",
     "setup": {
       "cwd": "C:\\Users\\Student"
     },

@@ -41,6 +41,26 @@ Nothing here can break the telescope. Work through the acts in the left panel.
 105,Evan Wright,Outreach,78,inactive
 106,Fiona Marsh,Weather,120,active
 `),
+          'dome_temps.log': file(
+`9
+12
+-6
+0
+4
+1
+7
+`),
+          'dome_status.log': file(
+`sealed
+sealed
+sealed
+open
+open
+sealed
+sealed
+sealed
+sealed
+`),
           'server_access.log': file(
 `192.168.1.10 - - [17/Aug/2026:01:00:15 +0000] "GET /index.html HTTP/1.1" 200 4523
 192.168.1.11 - - [17/Aug/2026:01:05:22 +0000] "GET /style.css HTTP/1.1" 200 1204

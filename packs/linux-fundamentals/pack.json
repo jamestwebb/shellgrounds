@@ -28,13 +28,10 @@
   "linux": {
     "home": "/home/student",
     "user": "student",
-    "host": "meridian",
-    "shell": "bash"
+    "host": "meridian"
   },
   "theme": {
-    "accent": "#22c55e",
-    "titleBar": "MERIDIAN OBSERVATORY TTY1",
-    "sidebarTone": "green"
+    "accent": "#22c55e"
   },
   "messages": {
     "unsimulated": "That is a real command. It is not simulated here.",
@@ -63,7 +60,8 @@
       "tagline": "Create, copy, move, remove, and decide who may read what",
       "icon": "🔐",
       "glyph": "─···─",
-      "unlockThreshold": 0.8
+      "// unlockThreshold": "Act II grew from 11 to 13 challenges (sort split in two, uniq added). The house default of 0.8 would raise this act's requirement from 9 solves to 11, so a student sitting between those two numbers -- who had already unlocked Act III -- would find it re-locked. 0.65 keeps the requirement at 9, same as before the content pass.",
+      "unlockThreshold": 0.65
     },
     {
       "id": 4,
@@ -71,7 +69,8 @@
       "tagline": "Find, edit, test and chain — everything the day crew will not do for you",
       "icon": "🌅",
       "glyph": "═★═",
-      "unlockThreshold": 0.8
+      "// unlockThreshold": "Act III grew from 11 to 12 challenges (&& moved here from Act IV, ahead of the boss). The house default of 0.8 would raise this act's requirement from 9 solves to 10, re-locking a student sitting at exactly 9. 0.75 keeps the requirement at 9.",
+      "unlockThreshold": 0.75
     }
   ],
   "badges": [

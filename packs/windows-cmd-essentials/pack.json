@@ -28,13 +28,10 @@
   "windows": {
     "home": "C:\\Users\\Student",
     "user": "Student",
-    "host": "lostfound",
-    "shell": "cmd"
+    "host": "lostfound"
   },
   "theme": {
-    "accent": "#3b82f6",
-    "titleBar": "LOST PROPERTY - LAPTOP LF-2291 - cmd.exe",
-    "sidebarTone": "blue"
+    "accent": "#3b82f6"
   },
   "messages": {
     "unsimulated": "'%s' is a real Windows command, but not simulated here.",
