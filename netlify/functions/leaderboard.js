@@ -3,7 +3,7 @@
 //
 // Each pack is its own board. Omit packId for the combined board.
 
-import { listPlayers, getSolves, normalizeSolve, splitSolveKey, readAllSolves} from './utils/store.js';
+import { listPlayers, normalizeSolve, splitSolveKey, readAllSolves} from './utils/store.js';
 import { PACKS } from '../../packs/index.js';
 import { isPackEnabled } from './utils/enabled.js';
 

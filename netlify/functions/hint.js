@@ -8,7 +8,7 @@
 
 import { verifySessionToken } from '../../packages/engine/crypto-utils.js';
 import { getPackForChallenge } from '../../packs/index.js';
-import { openHint, getHintsUsed, hintCountFor } from './utils/store.js';
+import { openHint } from './utils/store.js';
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {

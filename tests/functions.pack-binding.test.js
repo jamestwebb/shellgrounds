@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   freshStore, call, get, post, register, readStore, writeStoreRaw,
-  CLASS_PASSWORD, SETUP_CODE
+  SETUP_CODE
 } from './functions.helpers.js';
 
 let registerHandler, submitHandler, sessionHandler, hintHandler, adminHandler, leaderboardHandler;

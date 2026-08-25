@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (ESLint)
+        run: npm run lint
+
       - name: Run Vitest test suite (unit, API handlers, de-branding, fidelity)
         run: npm test
 

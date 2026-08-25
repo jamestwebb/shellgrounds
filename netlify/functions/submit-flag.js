@@ -10,7 +10,7 @@ import { verifySessionToken, generateUserFlag } from '../../packages/engine/cryp
 import { runPipeline } from '../../packages/engine/shell/exec.js';
 import { evaluatePredicate } from '../../packages/engine/validate/predicates.js';
 import { stat } from '../../packages/engine/vfs/ops.js';
-import { getPack, getPackForChallenge, PACKS } from '../../packs/index.js';
+import { getPackForChallenge, PACKS } from '../../packs/index.js';
 import { isPackEnabled } from './utils/enabled.js';
 import {
   getSolves, addSolve, readSolveEntry, splitSolveKey, normalizeSolve,

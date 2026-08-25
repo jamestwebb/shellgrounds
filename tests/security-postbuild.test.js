@@ -12,7 +12,7 @@ import { compileSafe, testSafe, assertSafePattern, UnsafePatternError } from '..
 import { evaluatePredicate } from '../packages/engine/validate/predicates.js';
 import { runPipeline } from '../packages/engine/shell/exec.js';
 
-let reg, ses, adm, claim, sub, hint;
+let reg, ses, adm, claim, sub;
 beforeEach(async () => {
   freshStore();
   reg = (await import('../netlify/functions/register-handle.js')).default;
@@ -20,7 +20,6 @@ beforeEach(async () => {
   adm = (await import('../netlify/functions/admin-overview.js')).default;
   claim = (await import('../netlify/functions/claim-instructor.js')).default;
   sub = (await import('../netlify/functions/submit-flag.js')).default;
-  hint = (await import('../netlify/functions/hint.js')).default;
 });
 
 describe('instructor rights cannot be acquired by waiting', () => {
