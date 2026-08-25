@@ -1,6 +1,6 @@
 # Three included campaigns
 
-Three campaigns ship with the site — **106 challenges in total**. Students switch between
+Three campaigns ship with the site, **106 challenges in total**. Students switch between
 them from the header, and each is a full campaign with its own machine, its own story and
 its own badges. Nothing is shared, so a student can finish one and start another without
 losing anything.
@@ -31,7 +31,7 @@ one to start a class on: it begins at `pwd` and ends with a student writing a pi
 **30 challenges · 3 acts · Windows · no prior experience assumed**
 
 A laptop arrives at a university lost-property desk with no name on it. Your job is to find
-out whose it is, tidy it up, and fill in the property form — using `cmd.exe` and nothing
+out whose it is, tidy it up, and fill in the property form, using `cmd.exe` and nothing
 else. Real CMD, not bash wearing a `C:\` prompt.
 
 | Act | What it teaches |

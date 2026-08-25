@@ -14,7 +14,7 @@ comfortably; a whole school on one site would want watching.
 
 **A handle they choose, and what they have solved.** No email address, no real
 name, no class list, no analytics, no third-party scripts. Nothing on the page
-calls out to anyone else's server — a student's browser talks only to your own
+calls out to anyone else's server. A student's browser talks only to your own
 Netlify site.
 
 A student is identified by a token held in their browser. That is the whole
@@ -23,13 +23,13 @@ the honest trade for not collecting anything that would let them.
 
 ### Do students install anything?
 
-No. They open a web page. The shell is simulated in the browser — there is no
+No. They open a web page. The shell is simulated in the browser. There is no
 server executing commands, and there is no server that *could*.
 
 ### Is this like a capture-the-flag?
 
 Mechanically, yes. Culturally, no. Students never see the words "capture" or
-"flag" — they find things. Nothing is timed, nothing eliminates anyone, and a
+"flag". They find things. Nothing is timed, nothing eliminates anyone, and a
 student who finishes last still finishes.
 
 ### Can students copy each other's answers?
@@ -43,7 +43,7 @@ enough to stop trying.
 
 No. You need to be able to make a copy of a repository and set three settings.
 The guide in the README walks through it and takes about twenty minutes. You do
-not have to be able to solve the challenges to run them — the instructor guide
+not have to be able to solve the challenges to run them. The instructor guide
 in `docs/instructor/` ships with every answer.
 
 ### Is it a real shell?
@@ -60,7 +60,7 @@ command teaches a student to distrust what they know.
 ### Can I use it at my school? At a company?
 
 **School, college, university, public library, government: yes**, and the
-licence says so explicitly — an educational institution is permitted regardless
+licence says so explicitly: an educational institution is permitted regardless
 of how it is funded, so tuition does not change the answer.
 
 **A for-profit training company: no.** The licence is
@@ -77,13 +77,13 @@ unlock on progress, not on a clock, so a class moves at the pace of the class.
 
 Yes. An instructor account gets a console showing each student's progress, which
 act they are in, and which challenges are costing the most hints. It is meant
-for "who do I sit with next", not for surveillance — it shows progress, not
+for "who do I sit with next", not for surveillance. It shows progress, not
 keystrokes.
 
 ### Can I write my own campaign?
 
-Yes, and this is the part the project cares most about. A campaign — a *pack*, in the
-code and the file format — is a folder of
+Yes, and this is the part the project cares most about. A campaign (a *pack*, in the
+code and the file format) is a folder of
 JSON: the story, the filesystem, the challenges, the answers. See
 [`packs/AUTHORING.md`](../packs/AUTHORING.md) to build one in ten minutes and
 [`docs/PACK-FORMAT.md`](PACK-FORMAT.md) for the full reference.
@@ -131,6 +131,6 @@ handle rather than stored, and the only thing the site keeps is who solved what.
 
 ### What happens when the class finishes?
 
-They uncover a picture together — one square per find, the whole class working
+They uncover a picture together, one square per find, the whole class working
 on the same image. It finishes when the class finishes, not when the fastest
 student does.

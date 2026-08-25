@@ -1,9 +1,9 @@
-# Shellgrounds — learn the command line, one find at a time
+# Shellgrounds: learn the command line, one find at a time
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="docs/images/shellgrounds-banner-light.png">
-    <img src="docs/images/shellgrounds-banner-dark.png" alt="Shellgrounds — learn the command line, one find at a time.">
+    <img src="docs/images/shellgrounds-banner-dark.png" alt="Shellgrounds: learn the command line, one find at a time.">
   </picture>
 </p>
 
@@ -30,14 +30,14 @@ and rebuild every term. [Set it up in twenty minutes →](#deploy-it-for-your-cl
 
 **Key features**
 
-- **Linux and Windows, in one place.** Three campaigns included — 106 challenges and 143
+- **Linux and Windows, in one place.** Three campaigns included, with 106 challenges and 143
   distinct skills across `bash`, Windows `cmd`, and a forensics campaign that crosses
   between the two over WSL.
-- **Build your own campaign.** A campaign — a *pack*, in the code — is a folder of JSON:
+- **Build your own campaign.** A campaign (a *pack*, in the code) is a folder of JSON:
   networking, git, SQL, whatever your syllabus actually needs. `npm run validate`
   machine-proves every challenge solvable before a class ever sees it.
 - **Nothing for students to install, nothing for you to administer.** A static site on a
-  free tier — no virtual machines, no containers, no lab images, and no per-student
+  free tier, with no virtual machines, no containers, no lab images and no per-student
   accounts to provision. Deploying it needs a GitHub and a Netlify account and no software.
 - **No student data beyond a handle they choose.** No email, no real name, no roster, no
   analytics, no third-party scripts. That is the whole answer to the privacy question.
@@ -46,7 +46,7 @@ and rebuild every term. [Set it up in twenty minutes →](#deploy-it-for-your-cl
 - **A shared picture by default, a leaderboard only if you want one.** Every find turns
   over one square of a class image: names show, nothing is ranked, and it finishes well
   before the slowest student does. A public ranking pushes students toward looking
-  competent rather than becoming competent — and being shown as 23rd of 24 confirms exactly
+  competent rather than becoming competent, and being shown as 23rd of 24 confirms exactly
   what a frightened first-year already suspected. Switch to a board in one click; the full
   ranking and the gradebook stay in the instructor console either way.
 - **WCAG 2.1 AA, and honest about the gaps.** Six terminal schemes, all contrast-tested at
@@ -61,7 +61,7 @@ result in one line, and the challenge is marked solved for ten
 points.](docs/images/shellgrounds-terminal.png)
 
 <sub>Act I of the forensics campaign, in practice mode. The terminal is simulated in the
-browser — nothing is executed on a server, and there is no server to execute it on.</sub>
+browser. Nothing is executed on a server, and there is no server to execute it on.</sub>
 
 ---
 
@@ -78,14 +78,14 @@ a free `*.netlify.app` address. On the way through, Netlify asks you for three t
 | `ADMIN_HANDLES` | Your own handle, so the site shows you the instructor view. Comma-separated for more than one teacher: `ms_okafor,ta_alex`. |
 | `INSTRUCTOR_SETUP_CODE` | A second, private password only you know. It stops a student claiming the teacher handle before you do. Make it different from the class password, and do not announce it. |
 
-### After the first deploy — two more steps
+### After the first deploy: two more steps
 
 1. **Add a signing key.** In the Netlify dashboard, open **Site configuration ->
    Environment variables** and add `SESSION_SECRET`. It must be a long random string.
    On a Mac or Linux machine, `openssl rand -hex 32` prints one. Any long jumble of
    letters and numbers works. Then redeploy (**Deploys -> Trigger deploy**).
 2. **Claim your handle.** Open the site, enter your handle from `ADMIN_HANDLES`, the class
-   password, and — under **I am the instructor** — your setup code. You now see the
+   password, and (under **I am the instructor**) your setup code. You now see the
    instructor view.
 
 Then give your class the site address and the class password. That is the whole setup.
@@ -94,7 +94,7 @@ Then give your class the site address and the class password. That is the whole 
 
 `SHELLGROUNDS_STORE` names the storage area holding every handle, solve, and score. You do
 not have to set it: it has a working default. Change the value and the site starts reading
-a fresh, empty store, and every score already recorded becomes invisible — it is still on
+a fresh, empty store, and every score already recorded becomes invisible. It is still on
 disk, but the site no longer looks there. So change it once, at the start of a term, and
 never in the middle of one.
 
@@ -105,7 +105,7 @@ value into `SHELLGROUNDS_STORE` and delete the old one.
 ---
 ## What your students get
 
-Three campaigns ship with the site — **106 challenges** in total. Students switch between
+Three campaigns ship with the site, **106 challenges** in total. Students switch between
 them from the header, and each is a full campaign with its own machine, its own story and
 its own badges.
 
@@ -117,7 +117,7 @@ its own badges.
 
 **[Read what each act teaches →](docs/CAMPAIGNS.md)**
 
-**[Running it with a class →](docs/TEACHING.md)** — choosing which campaigns your class
+**[Running it with a class →](docs/TEACHING.md)** covers which campaigns your class
 sees, whether they get a shared picture or a leaderboard, and the design decisions behind
 both: different finds per student, a free first hint on every challenge, one skip per act,
 and no timers anywhere.
@@ -146,7 +146,7 @@ node bin/shellgrounds.js validate packs/linux-fundamentals --json
 
 ## Contributing
 
-Issues and pull requests are welcome, particularly content packs — a campaign for
+Issues and pull requests are welcome, particularly content packs: a campaign for
 networking, for git, for SQL, for whatever you actually teach. See
 [`packs/AUTHORING.md`](packs/AUTHORING.md) to build one, and run `npm run validate`
 before opening a PR: it machine-proves every challenge in your pack is solvable and
@@ -161,7 +161,7 @@ and you should have read it.
 **[Netlify](https://github.com/netlify).** This project rests on their free tier, and the
 shape of the product follows from it: a static site, serverless functions and a key-value
 store, at no cost and with no card on file. That is why a teacher can run this without a
-budget line, a purchase order or a conversation with procurement — which for most schools
+budget line, a purchase order or a conversation with procurement, which for most schools
 is the difference between using something and not.
 
 **[shields.io](https://shields.io)** for the badges above, and
@@ -169,7 +169,7 @@ is the difference between using something and not.
 
 ## License
 
-**PolyForm Noncommercial License 1.0.0** — full text in [LICENSE.md](LICENSE.md).
+**PolyForm Noncommercial License 1.0.0**. Full text in [LICENSE.md](LICENSE.md).
 
 Plain English. This summary is not a substitute for the licence itself:
 

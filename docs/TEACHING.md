@@ -22,7 +22,7 @@ switcher, and the site refuses to grade its challenges even for a student who sa
 link from last term.
 
 You do not have to use the variable at all. **Sign in as the instructor and open the
-Packs tab** — the same choice is there as a row of switches, it applies immediately, and it
+Packs tab**. The same choice is there as a row of switches, it applies immediately, and it
 needs no redeploy. `ENABLED_PACKS` is only the starting point for a site nobody has
 configured yet; once you save from the screen, the screen wins.
 
@@ -35,7 +35,7 @@ Under **Packs** in the instructor view you also choose what your class sees:
 
 - **A shared picture** (the default). Every find by anyone turns over one square of an
   image from the campaign. Names appear, nothing is ranked, and the picture finishes well
-  before the last student does — so nobody is ever visibly holding up the class.
+  before the last student does, so nobody is ever visibly holding up the class.
 - **A leaderboard.** The familiar ranked board, by points.
 
 Either way you keep the full ranking and the gradebook in the instructor console, because
