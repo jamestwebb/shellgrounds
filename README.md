@@ -30,13 +30,17 @@ takes about twenty minutes — [start here](#deploy-it-for-your-class).
 
 **Key features**
 
+- **Linux and Windows, in one place.** Three campaigns included — 106 challenges and 143
+  distinct skills across `bash`, Windows `cmd`, and a forensics campaign that crosses
+  between the two over WSL.
+- **Build your own campaign.** A campaign — a *pack*, in the code — is a folder of JSON:
+  networking, git, SQL, whatever your syllabus actually needs. `npm run validate`
+  machine-proves every challenge solvable before a class ever sees it.
 - **Nothing for students to install, nothing for you to administer.** A static site on a
   free tier — no virtual machines, no containers, no lab images, and no per-student
   accounts to provision. Deploying it needs a GitHub and a Netlify account and no software.
 - **No student data beyond a handle they choose.** No email, no real name, no roster, no
   analytics, no third-party scripts. That is the whole answer to the privacy question.
-- **Linux and Windows, in one place.** Three campaigns, 106 challenges, 143 distinct skills —
-  `bash`, Windows `cmd`, and a forensics campaign that crosses between them over WSL.
 - **Answers cannot be passed around.** Every find is generated from the student's own
   handle, so the string that scores for one student scores for nobody else.
 - **A shared picture by default, a leaderboard only if you want one.** Every find turns
@@ -45,9 +49,6 @@ takes about twenty minutes — [start here](#deploy-it-for-your-class).
   competent rather than becoming competent — and being shown as 23rd of 24 confirms exactly
   what a frightened first-year already suspected. Switch to a board in one click; the full
   ranking and the gradebook stay in the instructor console either way.
-- **Write the campaign you actually teach.** A campaign — a *pack*, in the code — is a
-  folder of JSON: networking, git, SQL. `npm run validate` proves every challenge solvable
-  before a class sees it.
 - **WCAG 2.1 AA, and honest about the gaps.** Six terminal schemes, all contrast-tested at
   4.5:1; colour is never the only signal. What is unfinished is
   [listed by name](docs/ACCESSIBILITY.md).
