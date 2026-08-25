@@ -22,10 +22,31 @@
   <a href="docs/ACCESSIBILITY.md">Accessibility</a>
 </p>
 
-**A free command-line game for your classroom.** Students open a web page, pick a handle,
-and learn real bash and Windows commands by solving small challenges. Nothing to install,
-no server to maintain, and every find is generated for one student alone, so answers
-cannot be passed around. Setup takes about twenty minutes — [start here](#deploy-it-for-your-class).
+**A free command-line course for high school and university technology educators.**
+For CS, IT and cybersecurity programmes that need students fluent at a shell — without a
+lab of virtual machines to build, patch and rebuild every term. Students open a web page,
+pick a handle, and learn real bash and Windows CMD by solving small challenges. Setup
+takes about twenty minutes — [start here](#deploy-it-for-your-class).
+
+- **Nothing to install, nothing to administer.** A static site on a free tier — no virtual
+  machines, no containers, no lab images, no accounts to provision.
+- **No student data beyond a handle they choose.** No email, no real name, no roster, no
+  analytics, no third-party scripts. That is the whole answer to the privacy question.
+- **Linux and Windows, in one place.** Three courses, 106 challenges, 143 distinct skills —
+  `bash`, Windows `cmd`, and a forensics course that crosses between them over WSL.
+- **Answers cannot be passed around.** Every find is generated from the student's own
+  handle, so the string that scores for one student scores for nobody else.
+- **A correct answer is a correct answer.** Challenges grade the result, not the keystrokes,
+  and the validator hunts for right answers your patterns would wrongly reject.
+- **The simulation is honest about its edges.** A real command it has not implemented says
+  so, rather than telling a student they are wrong when they are right.
+- **You can see who is stuck.** An instructor console shows progress by act and which
+  challenges are costing the most hints.
+- **Write the course you actually teach.** A course is a folder of JSON — networking, git,
+  SQL. `npm run validate` proves every challenge solvable before a class sees it.
+- **WCAG 2.1 AA, and honest about the gaps.** Six terminal schemes, all contrast-tested at
+  4.5:1; colour is never the only signal. What is unfinished is
+  [listed by name](docs/ACCESSIBILITY.md).
 
 ![A student part-way through the forensics course. The left panel names the act and what
 it covers, states the task in one line under the heading YOUR TASK, explains what `ls` is
