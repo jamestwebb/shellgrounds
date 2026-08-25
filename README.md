@@ -17,45 +17,49 @@
 <p align="center">
   <a href="#deploy-it-for-your-class">Deploy it</a> ·
   <a href="docs/FAQ.md">FAQ</a> ·
-  <a href="packs/AUTHORING.md">Write a course</a> ·
+  <a href="packs/AUTHORING.md">Write a campaign</a> ·
   <a href="docs/PACK-FORMAT.md">Pack format</a> ·
   <a href="docs/ACCESSIBILITY.md">Accessibility</a>
 </p>
 
-**A free command-line course for high school and university technology educators.**
+**A free command-line training ground for high school and university technology educators.**
 For CS, IT and cybersecurity programmes that need students fluent at a shell — without a
 lab of virtual machines to build, patch and rebuild every term. Students open a web page,
 pick a handle, and learn real bash and Windows CMD by solving small challenges. Setup
 takes about twenty minutes — [start here](#deploy-it-for-your-class).
 
-- **Nothing to install, nothing to administer.** A static site on a free tier — no virtual
-  machines, no containers, no lab images, no accounts to provision.
+**Key features**
+
+- **Nothing for students to install, nothing for you to administer.** A static site on a
+  free tier — no virtual machines, no containers, no lab images, and no per-student
+  accounts to provision. Deploying it needs a GitHub and a Netlify account and no software.
 - **No student data beyond a handle they choose.** No email, no real name, no roster, no
   analytics, no third-party scripts. That is the whole answer to the privacy question.
-- **Linux and Windows, in one place.** Three courses, 106 challenges, 143 distinct skills —
-  `bash`, Windows `cmd`, and a forensics course that crosses between them over WSL.
+- **Linux and Windows, in one place.** Three campaigns, 106 challenges, 143 distinct skills —
+  `bash`, Windows `cmd`, and a forensics campaign that crosses between them over WSL.
 - **Answers cannot be passed around.** Every find is generated from the student's own
   handle, so the string that scores for one student scores for nobody else.
-- **A correct answer is a correct answer.** Challenges grade the result, not the keystrokes,
-  and the validator hunts for right answers your patterns would wrongly reject.
-- **The simulation is honest about its edges.** A real command it has not implemented says
-  so, rather than telling a student they are wrong when they are right.
-- **You can see who is stuck.** An instructor console shows progress by act and which
-  challenges are costing the most hints.
-- **Write the course you actually teach.** A course is a folder of JSON — networking, git,
-  SQL. `npm run validate` proves every challenge solvable before a class sees it.
+- **A shared picture by default, a leaderboard only if you want one.** Every find turns
+  over one square of a class image: names show, nothing is ranked, and it finishes well
+  before the slowest student does. A public ranking pushes students toward looking
+  competent rather than becoming competent — and being shown as 23rd of 24 confirms exactly
+  what a frightened first-year already suspected. Switch to a board in one click; the full
+  ranking and the gradebook stay in the instructor console either way.
+- **Write the campaign you actually teach.** A campaign — a *pack*, in the code — is a
+  folder of JSON: networking, git, SQL. `npm run validate` proves every challenge solvable
+  before a class sees it.
 - **WCAG 2.1 AA, and honest about the gaps.** Six terminal schemes, all contrast-tested at
   4.5:1; colour is never the only signal. What is unfinished is
   [listed by name](docs/ACCESSIBILITY.md).
 
-![A student part-way through the forensics course. The left panel names the act and what
+![A student part-way through the forensics campaign. The left panel names the act and what
 it covers, states the task in one line under the heading YOUR TASK, explains what `ls` is
-the first time the course uses it, and gives the scene underneath. The right panel is a
+the first time the campaign uses it, and gives the scene underneath. The right panel is a
 simulated shell where the student has run `pwd` and `ls`; the coach has explained each
 result in one line, and the challenge is marked solved for ten
 points.](docs/images/shellgrounds-terminal.png)
 
-<sub>Act I of the forensics course, in practice mode. The terminal is simulated in the
+<sub>Act I of the forensics campaign, in practice mode. The terminal is simulated in the
 browser — nothing is executed on a server, and there is no server to execute it on.</sub>
 
 ---
@@ -107,7 +111,7 @@ value into `SHELLGROUNDS_STORE` and delete the old one.
 ## What your students get
 
 Three packs ship with the site — **104 challenges in total**. Students switch packs from
-the header, and each one is a full course with its own machine, its own story, and its own
+the header, and each one is a full campaign with its own machine, its own story, and its own
 badges. Nothing is shared between them, so a student can finish one and start another
 without losing anything.
 
@@ -160,7 +164,7 @@ one of the two packs above will be comfortable here; students who have not will 
 
 ### Choosing which packs your class sees
 
-By default students see all three. To run one course at a time, set `ENABLED_PACKS` to a
+By default students see all three. To run one campaign at a time, set `ENABLED_PACKS` to a
 comma-separated list of ids:
 
 ```
@@ -187,7 +191,7 @@ challenges; switching it back on brings every score, solve and hint back exactly
 Under **Packs** in the instructor view you also choose what your class sees:
 
 - **A shared picture** (the default). Every find by anyone turns over one square of an
-  image from the course. Names appear, nothing is ranked, and the picture finishes well
+  image from the campaign. Names appear, nothing is ranked, and the picture finishes well
   before the last student does — so nobody is ever visibly holding up the class.
 - **A leaderboard.** The familiar ranked board, by points.
 
@@ -254,7 +258,7 @@ node bin/shellgrounds.js validate packs/linux-fundamentals --json
 
 ## Contributing
 
-Issues and pull requests are welcome, particularly content packs — a course for
+Issues and pull requests are welcome, particularly content packs — a campaign for
 networking, for git, for SQL, for whatever you actually teach. See
 [`packs/AUTHORING.md`](packs/AUTHORING.md) to build one, and run `npm run validate`
 before opening a PR: it machine-proves every challenge in your pack is solvable and
@@ -263,6 +267,17 @@ reports the mistakes that are easy to make and hard to see.
 **AI-assisted PRs are welcome.** Say so in the description, and hold the work to the
 same bar as anything else: it should be tested, it should explain *why* in its comments,
 and you should have read it.
+
+## Thanks
+
+**[Netlify](https://github.com/netlify).** This project rests on their free tier, and the
+shape of the product follows from it: a static site, serverless functions and a key-value
+store, at no cost and with no card on file. That is why a teacher can run this without a
+budget line, a purchase order or a conversation with procurement — which for most schools
+is the difference between using something and not.
+
+**[shields.io](https://shields.io)** for the badges above, and
+**[JetBrains Mono](https://www.jetbrains.com/lp/mono/)** for every character a student types.
 
 ## License
 

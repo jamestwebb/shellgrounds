@@ -141,7 +141,7 @@ footer { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 6px; font-si
 
 <div class="box key">
 <strong>Quick reference</strong><br>
-Set your own site URL and class password before handing this out. Admin handle: <code>warden</code>.<br>
+Set your own site URL and class password before handing this out. The admin handle is whatever you put in <code>ADMIN_HANDLES</code> — <code>instructor</code>, say; there is no default, and the setting ships empty.<br>
 Handles: 3–20 characters, letters/numbers/underscore/hyphen, <strong>claimed once only</strong>.<br>
 ${CHALLENGES.length} challenges · ${totalPoints} points total · finds look like <code>FIND{ABCD2345EFGH}</code> and are <strong>different for every student</strong>.
 </div>
@@ -228,6 +228,32 @@ html += `<h2>Accepted command variants</h2>
 
 const outPath = `docs/instructor/instructor-guide-${packId}.html`;
 fs.writeFileSync(outPath, html);
+
+// The PDF is what a teacher actually prints and carries into a classroom, and
+// until now this script did not make one -- so the shipped PDFs were generated
+// by hand once and then drifted a week behind the HTML beside them, saying
+// things the guide no longer said. Nothing failed, because no test has ever
+// opened a PDF. Now both come out of the same run or neither does.
+const pdfPath = `docs/instructor/instructor-guide-${packId}.pdf`;
+try {
+  const { chromium } = await import('playwright');
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle' });
+  await page.pdf({
+    path: pdfPath,
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '14mm', bottom: '14mm', left: '12mm', right: '12mm' }
+  });
+  await browser.close();
+  console.log(`PDF built:   ${pdfPath}`);
+} catch (err) {
+  // A contributor without the browser downloaded still gets the HTML, and is
+  // told why the PDF beside it did not move.
+  console.log(`PDF skipped: ${pdfPath} — ${err.message.split('\n')[0]}`);
+  console.log('             run `npx playwright install chromium` to build it.');
+}
 const verified = CHALLENGES.map(verify);
 const bad = CHALLENGES.filter((c, i) => verified[i] !== 'OK');
 console.log(`Guide built: ${outPath} — ${CHALLENGES.length} challenges, ${totalPoints} points`);

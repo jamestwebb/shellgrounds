@@ -26,7 +26,7 @@ the honest trade for not collecting anything that would let them.
 No. They open a web page. The shell is simulated in the browser — there is no
 server executing commands, and there is no server that *could*.
 
-### Is this a capture-the-flag?
+### Is this like a capture-the-flag?
 
 Mechanically, yes. Culturally, no. Students never see the words "capture" or
 "flag" — they find things. Nothing is timed, nothing eliminates anyone, and a
@@ -67,7 +67,7 @@ of how it is funded, so tuition does not change the answer.
 [PolyForm Noncommercial 1.0.0](../LICENSE.md), which permits noncommercial
 purposes only. If you want to run it commercially, ask.
 
-### How long does a course take?
+### How long does a campaign take?
 
 Roughly a term of short sessions. Linux Fundamentals is 46 challenges across
 four acts; the other two are 30 each. Most challenges are one command. Acts
@@ -80,9 +80,10 @@ act they are in, and which challenges are costing the most hints. It is meant
 for "who do I sit with next", not for surveillance — it shows progress, not
 keystrokes.
 
-### Can I write my own course?
+### Can I write my own campaign?
 
-Yes, and this is the part the project cares most about. A course is a folder of
+Yes, and this is the part the project cares most about. A campaign — a *pack*, in the
+code and the file format — is a folder of
 JSON: the story, the filesystem, the challenges, the answers. See
 [`packs/AUTHORING.md`](../packs/AUTHORING.md) to build one in ten minutes and
 [`docs/PACK-FORMAT.md`](PACK-FORMAT.md) for the full reference.
