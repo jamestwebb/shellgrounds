@@ -18,6 +18,16 @@ guide below walks through every step.
 a competition. Students never see the words "capture" or "flag" — they find things — but
 the mechanic is the one you know, and nothing here is timed or eliminating.*
 
+![A student part-way through the forensics course. The left panel names the act and what
+it covers, states the task in one line under the heading YOUR TASK, explains what `ls` is
+the first time the course uses it, and gives the scene underneath. The right panel is a
+simulated shell where the student has run `pwd` and `ls`; the coach has explained each
+result in one line, and the challenge is marked solved for ten
+points.](docs/images/shellgrounds-terminal.png)
+
+<sub>Act I of the forensics course, in practice mode. The terminal is simulated in the
+browser — nothing is executed on a server, and there is no server to execute it on.</sub>
+
 ---
 
 ## Deploy it for your class
