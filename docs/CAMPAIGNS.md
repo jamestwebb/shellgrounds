@@ -1,4 +1,4 @@
-# The three campaigns
+# Three included campaigns
 
 Three campaigns ship with the site — **106 challenges in total**. Students switch between
 them from the header, and each is a full campaign with its own machine, its own story and

@@ -25,7 +25,7 @@
 </p>
 
 **A free command-line training ground for high school and university technology educators.**
-For CS, IT and cybersecurity programmes that need students fluent at a shell — without a
+For CS, IT and cybersecurity programs that need students fluent at a shell — without a
 lab of virtual machines to build, patch and rebuild every term. Students open a web page,
 pick a handle, and learn real bash and Windows CMD by solving small challenges. Setup
 takes about twenty minutes — [start here](#deploy-it-for-your-class).
@@ -143,18 +143,6 @@ The pack validator also runs standalone, and takes a single pack:
 node bin/shellgrounds.js validate
 node bin/shellgrounds.js validate packs/linux-fundamentals --json
 ```
-
----
-
-## How it is built
-
-| Capability | How Shellgrounds does it |
-| :--- | :--- |
-| **No infrastructure** | Static site, serverless functions, and blob storage. No Docker, no VMs, no database to run. |
-| **Answers cannot be shared** | Flags are HMAC-SHA256 values derived per student, per challenge. |
-| **No broken challenges** | A validator proves a working solution path for every challenge before release. |
-| **Honest simulation** | Unsimulated commands declare themselves rather than failing silently or lying. |
-| **Pluggable curriculum** | Content packs are declarative data. Writing a new one needs no engine changes. |
 
 ---
 

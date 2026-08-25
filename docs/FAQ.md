@@ -113,6 +113,22 @@ What is **not** done is honest in
 name. Most importantly: **nothing has been tested with a real screen reader
 user.** Until it has, no claim about screen-reader support belongs here.
 
+### How does it do all that without a server?
+
+| Capability | How Shellgrounds does it |
+| :--- | :--- |
+| **No infrastructure** | Static site, serverless functions, and blob storage. No Docker, no VMs, no database to run. |
+| **Answers cannot be shared** | Flags are HMAC-SHA256 values derived per student, per challenge. |
+| **No broken challenges** | A validator proves a working solution path for every challenge before release. |
+| **Honest simulation** | Unsimulated commands declare themselves rather than failing silently or lying. |
+| **Pluggable curriculum** | Content packs are declarative data. Writing a new one needs no engine changes. |
+
+The short version: nothing a student types is executed anywhere. The shell is
+simulated in their browser, the finds are derived cryptographically from their
+handle rather than stored, and the only thing the site keeps is who solved what.
+
+---
+
 ### What happens when the class finishes?
 
 They uncover a picture together — one square per find, the whole class working
