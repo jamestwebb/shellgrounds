@@ -1,22 +1,31 @@
-<img src="docs/images/shellgrounds-logo-256.png" alt="" width="96" align="right" />
+# Shellgrounds — learn the command line, one find at a time
 
-# Shellgrounds
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/shellgrounds-banner-light.png">
+    <img src="docs/images/shellgrounds-banner-dark.png" alt="Shellgrounds — learn the command line, one find at a time.">
+  </picture>
+</p>
 
-> **Learn the command line, one find at a time.**
+<p align="center">
+  <a href="https://github.com/jamestwebb/shellgrounds/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/jamestwebb/shellgrounds/ci.yml?branch=master&style=flat-square&label=ci" alt="CI status"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-8b5cf6?style=flat-square" alt="License: PolyForm Noncommercial 1.0.0"></a>
+  <a href="#running-it-on-your-own-machine"><img src="https://img.shields.io/badge/node-20-339933?style=flat-square&logo=nodedotjs&logoColor=white" alt="Node.js 20"></a>
+  <a href="docs/FAQ.md"><img src="https://img.shields.io/badge/students-nothing%20to%20install-d4b483?style=flat-square" alt="Students install nothing"></a>
+</p>
 
-**Shellgrounds is a free command-line game you can run for your class.** Students open a
-web page, pick a handle, and learn real bash and Windows commands by solving small
-challenges and finding things — with a class leaderboard, badges, and hints for the ones
-who get stuck. There is nothing to install and no server to maintain: it is a static site
-you deploy to Netlify's free tier by clicking a button, setting three settings, and telling
-your class one password. If you can make a Google Form, you can run this. Every student
-finds something different, generated just for them, so answers cannot be copied — the only
-way onto the leaderboard is through the terminal. Setup takes about twenty minutes; the
-guide below walks through every step.
+<p align="center">
+  <a href="#deploy-it-for-your-class">Deploy it</a> ·
+  <a href="docs/FAQ.md">FAQ</a> ·
+  <a href="packs/AUTHORING.md">Write a course</a> ·
+  <a href="docs/PACK-FORMAT.md">Pack format</a> ·
+  <a href="docs/ACCESSIBILITY.md">Accessibility</a>
+</p>
 
-*If you have run a capture-the-flag before: this is one, built for a classroom rather than
-a competition. Students never see the words "capture" or "flag" — they find things — but
-the mechanic is the one you know, and nothing here is timed or eliminating.*
+**A free command-line game for your classroom.** Students open a web page, pick a handle,
+and learn real bash and Windows commands by solving small challenges. Nothing to install,
+no server to maintain, and every find is generated for one student alone, so answers
+cannot be passed around. Setup takes about twenty minutes — [start here](#deploy-it-for-your-class).
 
 ![A student part-way through the forensics course. The left panel names the act and what
 it covers, states the task in one line under the heading YOUR TASK, explains what `ls` is
@@ -221,6 +230,18 @@ node bin/shellgrounds.js validate packs/linux-fundamentals --json
 | **Pluggable curriculum** | Content packs are declarative data. Writing a new one needs no engine changes. |
 
 ---
+
+## Contributing
+
+Issues and pull requests are welcome, particularly content packs — a course for
+networking, for git, for SQL, for whatever you actually teach. See
+[`packs/AUTHORING.md`](packs/AUTHORING.md) to build one, and run `npm run validate`
+before opening a PR: it machine-proves every challenge in your pack is solvable and
+reports the mistakes that are easy to make and hard to see.
+
+**AI-assisted PRs are welcome.** Say so in the description, and hold the work to the
+same bar as anything else: it should be tested, it should explain *why* in its comments,
+and you should have read it.
 
 ## License
 
