@@ -173,13 +173,36 @@ export function analyseConceptFlow(challenges) {
   const order = inCourseOrder(challenges);
   const tagsOf = (c) => (Array.isArray(c.teaches) ? c.teaches.filter((t) => typeof t === 'string') : []);
 
+  // A tag is either a SKILL, something a student types, or a CONCEPT naming
+  // what the skill is for. `stat`, `metadata` and `inodes` is one lesson
+  // wearing three tags, and counting that as three new ideas made this check
+  // report every challenge that bothered to describe itself. Only skills count
+  // toward the load; concepts still show in the reported list, because a reader
+  // wants to see everything the challenge claims to cover.
+  const knownCommand = new Set([
+    ...registry.getAll('linux').map((c) => c.name),
+    ...registry.getAll('windows').map((c) => c.name)
+  ]);
+  const isSkillTag = (tag) => {
+    const t = String(tag).trim();
+    if (knownCommand.has(t.split(/\s+/)[0].toLowerCase())) return true;
+    // A flag or shell operator is a skill even when its command is not
+    // simulated: `-la`, `/a`, `&&`, `>`, `%VAR%`.
+    return /^[-/]/.test(t) || /[|&><$%]/.test(t);
+  };
+  const skillsOf = (c) => tagsOf(c).filter(isSkillTag);
+
   const firstAt = new Map();      // tag -> index where a student first meets it
   const dedicatedAt = new Map();  // tag -> index of the challenge that is ABOUT it
   order.forEach((c, idx) => {
     const tags = tagsOf(c);
     for (const tag of tags) {
+        // Dedication is judged on SKILLS too. A lesson that is plainly about one
+        // command looked like a three-idea challenge purely because it also named
+        // the concept and a synonym, so the course appeared to teach `cd` after
+        // it had used it.
       if (!firstAt.has(tag)) firstAt.set(tag, idx);
-      if (tags.length <= DEDICATED_MAX_TAGS && !dedicatedAt.has(tag)) dedicatedAt.set(tag, idx);
+      if (skillsOf(c).length <= DEDICATED_MAX_TAGS && !dedicatedAt.has(tag)) dedicatedAt.set(tag, idx);
     }
   });
 
@@ -188,7 +211,8 @@ export function analyseConceptFlow(challenges) {
   order.forEach((c, idx) => {
     const tags = tagsOf(c);
     const fresh = tags.filter((t) => firstAt.get(t) === idx);
-    if (fresh.length > FIRST_CONTACT_LIMIT) {
+      const freshSkills = fresh.filter(isSkillTag);
+    if (freshSkills.length > FIRST_CONTACT_LIMIT) {
       tooMuchAtOnce.push({ id: c.id, act: c.act, title: c.title, tags: fresh });
       // Deliberately not also reported below. Every challenge with three new
       // tags is by definition a challenge with three tags and one of them new,
@@ -196,7 +220,7 @@ export function analyseConceptFlow(challenges) {
       // and double the apparent size of the problem.
       return;
     }
-    if (tags.length >= SYNTHESIS_MIN_TAGS && fresh.length > 0) {
+      if (skillsOf(c).length >= SYNTHESIS_MIN_TAGS && freshSkills.length > 0) {
       coldInSynthesis.push({ id: c.id, act: c.act, title: c.title, tags: fresh, total: tags.length });
     }
   });
@@ -207,8 +231,8 @@ export function analyseConceptFlow(challenges) {
   const taughtLate = [];
   const reported = new Set();
   order.forEach((c, idx) => {
-    if (tagsOf(c).length < SYNTHESIS_MIN_TAGS) return;
-    for (const tag of tagsOf(c)) {
+    if (skillsOf(c).length < SYNTHESIS_MIN_TAGS) return;
+    for (const tag of skillsOf(c)) {
       const d = dedicatedAt.get(tag);
       if (d === undefined || d <= idx || reported.has(tag)) continue;
       reported.add(tag);
@@ -901,7 +925,17 @@ export async function validatePack(packObj, options = {}) {
       // resolve yet and still names the thing in the room — provided the
       // pack's own answer uses the same word.
       const t = w.replace(/^[`"'(]+/, '').replace(/[`"'.,;:!?)]+$/, '');
-      return looksLikeAPath(t, isWin) && named.has(t);
+      if (looksLikeAPath(t, isWin) && named.has(t)) return true;
+      // A thing can be named without its full path or its extension.
+      // `where cmd` is about a program that really is on this machine, at
+      // C:\\Windows\\System32\\cmd.exe -- so the brief saying "the program
+      // `cmd`" names the thing in the room as precisely as a path would.
+      if (!named.has(t)) return false;
+      const base = t.toLowerCase();
+      return Object.keys(fsv).some((key) => {
+        const leaf = key.split(/[/\\]/).pop().toLowerCase();
+        return leaf === base || leaf.replace(/\.[^.]+$/, '') === base;
+      });
     });
 
     if (!grounded) {

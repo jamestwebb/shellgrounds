@@ -209,12 +209,15 @@ describe('Pack validator reads the course, not only the challenge', () => {
   it('reports a challenge that introduces more than two ideas at once', async () => {
     const r = await validatePack(syntheticPack({
       challenges: [
-        solvable('sy-1-a', 1, { teaches: ['cat', 'sorting', 'redirection'] }),
+        // All three are skills: two commands and an operator. A tag like
+        // 'sorting' describes what the lesson is FOR and no longer counts
+        // toward the load. See isSkillTag in the validator.
+        solvable('sy-1-a', 1, { teaches: ['cat', 'sort', '>'] }),
         solvable('sy-1-b', 1)
       ]
     }));
     expect(r.tooMuchAtOnce.map(t => t.id)).toEqual(['sy-1-a']);
-    expect(r.tooMuchAtOnce[0].tags).toEqual(['cat', 'sorting', 'redirection']);
+    expect(r.tooMuchAtOnce[0].tags).toEqual(['cat', 'sort', '>']);
     // A finding, never a failure: this pack still ships.
     expect(r.valid).toBe(true);
   });
@@ -223,8 +226,8 @@ describe('Pack validator reads the course, not only the challenge', () => {
     const r = await validatePack(syntheticPack({
       challenges: [
         solvable('sy-1-a', 1, { teaches: ['cat'] }),
-        solvable('sy-1-b', 1, { teaches: ['pipes'] }),
-        solvable('sy-2-boss', 2, { teaches: ['cat', 'pipes', 'uniq'] })
+        solvable('sy-1-b', 1, { teaches: ['|'] }),
+        solvable('sy-2-boss', 2, { teaches: ['cat', '|', 'uniq'] })
       ]
     }));
     expect(r.coldInSynthesis.map(c => c.id)).toEqual(['sy-2-boss']);
@@ -233,11 +236,24 @@ describe('Pack validator reads the course, not only the challenge', () => {
     expect(r.tooMuchAtOnce).toEqual([]);
   });
 
+  it('does not count a description of the lesson as an idea in it', async () => {
+    // `stat`, `metadata`, `inodes` is one lesson wearing three tags. Counting
+    // that as three made this check report every challenge that bothered to
+    // describe itself: eight of 104, none of them a real problem.
+    const r = await validatePack(syntheticPack({
+      challenges: [
+        solvable('sy-1-a', 1, { teaches: ['stat', 'metadata', 'inodes'] }),
+        solvable('sy-1-b', 1)
+      ]
+    }));
+    expect(r.tooMuchAtOnce).toEqual([]);
+  });
+
   it('reports an idea whose own lesson comes after the challenge that needed it', async () => {
     const r = await validatePack(syntheticPack({
       challenges: [
         solvable('sy-1-a', 1, { teaches: ['cat'] }),
-        solvable('sy-1-boss', 1, { teaches: ['cat', 'pipes', 'uniq'] }),
+        solvable('sy-1-boss', 1, { teaches: ['cat', '|', 'uniq'] }),
         solvable('sy-2-uniq', 2, { teaches: ['uniq', 'de-duplication'] })
       ]
     }));

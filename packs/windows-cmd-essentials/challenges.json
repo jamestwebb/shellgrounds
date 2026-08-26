@@ -344,7 +344,8 @@
     ],
     "successMessage": "`tree /f` is the fastest way to see the shape of an unfamiliar machine — including the hidden tag.",
     "teaches": [
-      "tree"
+      "tree",
+      "tree /f"
     ],
     "solution": "tree",
     "acceptedVariants": [

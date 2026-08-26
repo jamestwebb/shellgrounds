@@ -612,7 +612,7 @@
         "text": "Run `sort -n Documents/dome_temps.log`."
       }
     ],
-    "successMessage": "Without the numeric find, 12 sorts before 9, because alphabetically \"1\" comes before \"9\".",
+    "successMessage": "Without the numeric find, 12 sorts before 9, because alphabetically \"1\" comes before \"9\". Add `-r` to the same flag and the order reverses, which is how you ask for the largest rather than the smallest.",
     "teaches": [
       "sort",
       "sort -n"
@@ -1500,7 +1500,7 @@
       "mkdir -p",
       "cp",
       "chmod",
-      "ls -l",
+      "ls -la",
       "&&"
     ],
     "solution": "mkdir -p /tmp/handover && cp logs/auth.log /tmp/handover/ && chmod 600 /tmp/handover/auth.log && ls -l /tmp/handover",
@@ -1954,7 +1954,7 @@
     "successMessage": "Three tools, one line, each doing one job and handing the result to the next. That is the whole idea of the Unix shell — and it is dawn. The dome is yours.",
     "teaches": [
       "pipes",
-      "sort -nr",
+      "sort -n",
       "head",
       "cut"
     ],
