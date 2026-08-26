@@ -20,6 +20,12 @@ const friendlyGateError = (message) => {
     return 'Someone in this class already has that handle. Add a number or an underscore and try again. '
       + 'If the handle is yours, open the site in the browser you registered with and it resumes on its own.';
   }
+  if (/too many attempts/i.test(text)) {
+    // A whole class registering at once shares one school address, so this is
+    // as likely to be a busy classroom as anything else. Say what to do.
+    return 'That network has made a lot of sign-ups in the last minute. '
+      + 'Wait a moment and press Enter again.';
+  }
   return text || 'That did not go through. Check your handle and password, then try again.';
 };
 

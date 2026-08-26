@@ -7,11 +7,25 @@ const API_BASE = import.meta.env?.VITE_API_BASE || '/api';
 
 // A proxy/timeout error page is HTML, not JSON. Never surface a raw parse
 // error ("Unexpected token '<'") to a student as if their answer were wrong.
+//
+// The message must fit whatever call failed. This used to say "your answer was
+// not judged" for every one of them, so a teacher who could not create a handle
+// was told something about an answer they had not given. "Nothing was recorded"
+// is true of a submission, a registration and a settings save alike.
 async function parseJsonSafe(res) {
   try {
     return await res.json();
   } catch {
-    return { error: 'The server is busy — wait a moment and try again. Your answer was not judged.' };
+    if (res.status === 429) {
+      return {
+        error: 'Too many attempts from this network in the last minute. '
+          + 'Wait a moment and try again. Nothing was recorded.'
+      };
+    }
+    return {
+      error: 'The server did not answer properly. Wait a moment and try again. '
+        + 'Nothing was recorded.'
+    };
   }
 }
 
@@ -108,6 +122,8 @@ export async function fetchSession() {
 let demoSource = null;
 export function setDemoPreview(source) { demoSource = source || null; }
 export function isDemoPreview() { return demoSource !== null; }
+/** Whether this browser holds a session at all. A guest does not. */
+export function hasSession() { return !!getAuthToken(); }
 
 export async function fetchSiteConfig() {
   if (demoSource) return demoSource.demoSiteConfig();
@@ -155,6 +171,7 @@ export async function markScreenSeen(what, packId = null) {
 
 /** The class's shared picture. Carries no scores and no ordering, on purpose. */
 export async function fetchReveal(packId) {
+  if (demoSource) return demoSource.demoReveal(packId);
   if (!getAuthToken()) return null;
   const qs = packId ? `?packId=${encodeURIComponent(packId)}` : '';
   const res = await fetch(`${API_BASE}/reveal${qs}`, { headers: authHeaders() });

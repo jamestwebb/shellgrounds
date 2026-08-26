@@ -17,7 +17,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Users, Sparkles, Clock } from 'lucide-react';
-import { fetchReveal } from '../utils/api';
+import { fetchReveal, hasSession, isDemoPreview } from '../utils/api';
 import { getPack } from '../../packs/index.js';
 
 const ago = (iso) => {
@@ -35,6 +35,8 @@ export const Reveal = ({ packId, handle }) => {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  // A guest has no class, which is a different thing from a request that failed.
+  const [needsHandle, setNeedsHandle] = useState(false);
   const [hovered, setHovered] = useState(null);
 
   // How often the picture catches up with the class, in milliseconds. It is a
@@ -48,6 +50,17 @@ export const Reveal = ({ packId, handle }) => {
     setLoading(true);
     try {
       const res = await fetchReveal(packId);
+      // No session is not a failure. The class picture belongs to a class, and
+      // a guest practising without a handle is not in one -- so `fetchReveal`
+      // returns null before it ever calls the server. Reporting that as "could
+      // not read the class picture" told every practice-mode visitor, including
+      // a teacher trying their own deployment, that something was broken.
+      if (!res && !hasSession() && !isDemoPreview()) {
+        setNeedsHandle(true);
+        setError(null);
+        return;
+      }
+      setNeedsHandle(false);
       if (!res) throw new Error('Could not read the class picture.');
       setData(res);
       setError(null);
@@ -83,6 +96,19 @@ export const Reveal = ({ packId, handle }) => {
     return (
       <div className="p-8 text-center text-xs text-neutral-500 flex items-center justify-center gap-2">
         <RefreshCw size={13} className="animate-spin" /> Looking at what the class has found…
+      </div>
+    );
+  }
+
+  if (needsHandle && !data) {
+    return (
+      <div className="p-8 max-w-md mx-auto text-center space-y-2">
+        <p className="text-sm font-bold text-term-green">The class picture needs a class</p>
+        <p className="text-xs text-neutral-400 leading-relaxed">
+          Every find your class makes turns over one square of a shared image. You are
+          practising without a handle, so there is nothing to add to and nobody to add it
+          with. Take a handle and the picture starts filling.
+        </p>
       </div>
     );
   }

@@ -191,6 +191,74 @@ export function demoAdminOverview(packId, { view, handle } = {}) {
   };
 }
 
+/**
+ * The class picture, part-uncovered, for the demo.
+ *
+ * The real endpoint needs a session token, because a class's progress is that
+ * class's business. A demo visitor has no handle and therefore no token, so
+ * without this the most distinctive screen in the product showed an error.
+ *
+ * The picture itself is never sent by the real endpoint either: the browser
+ * already holds every shipped pack, and re-sending a 20 KB image on a poll
+ * would be silly. Only the state comes from here, exactly as it does live.
+ */
+export function demoReveal(packId) {
+  const pack = packFor(packId);
+  const people = CLASS.map(h => ({ handle: h, ...stateFor(pack, h) }));
+  const list = ordered(pack);
+
+  const columns = 20;
+  const rows = 10;
+  const total = columns * rows;
+  const finds = people.reduce((n, p) => n + p.solvedCount, 0);
+  const target = Math.max(finds + 40, Math.round(list.length * CLASS.length * 0.55));
+  const fraction = Math.min(1, finds / target);
+  const uncovered = Math.round(total * fraction);
+
+  // Which squares are turned over is derived from the handle that turned them,
+  // so the picture is the same on every reload rather than shuffling.
+  const tiles = [];
+  let i = 0;
+  for (const p of people) {
+    for (let k = 0; k < p.solvedCount && tiles.length < uncovered; k++) {
+      tiles.push({ index: (i * 7 + k * 13) % total, handle: p.handle });
+    }
+    i++;
+  }
+  const seen = new Set();
+  const unique = tiles.filter(t => (seen.has(t.index) ? false : seen.add(t.index)));
+
+  const feed = people
+    .filter(p => p.frontier)
+    .slice(0, 12)
+    .map(p => ({
+      handle: p.handle,
+      challengeId: p.frontier.id,
+      title: p.frontier.title,
+      solvedAt: p.lastActive
+    }))
+    .sort((a, b) => new Date(b.solvedAt) - new Date(a.solvedAt));
+
+  return {
+    success: true,
+    packId: pack.id,
+    packName: pack.manifest.name,
+    hasImage: !!(pack.manifest.reveal || pack.manifest.cover),
+    accent: pack.manifest.theme?.accent || null,
+    columns, rows, total,
+    uncovered: unique.length,
+    fraction: unique.length / total,
+    target,
+    finds,
+    roster: people.length,
+    complete: false,
+    contributors: people.filter(p => p.solvedCount > 0).length,
+    yours: 0,
+    tiles: unique,
+    feed
+  };
+}
+
 /** The site config screen, with every course on, and never saveable here. */
 export function demoSiteConfig() {
   return {
