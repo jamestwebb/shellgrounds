@@ -25,6 +25,7 @@
 // unsolved.
 
 import { PACKS, DEFAULT_PACK_ID } from '../../packs/index.js';
+import { buildReveal } from '../../packages/engine/reveal.js';
 
 /** Names that read like a class register rather than like test fixtures. */
 const CLASS = [
@@ -204,40 +205,43 @@ export function demoAdminOverview(packId, { view, handle } = {}) {
  */
 export function demoReveal(packId) {
   const pack = packFor(packId);
-  const people = CLASS.map(h => ({ handle: h, ...stateFor(pack, h) }));
   const list = ordered(pack);
+  const people = CLASS.map(h => ({ handle: h, ...stateFor(pack, h) }));
 
-  const columns = 20;
-  const rows = 10;
-  const total = columns * rows;
-  const finds = people.reduce((n, p) => n + p.solvedCount, 0);
-  const target = Math.max(finds + 40, Math.round(list.length * CLASS.length * 0.55));
-  const fraction = Math.min(1, finds / target);
-  const uncovered = Math.round(total * fraction);
-
-  // Which squares are turned over is derived from the handle that turned them,
-  // so the picture is the same on every reload rather than shuffling.
-  const tiles = [];
-  let i = 0;
+  // Real solves, run through the real engine. The grid, the target and which
+  // squares are open are then exactly what a class of fourteen would see --
+  // including the way the grid gets finer as a roster grows, which is the part
+  // of this screen a visiting teacher is actually judging.
+  const solves = [];
   for (const p of people) {
-    for (let k = 0; k < p.solvedCount && tiles.length < uncovered; k++) {
-      tiles.push({ index: (i * 7 + k * 13) % total, handle: p.handle });
+    let k = 0;
+    for (const c of list) {
+      if (!p.solved.has(c.id)) continue;
+      solves.push({
+        handle: p.handle,
+        challengeId: c.id,
+        solvedAt: new Date(Date.parse(p.lastActive) - (list.length - k) * 3_600_000).toISOString()
+      });
+      k++;
     }
-    i++;
   }
-  const seen = new Set();
-  const unique = tiles.filter(t => (seen.has(t.index) ? false : seen.add(t.index)));
 
-  const feed = people
-    .filter(p => p.frontier)
+  const state = buildReveal(solves, pack.id, {
+    viewer: null,
+    roster: people.length,
+    challenges: list.length
+  });
+
+  const titleOf = new Map(list.map(c => [c.id, c.title]));
+  const feed = [...solves]
+    .sort((a, b) => Date.parse(b.solvedAt) - Date.parse(a.solvedAt))
     .slice(0, 12)
-    .map(p => ({
-      handle: p.handle,
-      challengeId: p.frontier.id,
-      title: p.frontier.title,
-      solvedAt: p.lastActive
-    }))
-    .sort((a, b) => new Date(b.solvedAt) - new Date(a.solvedAt));
+    .map(s => ({
+      handle: s.handle,
+      challengeId: s.challengeId,
+      title: titleOf.get(s.challengeId) || s.challengeId,
+      solvedAt: s.solvedAt
+    }));
 
   return {
     success: true,
@@ -245,16 +249,18 @@ export function demoReveal(packId) {
     packName: pack.manifest.name,
     hasImage: !!(pack.manifest.reveal || pack.manifest.cover),
     accent: pack.manifest.theme?.accent || null,
-    columns, rows, total,
-    uncovered: unique.length,
-    fraction: unique.length / total,
-    target,
-    finds,
+    columns: state.columns,
+    rows: state.rows,
+    total: state.total,
+    uncovered: state.uncovered,
+    fraction: state.fraction,
+    target: state.target,
+    finds: state.finds,
     roster: people.length,
-    complete: false,
-    contributors: people.filter(p => p.solvedCount > 0).length,
-    yours: 0,
-    tiles: unique,
+    complete: state.complete,
+    contributors: state.contributors,
+    yours: state.yours,
+    tiles: state.tiles,
     feed
   };
 }

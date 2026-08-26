@@ -206,10 +206,19 @@ export const Reveal = ({ packId, handle }) => {
                 key={i}
                 onMouseEnter={() => open && setHovered(tile)}
                 onMouseLeave={() => setHovered(null)}
+                // The cover is OPAQUE. At 95% it let five percent of the art
+                // through every square, which across a whole picture is enough
+                // to read the shape of it -- so a class could see what they
+                // were uncovering before they had uncovered anything.
+                //
+                // An open square is transparent rather than opacity-0, so a
+                // student's own squares can carry a visible ring. Under the
+                // old pair of classes the ring was drawn at ten percent and
+                // was, in practice, not there.
                 className={`transition-all duration-700 ${
                   open
-                    ? `opacity-0 ${tile.mine ? 'ring-1 ring-inset ring-term-green/40 opacity-10' : ''}`
-                    : 'bg-term-gray/95 border border-term-void/40'
+                    ? `bg-transparent ${tile.mine ? 'ring-1 ring-inset ring-term-green/50' : ''}`
+                    : 'bg-term-gray border border-term-void/40'
                 }`}
                 title={open ? `@${tile.handle} — ${tile.challengeId}` : undefined}
               />
