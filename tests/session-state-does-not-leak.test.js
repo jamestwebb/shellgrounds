@@ -42,22 +42,50 @@ function bodyOf(name) {
   return tail.slice(0, end < 0 ? 3000 : end);
 }
 
+/** State that belongs to one student and must not survive them. */
 const PER_STUDENT = [
   ['setSolvesMap', 'which challenges are already scored'],
   ['setUnlockedHints', 'which hints have been paid for'],
-  ['setTerminalHistory', "the scrollback, which holds the student's own finds"]
+  ['setTerminalHistory', "the scrollback, which holds the student's own finds"],
+  ['setFlagMap', 'the per-handle finds themselves'],
+  ['setLinuxFs', 'the Linux filesystem, which has those finds baked into it'],
+  ['setWindowsFs', 'the Windows filesystem, for the same reason'],
+  ['setInstalledPackages', 'packages installed in this shell'],
+  ['setSelectedChallengeId', 'where in the course they had got to']
 ];
+
+/** Every way into the app that changes who is sitting there. */
+const DOORS = ['handleLogout', 'handleAuthenticated', 'handleStartPractice'];
 
 describe('per-student state does not outlive its student', () => {
   for (const [setter, what] of PER_STUDENT) {
-    it(`logging out clears ${what}`, () => {
-      expect(bodyOf('handleLogout')).toContain(setter);
-    });
-
-    it(`signing in clears ${what}`, () => {
-      expect(bodyOf('handleAuthenticated')).toContain(setter);
+    it(`the reset clears ${what}`, () => {
+      expect(bodyOf('resetForNewStudent')).toContain(setter);
     });
   }
+
+  for (const door of DOORS) {
+    it(`${door} runs that reset`, () => {
+      expect(bodyOf(door)).toContain('resetForNewStudent()');
+    });
+  }
+
+  it('the reset also drops the instructor preview', () => {
+    const body = bodyOf('resetForNewStudent');
+    expect(body).toContain('setInstructorPreview(false)');
+    expect(body).toContain('setDemoPreview(null)');
+  });
+
+  it('the demo turns the preview on AFTER the reset, not before', () => {
+    // The reset deliberately switches the preview off. Setting it first and
+    // resetting second turned it straight back off, which silently removed
+    // the demo's instructor view.
+    const start = app.indexOf('handleStartPractice();');
+    const on = app.indexOf('setInstructorPreview(true)');
+    expect(start).toBeGreaterThan(-1);
+    expect(on).toBeGreaterThan(-1);
+    expect(on).toBeGreaterThan(start);
+  });
 
   it('signing in leaves practice mode', () => {
     expect(bodyOf('handleAuthenticated')).toContain('setIsPracticeMode(false)');
@@ -72,13 +100,16 @@ describe('per-student state does not outlive its student', () => {
   it('reads the hints the server reports, on both paths', () => {
     // The server has always sent `hintsOpened`; the client used to discard it,
     // so after a reload a hint the student owned asked to be bought again.
+    // The definition reads `hintMapFrom = (`, so only call sites match here.
     expect(app).toMatch(/hintsOpened/);
-    // Both entry points: the reload path and the sign-in path. The definition
-    // reads `hintMapFrom = (`, so only the call sites match here.
     expect(app.match(/hintMapFrom\(/g)?.length || 0).toBeGreaterThanOrEqual(2);
   });
 
   it('does not celebrate a solve the server says is already theirs', () => {
     expect(bodyOf('handleChallengeSuccess')).toMatch(/res\.alreadySolved/);
+  });
+
+  it('a change of course clears what the old course installed', () => {
+    expect(bodyOf('handleSelectPack')).toContain('setInstalledPackages');
   });
 });

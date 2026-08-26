@@ -243,6 +243,8 @@ export default function App() {
     setCwd(homeFor(pack, plat));
     setLinuxFs(pack.createFs('linux'));
     setWindowsFs(pack.createFs('windows'));
+    // Nothing installed under one course follows the student to another.
+    setInstalledPackages(new Set());
     setActiveActId(1);
     setSelectedChallengeId(pack.challenges[0]?.id || '');
     setTerminalHistory([
@@ -327,6 +329,38 @@ export default function App() {
     init();
   }, [handleSelectPack, activePackId]);
 
+  // ── Everything that belongs to one student, and nothing that does not ────
+  //
+  // Three doors lead into the app -- signing in, signing out to the gate, and
+  // starting practice -- and each one changes who is sitting there. Each used
+  // to reset a different subset of the state, which is how the same defect
+  // kept reappearing through whichever door had been forgotten.
+  //
+  // The filesystem is on this list because it is not generic: the effect that
+  // builds it bakes the student's own finds into the file contents, so a stale
+  // `linuxFs` is a stale copy of somebody else's answers.
+  const resetForNewStudent = useCallback(() => {
+    setSolvesMap({});
+    setUnlockedHints({});
+    setTerminalHistory([]);
+    setFlagMap({});
+    const plat = currentPack.manifest.platforms?.[0] || 'linux';
+    setPlatform(plat);
+    setCwd(homeFor(currentPack, plat));
+    setLinuxFs(currentPack.createFs('linux'));
+    setWindowsFs(currentPack.createFs('windows'));
+    setShellEnv(undefined);
+    setInstalledPackages(new Set());
+    setActiveActId(1);
+    setSelectedChallengeId(currentPack.challenges[0]?.id || '');
+    setActiveTab('terminal');
+    // The instructor preview swaps the API layer over to generated sample data.
+    // Left on, the next person to sign in on this browser reads an invented
+    // class instead of their own.
+    setInstructorPreview(false);
+    setDemoPreview(null);
+  }, [currentPack]);
+
   // ── Session response -> local state ──────────────────────────────────────
   // Both the reload path and the sign-in path need this, and only the reload
   // path had it. A student who practised first and then signed in kept their
@@ -345,6 +379,7 @@ export default function App() {
 
   // Practice Mode Login
   const handleStartPractice = () => {
+    resetForNewStudent();
     setIsPracticeMode(true);
     setSession({ handle: 'guest', isAdmin: false });
     setViewState('app');
@@ -359,9 +394,7 @@ export default function App() {
     // and then filled from the server, so there is no window in which one
     // person's progress is on screen under another person's name.
     setIsPracticeMode(false);
-    setSolvesMap({});
-    setUnlockedHints({});
-    setTerminalHistory([]);
+    resetForNewStudent();
     // Only the server knows who is an instructor (ADMIN_HANDLES). Without this
     // an instructor who logs in fresh stays gated until they reload the page.
     fetchSession()
@@ -395,19 +428,11 @@ export default function App() {
     setAuthToken('');
     setSession(null);
     setIsPracticeMode(false);
-    // The instructor preview swaps the API layer over to generated sample data.
-    // Left on across a logout, the next person to sign in on this browser reads
-    // an invented class instead of their own. Only reachable on the demo, but
-    // "only on the demo" is not a reason to leave a data-source flag latched.
-    setInstructorPreview(false);
-    setDemoPreview(null);
     // A school computer is used by one class after another. Left behind, the
     // solve map showed the next student the last one's progress and blocked
     // them from scoring those challenges, and the terminal scrollback still
     // held the previous student's finds, which are theirs alone.
-    setSolvesMap({});
-    setUnlockedHints({});
-    setTerminalHistory([]);
+    resetForNewStudent();
     setViewState('gate');
   };
 
@@ -909,11 +934,15 @@ export default function App() {
               <button
                 type="button"
                 onClick={async () => {
+                  // Practice starts FIRST. It resets the state that belongs to
+                  // whoever was here before, and that reset deliberately turns
+                  // the preview off -- so setting the preview before this call
+                  // would switch it straight back off again.
+                  handleStartPractice();
                   // Imported here, inside a branch that only exists in a demo
                   // build, so the sample class never enters anyone else's bundle.
                   setDemoPreview(await import('./utils/demoAdminData.js'));
                   setInstructorPreview(true);
-                  handleStartPractice();
                   setActiveTab('admin');
                 }}
                 className="w-full px-3 py-2 rounded-lg bg-purple-600/20 border border-purple-500/50
