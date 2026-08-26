@@ -761,31 +761,54 @@ export default function App() {
   }
 
   if (viewState === 'gate') {
-    return (
-      <div className="min-h-screen bg-term-void flex flex-col">
-        {DEMO_MODE ? (
-          <div className="pt-8 px-6">
-            <div className="max-w-md mx-auto rounded-lg border border-term-green/40
-                            bg-term-green-faint p-4 space-y-3">
+    // A demo deployment puts the explanation BESIDE the form rather than above
+    // it: the form is the action and the panel is context, and stacking them
+    // pushed the thing a visitor came to press below the fold.
+    if (DEMO_MODE) {
+      return (
+        <div className="min-h-screen bg-term-void flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl flex flex-col lg:flex-row lg:items-start
+                          gap-6 justify-center">
+            <div className="w-full lg:max-w-md">
+          <Gate
+            fullHeight={false}
+            onAuthenticated={handleAuthenticated}
+            onResumeSession={(h) => {
+              setSession({ handle: h, isAdmin: false });
+              setViewState('app');
+            }}
+            existingHandle={session?.handle}
+            packName={currentPack.manifest.name}
+          />
+              <div className="text-center pt-3">
+                <button
+                  onClick={handleStartPractice}
+                  className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
+                >
+                  Or skip the handle and just practise. Nothing is scored.
+                </button>
+              </div>
+            </div>
+
+            <aside className="w-full lg:max-w-sm rounded-lg border border-term-green/40
+                              bg-term-green-faint p-5 space-y-3 lg:mt-4">
               <p className="text-[11px] font-bold text-term-green tracking-widest">
                 THIS IS A DEMONSTRATION SITE
               </p>
               <p className="text-xs text-neutral-300 leading-relaxed">
                 A free command-line training ground for high school and university
                 technology educators. Everything here is real except the class: pick a
-                handle below, use the password shown here, and you are a student. Your
+                handle, use the password shown here, and you are a student. Your own
                 deployment gets its own private class, its own password and its own
                 scores.
               </p>
-              {DEMO_CLASS_PASSWORD && (
-                <p className="text-xs text-neutral-300">
-                  Class password for this demo:{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-term-black text-green-300
-                                   border border-term-green/40 select-all">
-                    {DEMO_CLASS_PASSWORD}
-                  </code>
-                </p>
-              )}
+              <p className="text-xs text-neutral-300">
+                Class password:{' '}
+                <code className="px-1.5 py-0.5 rounded bg-term-black text-green-300
+                                 border border-term-green/40 select-all">
+                  {DEMO_CLASS_PASSWORD}
+                </code>
+              </p>
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <a
                   href="https://github.com/jamestwebb/shellgrounds"
@@ -804,28 +827,16 @@ export default function App() {
                   />
                 </a>
               </div>
-            </div>
-            <div className="text-center pt-4">
-              <button
-                onClick={handleStartPractice}
-                className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
-              >
-                Or skip the handle and just practise. Nothing is scored.
-              </button>
-            </div>
+            </aside>
           </div>
-        ) : (
-          <div className="text-center pb-6">
-            <button
-              onClick={handleStartPractice}
-              className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
-            >
-              Just looking? Practise here without a handle. Nothing is scored.
-            </button>
-          </div>
-        )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-term-void flex flex-col">
         <Gate
-          fullHeight={!DEMO_MODE}
+          fullHeight={true}
           onAuthenticated={handleAuthenticated}
           onResumeSession={(h) => {
             setSession({ handle: h, isAdmin: false });
@@ -833,7 +844,15 @@ export default function App() {
           }}
           existingHandle={session?.handle}
           packName={currentPack.manifest.name}
-        />
+          />
+        <div className="text-center pb-6">
+          <button
+            onClick={handleStartPractice}
+            className="text-xs text-neutral-400 hover:text-emerald-400 underline transition"
+          >
+            Just looking? Practise here without a handle. Nothing is scored.
+          </button>
+        </div>
       </div>
     );
   }
