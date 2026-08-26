@@ -14,8 +14,9 @@ dist/
 # claims about the current state, which they are not.
 docs/research/
 
-# Netlify's Edge Functions lockfile. This project has no edge functions and
-# netlify.toml declares none; `netlify dev` writes the file regardless.
+# Netlify's Edge Functions lockfile, regenerated from the edge function source
+# on every build. It was committed once by accident, long before there was an
+# edge function to justify it.
 deno.lock
 
 # Editors and operating systems

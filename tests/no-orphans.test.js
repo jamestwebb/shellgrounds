@@ -74,6 +74,9 @@ describe('every module is reachable from something that ships', () => {
     /[/\\]bin[/\\]/,
     /[/\\]scripts[/\\]/,
     /[/\\]netlify[/\\]functions[/\\][^/\\]+\.js$/,
+    // Edge functions are discovered by directory too, and are entry points
+    // for the same reason: Netlify calls them, nothing imports them.
+    /[/\\]netlify[/\\]edge-functions[/\\][^/\\]+\.js$/,
     /[/\\]packs[/\\][^/\\]+[/\\]/,          // pack modules, named by the registry
     /registry\.gen\.js$/,
     /vite\.config\.js$/,
