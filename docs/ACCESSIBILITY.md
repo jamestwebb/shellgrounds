@@ -278,6 +278,12 @@ and because these are the things not to break:
   well past 23 pairs — and holds all of them at 4.5:1 going forward, not just
   the ones somebody happened to measure by hand.
 - **Headings are used, and `<h1>` exists on every screen.**
+- **Every control that submits has an accessible name.** The button that sends
+  a find was an icon and nothing else, so a screen reader announced it as
+  "button" with no indication of what it would do. It now carries
+  `aria-label="Submit this find"` (`src/components/ChallengeSidebar.jsx`), which
+  is 4.1.2 Name, Role, Value for the one control a student cannot finish a
+  challenge without.
 - **No drag interactions, no CAPTCHA, no time limits** — three whole classes of
   barrier that simply do not arise here, and two WCAG 2.2 AA criteria met for
   free.
