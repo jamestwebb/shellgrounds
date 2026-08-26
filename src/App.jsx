@@ -34,6 +34,7 @@ import { replaceFlagTokens, injectFlagsIntoVFS } from './utils/vfs-injector';
 import { explainCommand } from '../packages/engine/coach.js';
 import { badgesEarned } from '../packages/engine/badges.js';
 import { sounds } from './utils/audio';
+import { setDemoPreview } from './utils/api';
 import { readStoredTheme, storeTheme } from './utils/terminalThemes.js';
 import { nextWrongAnswerMessage, nextSolveMessage } from './copy';
 
@@ -104,6 +105,8 @@ export default function App() {
   const [bootBrief] = useState(() => hasSeenBoot());
   const [session, setSession] = useState(null);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
+  // Demo only: looking at the instructor console against a sample class.
+  const [instructorPreview, setInstructorPreview] = useState(false);
 
   // Active Pack Configuration
   const [activePackId, setActivePackId] = useState(DEFAULT_PACK_ID);
@@ -809,6 +812,27 @@ export default function App() {
                   {DEMO_CLASS_PASSWORD}
                 </code>
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setDemoPreview(true);
+                  setInstructorPreview(true);
+                  handleStartPractice();
+                  setActiveTab('admin');
+                }}
+                className="w-full px-3 py-2 rounded-lg bg-purple-600/20 border border-purple-500/50
+                           text-xs font-bold text-purple-200 hover:bg-purple-600/30
+                           cursor-pointer transition-colors
+                           focus-visible:outline focus-visible:outline-2
+                           focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+              >
+                See the instructor view
+              </button>
+              <p className="text-[11px] text-neutral-400 leading-relaxed">
+                Who is stuck, where the hints are going, and what to reteach. Shown
+                against a sample class, and read-only.
+              </p>
+
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <a
                   href="https://github.com/jamestwebb/shellgrounds"
@@ -1092,8 +1116,8 @@ export default function App() {
           <SimulationBoundary defaultPlatform={platform} />
         )}
 
-        {activeTab === 'admin' && session?.isAdmin && (
-          <AdminOverview packId={activePackId} />
+        {activeTab === 'admin' && (session?.isAdmin || instructorPreview) && (
+          <AdminOverview packId={activePackId} preview={instructorPreview} />
         )}
       </main>
 

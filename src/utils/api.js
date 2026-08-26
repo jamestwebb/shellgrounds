@@ -90,7 +90,20 @@ export async function fetchSession() {
 // The list lives in a settings record on the server, not in this bundle, so a
 // teacher can switch a pack on or off without a redeploy. The build-time
 // ENABLED_PACKS is only the seed for a site nobody has configured yet.
+// ── Instructor preview, for the public demo ──────────────────────────────
+//
+// The demo lets a visitor look at the instructor console without an account.
+// Intercepting HERE rather than inside AdminOverview keeps the console free of
+// special cases: it asks for data the same way it always does and gets the same
+// shapes back. Nothing below reaches the network while this is on, and the one
+// write path is removed in the component rather than faked here -- a save that
+// silently does nothing is worse than a save that is not offered.
+let demoPreview = false;
+export function setDemoPreview(on) { demoPreview = !!on; }
+export function isDemoPreview() { return demoPreview; }
+
 export async function fetchSiteConfig() {
+  if (demoPreview) return (await import('./demoAdminData.js')).demoSiteConfig();
   if (!getAuthToken()) return null;
   const res = await fetch(`${API_BASE}/config`, { headers: authHeaders() });
   if (!res.ok) return null;
@@ -100,6 +113,7 @@ export async function fetchSiteConfig() {
 
 /** Instructors only. Returns the saved config, or throws with the server's reason. */
 export async function saveSiteConfig(enabledPacks, classView) {
+  if (demoPreview) throw new Error('The demo does not save settings.');
   const res = await fetch(`${API_BASE}/config`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -193,6 +207,9 @@ export async function fetchLeaderboard(window = 'all', packId) {
 }
 
 export async function fetchAdminOverview(packId, { view, handle, format } = {}) {
+  if (demoPreview) {
+    return (await import('./demoAdminData.js')).demoAdminOverview(packId, { view, handle });
+  }
   const params = new URLSearchParams();
   if (packId) params.set('packId', packId);
   if (view) params.set('view', view);
@@ -206,6 +223,7 @@ export async function fetchAdminOverview(packId, { view, handle, format } = {}) 
 
 /** The gradebook CSV, as a Blob the caller can offer as a download. */
 export async function fetchGradebookCsv(packId) {
+  if (demoPreview) throw new Error('The gradebook is not exported from the demo.');
   const res = await fetch(
     `${API_BASE}/admin-overview?format=csv${packId ? `&packId=${encodeURIComponent(packId)}` : ''}`,
     { headers: authHeaders() }

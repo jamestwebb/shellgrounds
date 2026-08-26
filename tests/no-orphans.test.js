@@ -55,7 +55,12 @@ function importersOf(target) {
   for (const [file, src] of SOURCES) {
     if (file === target) continue;
     // Any specifier ending in this module's name, with or without extension.
-    const re = new RegExp(`from\\s+['"][^'"]*${name}(\\.js|\\.jsx|\\.mjs)?['"]`);
+    // Both forms count: a static `from '...'` and a dynamic `import('...')`.
+    // A module loaded dynamically is still reachable, and loading it that way
+    // is often deliberate -- it keeps code out of the bundle for everyone who
+    // never takes that branch.
+    const tail = `[^'"]*${name}(\\.js|\\.jsx|\\.mjs)?['"]`;
+    const re = new RegExp(`(from\\s+['"]${tail}|import\\s*\\(\\s*['"]${tail})`);
     if (!re.test(src)) continue;
     (isTest(file) ? tests : production).push(relative(ROOT, file));
   }

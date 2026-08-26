@@ -99,7 +99,13 @@ const EmptyNote = ({ children }) => (
   <div className="p-8 text-center text-xs text-neutral-500">{children}</div>
 );
 
-export const AdminOverview = ({ packId: preferredPackId = null }) => {
+export const AdminOverview = ({ packId: preferredPackId = null,
+  // The public demo renders this against a sample class so a teacher can
+  // see the screen that decides whether they adopt this. Read-only: the
+  // Packs tab is the one control that writes, and it is removed rather
+  // than disabled, because a save that silently does nothing is worse
+  // than a save that is not offered.
+  preview = false }) => {
   const [packId, setPackId] = useState(() => resolveInitialPack(preferredPackId));
   const [view, setView] = useState('class');            // 'class' | 'answers' | 'packs'
 
@@ -398,6 +404,20 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             <div className="p-2.5 rounded-lg bg-purple-950/40 border border-purple-500/40 text-purple-400">
               <Shield size={24} />
             </div>
+          {preview && (
+            <div className="mb-4 rounded-lg border border-purple-500/50 bg-purple-950/30 p-3">
+              <p className="text-xs font-bold text-purple-200 tracking-wider mb-1">
+                PREVIEW OF A SAMPLE CLASS
+              </p>
+              <p className="text-[11px] text-neutral-300 leading-relaxed">
+                Fourteen invented students, so the screen shows what it looks like in week
+                six rather than on day one. Nothing here is saved and nothing can be
+                changed: the course settings and the gradebook export are hidden rather
+                than disabled, because a control that quietly does nothing is worse than
+                one that is not offered. Your own deployment has all of them.
+              </p>
+            </div>
+          )}
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-purple-400 tracking-wide">
                 Instructor console
@@ -420,7 +440,8 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
               ))}
             </select>
 
-            <button
+{!preview && (
+                        <button
               onClick={exportCsv}
               disabled={csv.busy}
               className="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-lg"
@@ -428,6 +449,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             >
               <Download size={13} /> {csv.busy ? 'EXPORTING...' : 'Gradebook CSV'}
             </button>
+            )}
 
             <button
               onClick={refreshAll}
@@ -462,6 +484,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             >
               <KeyRound size={13} /> Answer key
             </button>
+            {!preview && (
             <button
               onClick={() => setView('packs')}
               className={`px-3 py-1.5 rounded transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -472,6 +495,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
             >
               <Layers size={13} /> Packs
             </button>
+          )}
           </div>
 
           {overviewError && overview && (
@@ -488,7 +512,7 @@ export const AdminOverview = ({ packId: preferredPackId = null }) => {
         )}
 
         {/* ================= PACKS ================= */}
-        {view === 'packs' && (
+        {view === 'packs' && !preview && (
           <PackSettings onSaved={() => refreshAll()} />
         )}
 
