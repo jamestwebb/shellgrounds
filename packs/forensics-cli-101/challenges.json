@@ -605,6 +605,9 @@
     "teaches": [
       "wsl-paths",
       "path-translation"
+    ],
+    "builtOn": [
+      "act3-crossing"
     ]
   },
   {
@@ -728,6 +731,9 @@
       "pipes",
       "wc -l"
     ],
+    "builtOn": [
+      "act4-grep-v"
+    ],
     "acceptedVariants": [
       "grep -v ALLOW Documents/network_stream.log | wc -l",
       "grep -v \"ALLOW\" Documents/network_stream.log | wc -l",
@@ -765,6 +771,9 @@
       "cut",
       "csv-parsing",
       "pipes"
+    ],
+    "builtOn": [
+      "act4-pipe-count"
     ]
   },
   {
@@ -810,6 +819,9 @@
     "teaches": [
       "redirection",
       ">"
+    ],
+    "builtOn": [
+      "act3-grepi"
     ],
     "acceptedVariants": [
       "grep -i error Documents/logs.txt > /tmp/errors.log",
@@ -951,6 +963,9 @@
       "dir",
       "cmd-basics"
     ],
+    "builtOn": [
+      "act1-ls"
+    ],
     "acceptedVariants": [
       "dir",
       "dir ."
@@ -986,6 +1001,9 @@
       "attrib",
       "type",
       "windows-attributes"
+    ],
+    "builtOn": [
+      "act1-hidden"
     ]
   },
   {
@@ -1017,6 +1035,9 @@
     "teaches": [
       "findstr",
       "findstr /i"
+    ],
+    "builtOn": [
+      "act3-grepi"
     ]
   },
   {
@@ -1057,6 +1078,9 @@
     "teaches": [
       "certutil",
       "windows-hashing"
+    ],
+    "builtOn": [
+      "act2-md5"
     ],
     "acceptedVariants": [
       "certutil -hashfile evidence\\evidence.img MD5",

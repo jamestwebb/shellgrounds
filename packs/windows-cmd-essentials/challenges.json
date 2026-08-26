@@ -428,6 +428,11 @@
       "type",
       "discovery"
     ],
+    "builtOn": [
+      "w1-dir-s",
+      "w1-tree",
+      "w1-type"
+    ],
     "solution": "type Documents\\servers.txt",
     "acceptedVariants": [
       "type Documents\\servers.txt",
@@ -898,6 +903,11 @@
       "dir /b",
       "command-chaining"
     ],
+    "builtOn": [
+      "w2-md",
+      "w2-copy",
+      "w1-dir-b"
+    ],
     "solution": "md Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return",
     "acceptedVariants": [
       "md Return & copy Documents\\notes.txt Return\\notes.txt & dir /b Return",
@@ -1244,6 +1254,9 @@
       "findstr",
       "log-analysis",
       "discovery"
+    ],
+    "builtOn": [
+      "w3-findstr"
     ],
     "solution": "findstr 4624 logs\\eventlog.txt",
     "acceptedVariants": [

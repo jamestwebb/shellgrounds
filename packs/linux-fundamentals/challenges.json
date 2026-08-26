@@ -396,10 +396,14 @@
     ],
     "successMessage": "Hidden files are hidden by convention, not by security. Listing them is the first thing to do on an unfamiliar machine — and that key was yours alone.",
     "teaches": [
-      "ls -a",
+      "ls -la",
       "dotfiles",
       "cat",
       "discovery"
+    ],
+    "builtOn": [
+      "l1-ls-la",
+      "l1-cat"
     ],
     "solution": "cat .handover",
     "acceptedVariants": [
@@ -986,6 +990,12 @@
       "uniq",
       "wc -l"
     ],
+    "builtOn": [
+      "l2-cut",
+      "l2-sort",
+      "l2-uniq",
+      "l2-wc-l"
+    ],
     "solution": "cut -d' ' -f1 Documents/server_access.log | sort | uniq | wc -l",
     "acceptedVariants": [
       "cut -d' ' -f1 Documents/server_access.log | sort | uniq | wc -l",
@@ -1503,6 +1513,13 @@
       "ls -la",
       "&&"
     ],
+    "builtOn": [
+      "l3-mkdir",
+      "l3-cp",
+      "l3-chmod-symbolic",
+      "l1-ls-la",
+      "l4-list-and"
+    ],
     "solution": "mkdir -p /tmp/handover && cp logs/auth.log /tmp/handover/ && chmod 600 /tmp/handover/auth.log && ls -l /tmp/handover",
     "acceptedVariants": [
       "mkdir -p /tmp/handover && cp logs/auth.log /tmp/handover/ && chmod 600 /tmp/handover/auth.log && ls -l /tmp/handover",
@@ -1957,6 +1974,11 @@
       "sort -n",
       "head",
       "cut"
+    ],
+    "builtOn": [
+      "l2-sort",
+      "l1-head",
+      "l2-cut"
     ],
     "solution": "sort -t, -k4 -nr Documents/data.csv | head -n 1 | cut -d, -f2",
     "acceptedVariants": [
