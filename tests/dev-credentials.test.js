@@ -152,3 +152,56 @@ describe('the endpoint is not deployable', () => {
     }
   });
 });
+
+// ── The demo affordances must not ship to a teacher's deployment ──────────
+//
+// A third-party audit found that they did. `DEMO_MODE` was written as
+// `import.meta.env?.VITE_DEMO_MODE`, and that optional chaining defeats Vite's
+// build-time substitution: the comparison became a runtime one, the bundler
+// could no longer prove the branch dead, and every normal build shipped the
+// demo gate, the preview banner AND a separate chunk holding the sample class.
+//
+// Nothing failed. The demo simply never rendered, so nobody looked. That is the
+// shape of defect this file exists for, and it is why the assertions below are
+// about the BUILT OUTPUT rather than about the source.
+describe('a production build carries nothing from demo mode', () => {
+  let dist, built;
+
+  beforeAll(() => {
+    dist = mkdtempSync(join(tmpdir(), 'shellgrounds-democheck-'));
+    execFileSync('node_modules/.bin/vite', ['build', '--outDir', dist, '--emptyOutDir'], {
+      cwd: ROOT,
+      stdio: 'pipe',
+      // Deliberately WITHOUT VITE_DEMO_MODE, which is what a teacher's build is.
+      env: { ...process.env, NODE_ENV: 'production', VITE_DEMO_MODE: '', VITE_DEMO_CLASS_PASSWORD: '' }
+    });
+    built = bundleText(dist);
+  }, 120_000);
+
+  afterAll(() => { if (dist) rmSync(dist, { recursive: true, force: true }); });
+
+  it('does not ship the demonstration panel', () => {
+    expect(built).not.toContain('DEMONSTRATION SITE');
+    expect(built).not.toContain('Deploy your own copy to Netlify');
+  });
+
+  it('does not ship the sample class', () => {
+    // Names from demoAdminData. If the chunk is emitted at all, these appear.
+    for (const name of ['mara_k', 'liu_wei', 'kofi_a']) {
+      expect(built, `the bundle must not carry the sample student ${name}`).not.toContain(name);
+    }
+  });
+
+  // The root cause, pinned directly: optional chaining here silently undoes
+  // every assertion above, and the failure is invisible at runtime.
+  it('reads the flag in the exact form Vite can replace', () => {
+    // Comments stripped first. The comment ABOVE the flag explains the bug by
+    // quoting the broken form, and matching that is how this assertion failed
+    // the first time it ran -- a test reading its own explanation as evidence.
+    const src = readFileSync(join(ROOT, 'src/App.jsx'), 'utf8')
+      .split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+    expect(src, 'import.meta.env?.VITE_DEMO_MODE defeats build-time substitution')
+      .not.toMatch(/import\.meta\.env\?\.\s*VITE_DEMO/);
+    expect(src).toMatch(/import\.meta\.env\.VITE_DEMO_MODE/);
+  });
+});

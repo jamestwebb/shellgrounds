@@ -98,12 +98,19 @@ export async function fetchSession() {
 // shapes back. Nothing below reaches the network while this is on, and the one
 // write path is removed in the component rather than faked here -- a save that
 // silently does nothing is worse than a save that is not offered.
-let demoPreview = false;
-export function setDemoPreview(on) { demoPreview = !!on; }
-export function isDemoPreview() { return demoPreview; }
+// The sample-data source is INJECTED rather than imported. Importing it here,
+// even dynamically, made the chunk unconditional from the bundler's point of
+// view -- the guard is a runtime flag, so Vite must assume it can be true and
+// emits the chunk for every deployment. Passing the provider in means the one
+// import site lives inside the demo branch, which IS statically dead in a
+// normal build. A third-party audit found the class register of fourteen
+// invented students shipping to every teacher.
+let demoSource = null;
+export function setDemoPreview(source) { demoSource = source || null; }
+export function isDemoPreview() { return demoSource !== null; }
 
 export async function fetchSiteConfig() {
-  if (demoPreview) return (await import('./demoAdminData.js')).demoSiteConfig();
+  if (demoSource) return demoSource.demoSiteConfig();
   if (!getAuthToken()) return null;
   const res = await fetch(`${API_BASE}/config`, { headers: authHeaders() });
   if (!res.ok) return null;
@@ -113,7 +120,7 @@ export async function fetchSiteConfig() {
 
 /** Instructors only. Returns the saved config, or throws with the server's reason. */
 export async function saveSiteConfig(enabledPacks, classView) {
-  if (demoPreview) throw new Error('The demo does not save settings.');
+  if (demoSource) throw new Error('The demo does not save settings.');
   const res = await fetch(`${API_BASE}/config`, {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json' }),
@@ -207,9 +214,7 @@ export async function fetchLeaderboard(window = 'all', packId) {
 }
 
 export async function fetchAdminOverview(packId, { view, handle, format } = {}) {
-  if (demoPreview) {
-    return (await import('./demoAdminData.js')).demoAdminOverview(packId, { view, handle });
-  }
+  if (demoSource) return demoSource.demoAdminOverview(packId, { view, handle });
   const params = new URLSearchParams();
   if (packId) params.set('packId', packId);
   if (view) params.set('view', view);
@@ -223,7 +228,7 @@ export async function fetchAdminOverview(packId, { view, handle, format } = {}) 
 
 /** The gradebook CSV, as a Blob the caller can offer as a download. */
 export async function fetchGradebookCsv(packId) {
-  if (demoPreview) throw new Error('The gradebook is not exported from the demo.');
+  if (demoSource) throw new Error('The gradebook is not exported from the demo.');
   const res = await fetch(
     `${API_BASE}/admin-overview?format=csv${packId ? `&packId=${encodeURIComponent(packId)}` : ''}`,
     { headers: authHeaders() }

@@ -225,6 +225,12 @@ function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
     let stageStdout = '';
     let stageStderr = '';
     let stageStatus = 0;
+      // Every stage's stderr, not only the last one's. stageStderr is
+      // overwritten on each pass, so folding it in after the loop threw away
+      // everything upstream: `ls nowhere | grep x` printed NOTHING, while the
+      // same `ls` alone reported the missing path. Silence is the worst answer
+      // a teaching shell can give.
+      let listStderr = '';
 
     for (let sIdx = 0; sIdx < stages.length; sIdx++) {
       const stage = stages[sIdx];
@@ -388,15 +394,22 @@ function runPipelineInner(input, cwd, fs, platform = 'linux', context = {}) {
 
       if (stage.pipeBoth) {
         currentStdin = `${stageStdout}${stageStderr}`;
+        // 2>&1: stderr joined the stream, so it is no longer a separate
+        // diagnostic to print.
+        stageStderr = '';
       } else {
         currentStdin = stageStdout;
       }
+
+      // Inside the stage loop, while THIS stage's stderr still exists. After
+      // the loop it has already been overwritten by the next stage.
+      if (stageStderr) listStderr += stageStderr;
     }
 
     lastStatus = stageStatus;
     currentEnv['?'] = String(lastStatus);
 
-    if (stageStderr) finalStderr = finalStderr ? `${finalStderr}${stageStderr}` : stageStderr;
+      if (listStderr) finalStderr = finalStderr ? `${finalStderr}${listStderr}` : listStderr;
     if (stageStdout) finalStdout = finalStdout ? `${finalStdout}${stageStdout}` : stageStdout;
 
     // Evaluate list operator (&&, ||)

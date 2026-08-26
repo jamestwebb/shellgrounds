@@ -82,12 +82,18 @@ export const resumeSelection = (challenges, solves) => {
 // "demo" from a missing CLASS_PASSWORD would mean a teacher who simply forgot to
 // set one gets a friendly demo screen instead of the error telling them their
 // deployment is broken.
-const DEMO_MODE = import.meta.env?.VITE_DEMO_MODE === '1'
-  || import.meta.env?.VITE_DEMO_MODE === 'true';
+// No optional chaining here, deliberately. Vite replaces the exact text
+// `import.meta.env.VITE_DEMO_MODE` at build time; written as
+// `import.meta.env?.VITE_DEMO_MODE` the substitution does not happen, the
+// comparison becomes a runtime one, and the bundler can no longer prove the
+// branch is dead. A third-party audit caught this shipping the whole demo gate,
+// the preview banner and a separate sample-data chunk into every build.
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === '1'
+  || import.meta.env.VITE_DEMO_MODE === 'true';
 
 // Shown on the demo so a visitor can register and see scoring work for real. A
 // class deployment never exposes its password anywhere in the interface.
-const DEMO_CLASS_PASSWORD = import.meta.env?.VITE_DEMO_CLASS_PASSWORD || '';
+const DEMO_CLASS_PASSWORD = import.meta.env.VITE_DEMO_CLASS_PASSWORD || '';
 
 export default function App() {
   // Navigation & Session States
@@ -362,6 +368,12 @@ export default function App() {
     setAuthToken('');
     setSession(null);
     setIsPracticeMode(false);
+    // The instructor preview swaps the API layer over to generated sample data.
+    // Left on across a logout, the next person to sign in on this browser reads
+    // an invented class instead of their own. Only reachable on the demo, but
+    // "only on the demo" is not a reason to leave a data-source flag latched.
+    setInstructorPreview(false);
+    setDemoPreview(null);
     setViewState('gate');
   };
 
@@ -814,8 +826,10 @@ export default function App() {
               </p>
               <button
                 type="button"
-                onClick={() => {
-                  setDemoPreview(true);
+                onClick={async () => {
+                  // Imported here, inside a branch that only exists in a demo
+                  // build, so the sample class never enters anyone else's bundle.
+                  setDemoPreview(await import('./utils/demoAdminData.js'));
                   setInstructorPreview(true);
                   handleStartPractice();
                   setActiveTab('admin');

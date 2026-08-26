@@ -299,11 +299,22 @@ export function detectUnsupportedSyntax(input) {
  * `"if"` and `'for'` are quoted words and bash treats them as command names,
  * not keywords, so a quoted first word is never a compound command.
  */
-export function commandPositionWord(rawTokens) {
+export function commandPositionWord(rawTokens, rawText = null) {
   const first = rawTokens && rawTokens[0];
   if (!first || first.length !== 1) return null;
   if (first[0].type !== 'unquoted') return null;
-  return first[0].value;
+  const word = first[0].value;
+
+  // A keyword that was escaped or quoted is not a keyword. Parsing unescapes
+  // `\\if` to a plain unquoted `if`, so by this point the two are
+  // indistinguishable from the token alone -- and real bash runs `\\if` as a
+  // command named `if`. Compare against the source text: if the first word as
+  // TYPED is not exactly the keyword, the student meant a command.
+  if (rawText != null) {
+    const typed = String(rawText).trimStart().split(/[\s;|&<>]/)[0];
+    if (typed !== word) return null;
+  }
+  return word;
 }
 
 function unquoteTarget(raw) {
@@ -545,7 +556,7 @@ export function tokenizeCommandLine(input, isWindows = false) {
       // stage reaching here is one, because the list and pipe splitters have
       // already run, so this is exactly command position and nowhere else.
       if (!isWindows) {
-        const word = commandPositionWord(stageRes.rawTokens);
+        const word = commandPositionWord(stageRes.rawTokens, stageObj.raw);
         if (word && COMPOUND_KEYWORDS.has(word)) {
           const unsupported = { syntax: word, message: keywordMessage(word) };
           return { error: unsupported.message, unsupportedSyntax: unsupported, lists: [] };

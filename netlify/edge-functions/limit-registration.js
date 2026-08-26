@@ -17,9 +17,11 @@
 // five minutes of a lesson, from behind ONE school NAT address. Thirty students
 // on one public IP is the normal case here, not the attack.
 //
-// So the window is sized for a whole class arriving at once and still catches
-// anything automated: 40 registrations a minute is a full classroom in sixty
-// seconds, and it is nowhere near what a script would want.
+// So the window is sized for a whole class arriving at once AND getting it
+// wrong: thirty students is thirty requests, and ten of them mistyping the
+// password once is forty. A limit of 40 would lock out the back half of the
+// room over typos. 120 a minute leaves room for that and is still nowhere
+// near what a script wants.
 //
 // windowSize is capped at 180 seconds by the platform.
 //
@@ -34,7 +36,7 @@ export default async (request, context) => context.next();
 export const config = {
   path: '/api/register-handle',
   rateLimit: {
-    windowLimit: 40,
+    windowLimit: 120,
     windowSize: 60,
     // Per visitor address. Pooling across the whole domain would let one
     // abusive source exhaust the quota for every school using the site.
