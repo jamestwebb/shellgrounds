@@ -187,7 +187,10 @@ export const ChallengeSidebar = ({
     setSubmitting(true);
     setFeedback(null);
     try {
-      const res = await onSubmitFlag(currentChallenge.id, flagInput.trim(), hintsRevealedCount);
+      // No hint count. The server prices the penalty from its own record of
+      // which hints were opened, so a number sent from the browser is at best
+      // ignored and at worst a way to claim a discount that was not earned.
+      const res = await onSubmitFlag(currentChallenge.id, flagInput.trim());
       // `res?.` deliberately. A handler that returns nothing is a bug, but the
       // student should not read the resulting TypeError in the box where their
       // answer goes.
