@@ -7,38 +7,31 @@
 
 export const REAL_LINUX = new Set([
   // processes & system
-  'top', 'htop', 'ps', 'kill', 'killall', 'pkill', 'jobs', 'bg', 'fg', 'nice',
-  'free', 'uptime', 'df', 'du', 'uname', 'whoami', 'id', 'who', 'w', 'date',
-  'cal', 'history', 'alias', 'export', 'env', 'which', 'whereis', 'locate',
+  'top', 'htop', 'killall', 'pkill', 'bg', 'fg', 'nice',
+  'free', 'uptime', 'uname', 'whoami', 'id', 'who', 'w', 'date',
+  'cal', 'alias', 'whereis', 'locate',
   'su', 'systemctl', 'service', 'mount', 'umount', 'lsblk', 'fdisk', 'dmesg',
   'journalctl', 'shutdown', 'reboot', 'crontab', 'lsof', 'strace', 'watch',
   // files & directories
-  'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'touch', 'ln', 'chmod', 'chown', 'chgrp',
-  'stat', 'tree', 'basename', 'dirname', 'realpath', 'rsync', 'shred',
+  'ln', 'chgrp',
+  'tree', 'basename', 'dirname', 'realpath', 'rsync', 'shred',
   // text processing
-  'nano', 'vim', 'vi', 'emacs', 'awk', 'sed', 'tr', 'uniq', 'diff', 'tee',
-  'more', 'split', 'paste', 'join', 'column', 'fold', 'rev', 'nl', 'jq',
+  'vim', 'emacs', 'more', 'split', 'paste', 'join', 'column', 'fold', 'rev', 'jq',
   // network
   'ping', 'curl', 'wget', 'ssh', 'scp', 'sftp', 'ifconfig', 'ip', 'netstat',
   'ss', 'dig', 'nslookup', 'traceroute', 'nmap', 'tcpdump', 'nc', 'netcat',
   // archives
-  'tar', 'gzip', 'gunzip', 'zip', 'unzip', 'xz', 'bzip2', '7z',
+  'gunzip', 'zip', 'unzip', 'xz', 'bzip2', '7z',
   // misc
   'git', 'python', 'python3', 'node', 'npm', 'pip', 'make', 'gcc', 'seq',
-  'sleep', 'yes', 'xargs', 'test', 'expr', 'bc', 'printf', 'read', 'exit',
-  'logout', 'clear_history', 'apt', 'apt-get', 'yum', 'dnf', 'snap'
-]);
+  'sleep', 'yes', 'expr', 'bc', 'printf', 'read', 'exit',
+  'logout', 'clear_history', 'apt', 'apt-get', 'yum', 'dnf', 'snap']);
 
 export const REAL_WINDOWS = new Set([
-  'dir', 'cd', 'chdir', 'md', 'mkdir', 'rd', 'rmdir', 'copy', 'move', 'del',
-  'erase', 'ren', 'rename', 'type', 'more', 'cls', 'attrib', 'find', 'findstr',
-  'echo', 'set', 'path', 'title', 'ver', 'vol', 'date', 'time', 'tasklist',
-  'taskkill', 'ipconfig', 'ping', 'tracert', 'netstat', 'nslookup', 'systeminfo',
-  'hostname', 'whoami', 'where', 'tree', 'fc', 'comp', 'robocopy', 'xcopy',
-  'certutil', 'powershell', 'pwsh', 'wmic', 'sc', 'net', 'shutdown', 'reg',
+  'chdir', 'mkdir', 'rmdir', 'erase', 'rename', 'more', 'path', 'title', 'vol', 'date', 'time', 'taskkill', 'ping', 'tracert', 'netstat', 'nslookup', 'hostname', 'fc', 'comp', 'robocopy', 'xcopy',
+  'powershell', 'pwsh', 'wmic', 'sc', 'net', 'shutdown', 'reg',
   'format', 'chkdsk', 'diskpart', 'sfc', 'assoc', 'ftype', 'pushd', 'popd',
-  'choice', 'timeout', 'pause', 'exit'
-]);
+  'choice', 'timeout', 'pause', 'exit']);
 
 export const REAL_POWERSHELL = new Set([
   'Get-ChildItem', 'Set-Location', 'Get-Location', 'Get-Content', 'Set-Content',

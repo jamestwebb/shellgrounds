@@ -6,21 +6,17 @@
 import { listPlayers, normalizeSolve, splitSolveKey, readAllSolves} from './utils/store.js';
 import { PACKS } from '../../packs/index.js';
 import { isPackEnabled } from './utils/enabled.js';
+import { badgesEarned } from '../../packages/engine/badges.js';
 
 // Badges come from whichever pack owns the solved challenge. Reading them from
 // a single hardcoded module meant only one pack could ever award a badge, and
 // students in the other two earned nothing.
-const BADGE_RULES = Object.values(PACKS).flatMap(pack =>
-  (pack.manifest.badges || [])
-    .filter(b => b.act)
-    .map(b => ({
-      id: b.id,
-      packId: pack.id,
-      name: b.name,
-      required: pack.challenges.filter(c => c.act === b.act).map(c => c.id)
-    }))
-    .filter(rule => rule.required.length > 0)
-);
+//
+// The RULE itself lives in packages/engine/badges.js, and is shared with the
+// browser so the celebration a student sees and the badge on this board come
+// from one place. This file used to carry its own copy. The two agreed on the
+// day the copy was made, which is the only day two implementations of the same
+// rule ever do.
 
 const json = (status, obj, extraHeaders = {}) =>
   new Response(JSON.stringify(obj), {
@@ -93,15 +89,14 @@ export default async (req) => {
     });
 
     const applicable = requestedPack
-      ? BADGE_RULES.filter(r => r.packId === requestedPack)
-      : BADGE_RULES;
+      ? [PACKS[requestedPack]].filter(Boolean)
+      : Object.values(PACKS);
 
     const leaderboard = rows.slice(0, 50).map((player, idx) => {
       const solvedSet = new Set(player.solves);
       const earnedBadges = applicable
-        .filter(rule =>
-          rule.required.filter(id => solvedSet.has(id)).length >= Math.ceil(rule.required.length * 0.8))
-        .map(rule => rule.id);
+        .flatMap(pack => badgesEarned(pack, solvedSet))
+        .map(badge => badge.id);
 
       return {
         rank: idx + 1,

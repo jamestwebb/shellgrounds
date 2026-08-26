@@ -77,23 +77,28 @@ describe('badgesEarned', () => {
   });
 });
 
-describe('one rule, two callers', () => {
-  // The leaderboard function still carries its own copy. That is a real
-  // follow-up and not a nicety: two copies of one rule drift, and the drift is
-  // invisible -- the celebration fires for a badge the board does not show, or
-  // the board shows one the student was never told about. Until it is pointed
-  // at packages/engine/badges.js, this holds the two numbers together.
+describe('one rule, one implementation', () => {
+  // The leaderboard function used to carry its own copy of this rule. The two
+  // agreed on the day the copy was made, which is the only day two
+  // implementations of one rule ever do: the drift would have been invisible,
+  // showing as a celebration for a badge the board does not list, or a badge on
+  // the board the student was never told about.
   const leaderboard = fs.readFileSync(
     path.join(ROOT, 'netlify/functions/leaderboard.js'), 'utf8'
   );
 
-  it('uses the same threshold as the leaderboard function', () => {
-    expect(leaderboard).toContain(`* ${BADGE_THRESHOLD})`);
-    expect(leaderboard).toContain('Math.ceil(');
+  it('the leaderboard calls the shared rule', () => {
+    expect(leaderboard).toMatch(/import \{[^}]*badgesEarned[^}]*\} from/);
+    expect(leaderboard).toContain('badgesEarned(pack, solvedSet)');
   });
 
-  it('agrees with the leaderboard that a badge without an act is not awarded', () => {
-    expect(leaderboard).toContain('.filter(b => b.act)');
+  it('the leaderboard no longer carries a second copy', () => {
+    expect(leaderboard, 'a duplicated threshold is how the two drift apart')
+      .not.toContain('Math.ceil(');
+    expect(leaderboard).not.toContain('BADGE_RULES');
+  });
+
+  it('a badge with no act is awarded to nobody', () => {
     const actless = { id: 'x', name: 'No act' };
     const pack = { manifest: { badges: [actless] }, challenges: [{ id: 'c1', act: 1 }] };
     expect(badgesEarned(pack, ['c1'])).toEqual([]);
