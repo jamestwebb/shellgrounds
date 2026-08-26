@@ -7,6 +7,7 @@ import {
   Volume2, VolumeX, BookOpen, Package, Sparkles, ChevronDown
 } from 'lucide-react';
 import { BrandMark } from './components/BrandMark';
+import { SourceButton, SourceHeaderButton } from './components/SourceButton';
 import { Boot, hasSeenBoot, rememberBootSeen } from './components/Boot';
 import { Welcome, ChoosePack, PackBriefing } from './components/Onboarding';
 import { Gate } from './components/Gate';
@@ -847,16 +848,18 @@ export default function App() {
                 against a sample class, and read-only.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <a
-                  href="https://github.com/jamestwebb/shellgrounds"
-                  className="text-xs font-bold text-term-green hover:text-green-300 underline"
-                >
-                  Source and setup guide
-                </a>
+              {/* Two ways to leave with something. Read it first, or deploy
+                  it now -- a teacher evaluating a tool wants the first, and
+                  the underlined link this replaced did not look like a way
+                  out of the page at all beside a button that did. */}
+              <div className="space-y-2 pt-1">
+                <SourceButton />
                 <a
                   href="https://app.netlify.com/start/deploy?repository=https://github.com/jamestwebb/shellgrounds"
-                  aria-label="Deploy your own copy to Netlify"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex justify-center"
+                  aria-label="Deploy your own copy to Netlify, opens in a new tab"
                 >
                   <img
                     src="https://www.netlify.com/img/deploy/button.svg"
@@ -1012,6 +1015,8 @@ export default function App() {
 
         {/* Right Status Controls */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          {DEMO_MODE && <SourceHeaderButton />}
+
           <button
             onClick={() => setSoundEnabled(prev => !prev)}
             className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-term-gray transition-all cursor-pointer"
