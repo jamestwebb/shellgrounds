@@ -637,12 +637,27 @@ export default function App() {
     }
   };
 
-  const handleFlagSubmit = async (flagValue) => {
-    if (!flagValue || !flagValue.trim()) return;
+  /**
+   * A find typed into the sidebar box.
+   *
+   * The parameters MUST stay in the order ChallengeSidebar sends them: the
+   * challenge first, the find second. Taking the find alone meant every
+   * submission sent the challenge id where the find belonged, so the server
+   * was asked to match `act1-hidden` against `FIND{...}` and refused every
+   * one of them. Flag challenges could not be solved from this box at all.
+   *
+   * It must also RETURN the outcome. The sidebar reads `success` off the
+   * result to decide what to say; a handler that returned nothing made it
+   * throw "Cannot read properties of undefined" into the student's feedback
+   * box on every attempt, right and wrong alike.
+   */
+  const handleFlagSubmit = async (challengeId, flagValue) => {
+    const targetId = challengeId || selectedChallengeId;
+    if (!flagValue || !flagValue.trim()) return { success: false };
 
     if (isPracticeMode) {
       // Find matching challenge
-      const c = currentPack.challenges.find(ch => ch.id === selectedChallengeId);
+      const c = currentPack.challenges.find(ch => ch.id === targetId);
       if (c) {
         setSolvesMap(prev => ({
           ...prev,
@@ -657,17 +672,18 @@ export default function App() {
         // pays out like any other. Wiring the celebration only to the command
         // path would have made a whole class of solve silent again.
         celebrateNewBadges(Object.keys(solvesMap), [...Object.keys(solvesMap), c.id]);
+        return { success: true, challengeId: c.id, points: c.points };
       }
-      return;
+      return { success: false };
     }
 
     try {
-      const res = await submitFlagApi({ challengeId: selectedChallengeId, flag: flagValue.trim(), cwd });
+      const res = await submitFlagApi({ challengeId: targetId, flag: flagValue.trim(), cwd });
       if (res.success) {
         sounds.playSuccess();
         setSolvesMap(prev => ({
           ...prev,
-          [res.challengeId || selectedChallengeId]: {
+          [res.challengeId || targetId]: {
             points: res.points,
             netPoints: res.points,
             solvedAt: new Date().toISOString()
@@ -679,15 +695,17 @@ export default function App() {
         ]);
         celebrateNewBadges(
           Object.keys(solvesMap),
-          [...Object.keys(solvesMap), res.challengeId || selectedChallengeId]
+          [...Object.keys(solvesMap), res.challengeId || targetId]
         );
       }
+      return res;
     } catch (err) {
       sounds.playError();
       setTerminalHistory(prev => [
         ...prev,
         { type: 'output', text: `[!] ${err.message || 'That find did not match.'}\n    ${nextWrongAnswerMessage()}`, isError: true }
       ]);
+      return { success: false, error: err.message || 'That find did not match.' };
     }
   };
 

@@ -188,12 +188,15 @@ export const ChallengeSidebar = ({
     setFeedback(null);
     try {
       const res = await onSubmitFlag(currentChallenge.id, flagInput.trim(), hintsRevealedCount);
-      if (res.success) {
+      // `res?.` deliberately. A handler that returns nothing is a bug, but the
+      // student should not read the resulting TypeError in the box where their
+      // answer goes.
+      if (res?.success) {
         if (res.challengeId && res.challengeId !== currentChallenge.id) {
           const solved = challenges.find(c => c.id === res.challengeId);
           setFeedback({
             type: 'success',
-            message: `That one belonged to '${solved?.title || res.challengeId}' — recorded there! (+${res.pointsAwarded} XP)`
+            message: `That one belonged to '${solved?.title || res.challengeId}' — recorded there! (+${res.points} XP)`
           });
         } else if (res.alreadySolved) {
           setFeedback({
@@ -205,7 +208,7 @@ export const ChallengeSidebar = ({
         }
         setFlagInput('');
       } else {
-        setFeedback({ type: 'error', message: res.error || nextWrongAnswerMessage() });
+        setFeedback({ type: 'error', message: res?.error || nextWrongAnswerMessage() });
       }
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Submission error' });
@@ -776,6 +779,7 @@ export const ChallengeSidebar = ({
                     />
                     <button
                       type="submit"
+                      aria-label="Submit this find"
                       disabled={submitting || !flagInput.trim()}
                       className="absolute right-1.5 top-1.5 px-2.5 py-1 rounded bg-term-green text-term-black font-bold text-[11px] hover:bg-green-400 disabled:opacity-40 transition-all cursor-pointer"
                     >
