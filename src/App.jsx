@@ -276,11 +276,12 @@ export default function App() {
             handleSelectPack(preferred);
           }
 
-          const solves = {};
-          (data.solves || []).forEach(s => {
-            solves[s.challengeId] = s;
-          });
+          const solves = solveMapFrom(data);
           setSolvesMap(solves);
+          // Hints the student has already paid for. The server has always sent
+          // these and the client has always thrown them away, so after a reload
+          // a hint they owned showed as locked and asked to be bought again.
+          setUnlockedHints(hintMapFrom(data));
 
           // Put the cursor back where they stopped. The pack is resolved here
           // rather than read from `currentPack`, because handleSelectPack above
@@ -326,6 +327,22 @@ export default function App() {
     init();
   }, [handleSelectPack, activePackId]);
 
+  // ── Session response -> local state ──────────────────────────────────────
+  // Both the reload path and the sign-in path need this, and only the reload
+  // path had it. A student who practised first and then signed in kept their
+  // practice solves, and `handleChallengeSuccess` refuses to submit anything
+  // already in the map -- so those challenges could never be scored at all.
+  const solveMapFrom = (data) => {
+    const out = {};
+    (data?.solves || []).forEach(s => { out[s.challengeId] = s; });
+    return out;
+  };
+  const hintMapFrom = (data) => {
+    const out = {};
+    (data?.hintsOpened || []).forEach(h => { out[h.challengeId] = h.count || 0; });
+    return out;
+  };
+
   // Practice Mode Login
   const handleStartPractice = () => {
     setIsPracticeMode(true);
@@ -338,6 +355,13 @@ export default function App() {
   const handleAuthenticated = async (handle, token) => {
     setAuthToken(token);
     setSession({ handle, isAdmin: false });
+    // Nothing from before this moment belongs to this student. Cleared first
+    // and then filled from the server, so there is no window in which one
+    // person's progress is on screen under another person's name.
+    setIsPracticeMode(false);
+    setSolvesMap({});
+    setUnlockedHints({});
+    setTerminalHistory([]);
     // Only the server knows who is an instructor (ADMIN_HANDLES). Without this
     // an instructor who logs in fresh stays gated until they reload the page.
     fetchSession()
@@ -345,6 +369,8 @@ export default function App() {
         if (d?.success) {
           setSession({ handle: d.handle, isAdmin: !!d.isAdmin });
           setSeenScreens(d.seen || {});
+          setSolvesMap(solveMapFrom(d));
+          setUnlockedHints(hintMapFrom(d));
         }
       })
       .catch(() => { /* keep the non-admin view; the reload path will correct it */ });
@@ -375,6 +401,13 @@ export default function App() {
     // "only on the demo" is not a reason to leave a data-source flag latched.
     setInstructorPreview(false);
     setDemoPreview(null);
+    // A school computer is used by one class after another. Left behind, the
+    // solve map showed the next student the last one's progress and blocked
+    // them from scoring those challenges, and the terminal scrollback still
+    // held the previous student's finds, which are theirs alone.
+    setSolvesMap({});
+    setUnlockedHints({});
+    setTerminalHistory([]);
     setViewState('gate');
   };
 
@@ -611,6 +644,30 @@ export default function App() {
 
     try {
       const res = await submitFlagApi({ challengeId: challenge.id, commandText: proofCommand, cwd });
+      // Already theirs, from another machine or another session. The local map
+      // did not know, so this used to celebrate a fresh solve and print
+      // "+undefined XP" with a blank line where the success message goes.
+      if (res.success && res.alreadySolved) {
+        setSolvesMap(prev => ({
+          ...prev,
+          [challenge.id]: {
+            points: challenge.points || 0,
+            hintPenalty: 0,
+            netPoints: res.points ?? challenge.points ?? 0,
+            solvedAt: new Date().toISOString()
+          }
+        }));
+        setTerminalHistory(prev => [
+          ...prev,
+          {
+            type: 'output',
+            text: `[✓] Still right: ${challenge.title}. You already have this one, so there are `
+              + 'no points this time.',
+            isSuccess: true
+          }
+        ]);
+        return;
+      }
       if (res.success) {
         sounds.playSuccess();
         setSolvesMap(prev => ({
@@ -684,7 +741,13 @@ export default function App() {
         setSolvesMap(prev => ({
           ...prev,
           [res.challengeId || targetId]: {
-            points: res.points,
+            // `points` is what the challenge is worth; `netPoints` is what this
+            // student earned after any hint penalty. The server sends only the
+            // second, so reading it into both made a 100 XP challenge solved
+            // with a 10 XP penalty look as though it had only ever been worth 90.
+            points: currentPack.challenges.find(c => c.id === (res.challengeId || targetId))?.points
+              ?? res.points,
+            hintPenalty: res.hintPenalty ?? 0,
             netPoints: res.points,
             solvedAt: new Date().toISOString()
           }
